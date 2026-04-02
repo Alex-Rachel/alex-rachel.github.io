@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十八）：URP 后处理完整指南
 date: 2026-04-01 13:30:00
 tags: [HLSL, URP, 后处理, Volume框架, Renderer Feature]
+categories:
+  - Unity Shader 系列
+  - 后处理与相机
 ---
 
 URP 的后处理系统经历了从 Post Processing Stack v2 到原生 Volume 框架的重大重构。本文从 Volume 框架的使用，到自定义 Renderer Feature 的完整 C# 代码，再到移动端性能优化策略，全面覆盖 Unity URP 后处理开发的核心知识。

@@ -2,6 +2,9 @@
 title: Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术
 date: 2026-04-01 14:50:00
 tags: [HLSL, URP, 音频可视化, 音频驱动Shader, 节拍同步]
+categories:
+  - Unity Shader 系列
+  - 进阶技术
 ---
 
 ## 让声音驱动视觉

@@ -2,6 +2,9 @@
 title: Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵
 date: 2026-04-01 14:20:00
 tags: [HLSL, URP, 极坐标, UV动画, 技能特效]
+categories:
+  - Unity Shader 系列
+  - 坐标与变换
 ---
 
 ## UV 动画是技能特效的基础

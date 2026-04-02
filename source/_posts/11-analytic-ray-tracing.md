@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十一）：解析几何求交：水晶球与激光束特效
 date: 2026-04-01 10:40:00
 tags: [HLSL, URP, 光线追踪, 几何求交, 特效Shader]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 解析几何求交（Analytic Ray Intersection）是在 Shader 中无需三角形网格、纯粹用数学方程渲染几何体的技术。在 Unity/URP 开发中，这项技术不同于 Physics.Raycast——它发生在 GPU 上，每帧对每个片段独立执行，特别适合制作水晶球折射、激光束碰撞可视化、镭射瞄准线等特效。本文从原理出发，提供两个完整的可在 Unity 项目中直接使用的 URP Shader。

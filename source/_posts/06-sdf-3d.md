@@ -2,6 +2,9 @@
 title: Unity Shader 系列（六）：URP 中的 SDF 3D 应用 — 体积雾与软粒子
 date: 2026-04-01 09:50:00
 tags: [HLSL, URP, SDF 3D, 体积雾, 软粒子]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 ## SDF 在 Unity 游戏开发中的实际用途

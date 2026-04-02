@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十七）：Unity 全局光照系统深度指南
 date: 2026-04-01 11:40:00
 tags: [HLSL, URP, 全局光照, 光照烘焙, GI]
+categories:
+  - Unity Shader 系列
+  - 光照与阴影
 ---
 
 全局光照（Global Illumination，GI）是让 3D 场景看起来真实的最重要因素——间接光、环境反射、颜色溢出，这些物理现象使场景有了深度和质感。Unity 提供了一套完整的 GI 系统，从静态光照烘焙到实时动态 GI，从 Light Probe 到自适应探针体（APV）。理解如何在 URP Shader 中正确读取和使用这些 GI 数据，是让自定义 Shader 融入真实感场景的关键。

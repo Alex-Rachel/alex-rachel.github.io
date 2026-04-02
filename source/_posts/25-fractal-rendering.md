@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十五）：Unity 中的分形与程序化视觉
 date: 2026-04-01 13:00:00
 tags: [HLSL, URP, 分形, 程序化生成, 后处理特效]
+categories:
+  - Unity Shader 系列
+  - 程序化与噪声
 ---
 
 分形的无限自相似性在游戏中有着丰富的应用——从 Loading 界面的动态 Julia Set，到 Boss 战的程序化能量纹路，再到传送门的迷幻边框效果。本文聚焦 Unity URP 环境中的分形实现，包括全屏后处理分形、程序化雪花生成，以及 Compute Shader 高精度分形探索。

@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十九）：Unity 天空系统深度指南：从 Skybox 到程序化大气散射
 date: 2026-04-01 12:00:00
 tags: [HLSL, URP, 大气散射, 天空盒, 程序化天空]
+categories:
+  - Unity Shader 系列
+  - 体积与大气
 ---
 
 天空是游戏场景的"第一印象"——蔚蓝的晴天、橙红的日落、阴郁的暴风雨前夕，天空的颜色和光照决定了整个场景的基调。Unity URP 提供了从简单天空盒到完整物理大气散射的完整工具链。本文深入讲解 Unity 天空系统的每个层次：URP 内置 Sky 组件的配置、自定义 Skybox Shader 的编写，以及在地面 Shader 中正确读取天空颜色用于环境光和反射。

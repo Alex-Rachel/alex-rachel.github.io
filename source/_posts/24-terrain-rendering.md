@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十四）：Unity 地形系统与自定义 Shader
 date: 2026-04-01 12:50:00
 tags: [HLSL, URP, 地形渲染, Splatmap, 地形纹理混合]
+categories:
+  - Unity Shader 系列
+  - 自然场景
 ---
 
 Unity 地形系统（Terrain）是开放世界游戏的核心基础设施。从内置 TerrainLit Shader 的工作原理，到自定义 Splatmap 多层纹理混合，再到基于坡度和高度的自动材质分配，本文提供完整的 URP 地形渲染技术指南。

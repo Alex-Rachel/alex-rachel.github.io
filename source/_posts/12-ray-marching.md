@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十二）：URP 光线步进：Renderer Feature 全屏 SDF 渲染
 date: 2026-04-01 10:50:00
 tags: [HLSL, URP, 光线步进, Renderer Feature, 后处理]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 光线步进（Ray Marching）结合 SDF（有符号距离函数）是在 GPU 中渲染无需三角网格的 3D 几何体的强大技术。在 Unity URP 中，将光线步进集成到渲染管线的正确方式是通过 **ScriptableRendererFeature**：它让你在 URP 的标准渲染流程中插入自定义渲染步骤，读取深度缓冲，与场景几何正确融合。本文提供完整的 C# RendererFeature 代码和对应的 HLSL Shader。

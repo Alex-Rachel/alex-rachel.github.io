@@ -2,6 +2,9 @@
 title: Unity Shader 系列（一）：URP 中的 2D SDF — 圆角 UI、血条与技能遮罩
 date: 2026-04-01 09:00:00
 tags: [HLSL, URP, SDF, UI Shader, Unity游戏开发]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 ## 为什么在 Unity UI 中使用 SDF？

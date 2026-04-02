@@ -2,6 +2,9 @@
 title: Unity Shader 系列（三）：URP 矩阵变换体系 — 坐标空间与顶点动画
 date: 2026-04-01 09:20:00
 tags: [HLSL, URP, 矩阵变换, 坐标空间, 顶点动画]
+categories:
+  - Unity Shader 系列
+  - 坐标与变换
 ---
 
 ## Unity 矩阵体系：为什么与 OpenGL 不同？

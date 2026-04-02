@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十一）：粒子系统与 Shader 深度整合
 date: 2026-04-01 12:20:00
 tags: [HLSL, URP, 粒子系统, VFX Graph, 特效]
+categories:
+  - Unity Shader 系列
+  - GPU 计算与模拟
 ---
 
 Unity 的粒子特效系统与 Shader 的深度结合，是游戏中火焰、魔法、爆炸、雨雪等视觉效果的核心技术基础。本文从 Shuriken 粒子系统到 VFX Graph，从自定义粒子 Shader 到软粒子深度排序，全面讲解 URP 环境下的粒子渲染技术。

@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效
 date: 2026-04-01 11:00:00
 tags: [HLSL, URP, CSG, SDF布尔运算, 程序化特效]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 CSG（Constructive Solid Geometry，构造实体几何）布尔运算在 Unity 游戏开发中有极高的实用价值：炸弹爆炸在地面炸出的坑洞、剑砍到敌人身上的溅血切割面、技能范围的辉光边界——这些效果如果用传统 Mesh 变形来实现，不仅复杂还开销巨大，而用 SDF 布尔运算配合 URP Renderer Feature，可以实现完全程序化、无网格变形的实时切割和溶解特效。

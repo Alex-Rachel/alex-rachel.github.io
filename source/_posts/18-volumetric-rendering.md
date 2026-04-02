@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十八）：URP 体积效果实战：体积光与程序化云朵
 date: 2026-04-01 11:50:00
 tags: [HLSL, URP, 体积渲染, 体积雾, 体积光]
+categories:
+  - Unity Shader 系列
+  - 体积与大气
 ---
 
 体积效果（Volumetric Effects）是现代游戏视觉表现的重要组成部分：体积光从窗缝穿入的丁达尔效应、浓雾中透出的光柱、漂浮在低处的地面雾气。Unity URP 提供了内置的体积雾系统，但当你需要更定制化的体积效果时，就需要自己编写 Renderer Feature 和 Compute Shader。本文从 URP Volume Framework 的使用方法出发，到完整的自定义体积光束 Shader，覆盖所有实用场景。

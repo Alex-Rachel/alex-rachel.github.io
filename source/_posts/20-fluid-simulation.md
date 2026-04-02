@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲
 date: 2026-04-01 12:10:00
 tags: [HLSL, URP, Compute Shader, 流体模拟, GPU物理]
+categories:
+  - Unity Shader 系列
+  - GPU 计算与模拟
 ---
 
 GPU 流体模拟是 Unity 开发中技术深度最高的方向之一，也是游戏中实现交互式水面、墨水扩散、烟雾流动的核心技术。与 ShaderToy 的帧缓冲反馈不同，Unity 中的 GPU 流体模拟使用 **Compute Shader** + **RenderTexture Ping-Pong**：一个 Compute Shader 读取上一帧的流体状态，计算新状态写入另一张 RenderTexture，然后通过 URP Renderer Feature 将结果可视化。本文提供完整的可交互 2D 流体模拟实现，包括 Compute Shader、C# 控制脚本和 URP 可视化 Shader。

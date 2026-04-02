@@ -2,6 +2,9 @@
 title: Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南
 date: 2026-04-01 14:40:00
 tags: [HLSL, URP, 调试, 常见错误, 平台兼容性]
+categories:
+  - Unity Shader 系列
+  - 性能与调试
 ---
 
 ## 为什么需要专门的 URP 调试指南？

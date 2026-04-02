@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十六）：URP Shader 性能优化实战
 date: 2026-04-01 11:30:00
 tags: [HLSL, URP, Shader优化, 性能, SDF技巧]
+categories:
+  - Unity Shader 系列
+  - 性能与调试
 ---
 
 Shader 性能优化是 Unity 游戏开发中最具影响力、也最容易被忽视的技术方向。一个写得好的 Shader 可以在同等视觉质量下比粗糙实现快 5-10 倍，这在移动端上往往是游戏能否流畅运行的关键。本文从 Unity 官方工具（Frame Debugger、Shader Profiler、RenderDoc）的实际使用方法出发，深入讲解每一种优化技术，并提供完整的优化版 SDF UI Shader 作为综合案例。

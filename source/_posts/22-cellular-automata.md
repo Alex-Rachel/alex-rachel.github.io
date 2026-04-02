@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十二）：Compute Shader 实现元胞自动机
 date: 2026-04-01 12:30:00
 tags: [HLSL, URP, Compute Shader, 元胞自动机, 程序化纹理]
+categories:
+  - Unity Shader 系列
+  - GPU 计算与模拟
 ---
 
 元胞自动机（Cellular Automata）和反应扩散系统（Reaction-Diffusion）是程序化纹理生成的强大工具。在 Unity 中，Compute Shader 让这些计算密集型模拟可以完全在 GPU 上运行，以极高效率生成皮革纹、斑纹、裂纹、生命游戏等动态或静态纹理。

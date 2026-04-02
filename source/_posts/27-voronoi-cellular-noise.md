@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用
 date: 2026-04-01 13:20:00
 tags: [HLSL, URP, Voronoi, 程序化纹理, 破碎效果]
+categories:
+  - Unity Shader 系列
+  - 程序化与噪声
 ---
 
 Voronoi 噪声（也称 Worley 噪声）将空间划分为以特征点为核心的"细胞区域"，是游戏中皮革纹理、玻璃破碎、裂纹地面、科技感 UI 等视觉效果的核心算法。本文对比 ShaderGraph 内置节点与手写实现，并给出完整的 URP 裂纹地面材质和动态科技感 UI Shader。

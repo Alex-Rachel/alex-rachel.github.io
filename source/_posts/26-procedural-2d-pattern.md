@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十六）：Unity 程序化纹理与材质生成
 date: 2026-04-01 13:10:00
 tags: [HLSL, URP, 程序化纹理, UI Shader, 六边形网格]
+categories:
+  - Unity Shader 系列
+  - 程序化与噪声
 ---
 
 程序化纹理在游戏开发中有极高的价值——不依赖美术资产、支持无限分辨率、可动态变化、内存占用极低。本文聚焦 Unity URP 中的实用程序化纹理技术，包括避免纹理重复的随机采样、UI Shader 中的程序化图案，以及策略游戏中六边形网格 Shader 的完整实现。

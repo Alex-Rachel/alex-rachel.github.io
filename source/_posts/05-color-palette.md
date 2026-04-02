@@ -2,6 +2,9 @@
 title: Unity Shader 系列（五）：Unity 颜色管理与 URP 后处理 — 赛博朋克风格特效
 date: 2026-04-01 09:40:00
 tags: [HLSL, URP, 颜色空间, 后处理, Color Grading]
+categories:
+  - Unity Shader 系列
+  - 纹理与颜色
 ---
 
 ## Linear vs Gamma：最容易踩的颜色陷阱

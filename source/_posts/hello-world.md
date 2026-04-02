@@ -2,6 +2,8 @@
 title: 第一篇博客
 date: 2026-04-02 12:00:00
 tags: [随想]
+categories:
+  - 随想
 ---
 
 # Hello World 🐶

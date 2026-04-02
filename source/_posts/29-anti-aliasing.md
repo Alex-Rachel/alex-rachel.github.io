@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较
 date: 2026-04-01 13:40:00
 tags: [HLSL, URP, 抗锯齿, TAA, FXAA, MSAA]
+categories:
+  - Unity Shader 系列
+  - 后处理与相机
 ---
 
 锯齿是游戏画质的重要负面因素，但不同类型的游戏和平台需要截然不同的抗锯齿方案。本文系统比较 URP 中所有可用的 AA 方案，包括 MSAA、FXAA、TAA、DLSS/FSR 集成，以及自定义 Shader 中的解析抗锯齿技术。

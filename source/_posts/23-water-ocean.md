@@ -2,6 +2,9 @@
 title: Unity Shader 系列（二十三）：URP 水面渲染完整指南
 date: 2026-04-01 12:40:00
 tags: [HLSL, URP, 水面渲染, Gerstner波, Fresnel]
+categories:
+  - Unity Shader 系列
+  - 自然场景
 ---
 
 水面渲染是游戏中最考验 Shader 技术综合能力的场景之一——它需要几何波形、Fresnel 反射、折射、焦散、泡沫等多种技术的协同配合。本文以 URP 为目标平台，从 Gerstner 波的顶点着色器实现到完整的低多边形风格水面 Shader，给出可直接在 Unity 项目中使用的代码。

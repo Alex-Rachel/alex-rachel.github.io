@@ -2,6 +2,8 @@
 title: Shader Craft - 我的 GLSL Shader 学习笔记
 date: 2026-04-02 16:30:00
 tags: [Unity, Shader, GLSL, 学习笔记]
+categories:
+  - 入门导读
 ---
 
 # Shader Craft - 我的 GLSL Shader 学习笔记 🎨

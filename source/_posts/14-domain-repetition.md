@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化
 date: 2026-04-01 11:10:00
 tags: [HLSL, URP, 域重复, 程序化纹理, 性能优化]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 域重复（Domain Repetition）在 Unity 开发中是一项被严重低估的技术。当你需要渲染无限延伸的地面、密集的地砖、重复的建筑外墙细节，或是任何存在大量重复几何的场景时，域重复技术可以在完全不增加 GPU 内存带宽的情况下，让单张纹理渲染出无限变化的视觉效果，同时避免明显的重复感。本文深入讲解 Unity URP 地形 Shader 中的域重复实践，以及如何与 GPU Instancing 协同工作。

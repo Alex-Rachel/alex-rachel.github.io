@@ -2,6 +2,9 @@
 title: Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效
 date: 2026-04-01 11:20:00
 tags: [HLSL, URP, 域扭曲, 特效Shader, UV动画]
+categories:
+  - Unity Shader 系列
+  - SDF 技术
 ---
 
 域扭曲（Domain Warping）是 Unity 特效制作中最具表现力的技术之一：用噪波偏移 UV 坐标，产生流动、扭曲、有机变形的视觉效果——传送门的空间撕裂感、熔岩的粘稠流动、毒液泡沫的涌动，这些效果的核心都是域扭曲。与纯粹的 UV 动画不同，域扭曲利用多层 FBM 噪波的嵌套叠加，产生无法预测的有机感，本文提供两个完整可用的 URP Shader。

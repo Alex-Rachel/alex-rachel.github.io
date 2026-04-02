@@ -2,6 +2,9 @@
 title: Unity Shader 系列（七）：URP 法线体系完整讲解 — TBN 矩阵与视差贴图
 date: 2026-04-01 10:00:00
 tags: [HLSL, URP, 法线贴图, 视差贴图, 切线空间]
+categories:
+  - Unity Shader 系列
+  - 坐标与变换
 ---
 
 ## Unity 法线体系：为什么有三种空间？
