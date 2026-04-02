@@ -1,38 +1,25 @@
 ---
-title: Hello World
+title: 第一篇博客
+date: 2026-04-02 12:00:00
+tags: [随想]
 ---
-Welcome to [Hexo](https://hexo.io/)! This is your very first post. Check [documentation](https://hexo.io/docs/) for more info. If you get any problems when using Hexo, you can find the answer in [troubleshooting](https://hexo.io/docs/troubleshooting.html) or you can ask me on [GitHub](https://github.com/hexojs/hexo/issues).
 
-## Quick Start
+# Hello World 🐶
 
-### Create a new post
+欢迎来到我的博客！
 
-``` bash
-$ hexo new "My New Post"
-```
+这里是 Alex 的个人博客，主要记录一些技术相关的学习和生活感悟。
 
-More info: [Writing](https://hexo.io/docs/writing.html)
+## 关于这个博客
 
-### Run server
+- 使用 [Hexo](https://hexo.io/) 作为静态博客框架
+- 主题使用 [Fluid](https://github.com/fluid-dev/hexo-theme-fluid)
+- 托管在 GitHub Pages
 
-``` bash
-$ hexo server
-```
+## 接下来要做什么
 
-More info: [Server](https://hexo.io/docs/server.html)
+1. 配置博客主题和样式
+2. 写一些技术文章
+3. 添加更多个性化内容
 
-### Generate static files
-
-``` bash
-$ hexo generate
-```
-
-More info: [Generating](https://hexo.io/docs/generating.html)
-
-### Deploy to remote sites
-
-``` bash
-$ hexo deploy
-```
-
-More info: [Deployment](https://hexo.io/docs/one-command-deployment.html)
+敬请期待！
