@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二十四）：Unity 地形系统与自定义 Shader
-date: 2026-04-25 12:00:00
+date: 2026-04-01 12:50:00
 tags: [HLSL, URP, 地形渲染, Splatmap, 地形纹理混合]
 ---
 

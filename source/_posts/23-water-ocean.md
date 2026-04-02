@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二十三）：URP 水面渲染完整指南
-date: 2026-04-24 12:00:00
+date: 2026-04-01 12:40:00
 tags: [HLSL, URP, 水面渲染, Gerstner波, Fresnel]
 ---
 

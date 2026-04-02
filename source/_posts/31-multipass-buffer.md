@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术
-date: 2026-05-02 12:00:00
+date: 2026-04-01 14:00:00
 tags: [HLSL, URP, RenderTexture, 多通道渲染, Ping-Pong]
 ---
 

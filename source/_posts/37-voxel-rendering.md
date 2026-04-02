@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader
-date: 2026-05-08 12:00:00
+date: 2026-04-01 15:00:00
 tags: [HLSL, URP, 体素渲染, Minecraft, Chunk系统]
 ---
 

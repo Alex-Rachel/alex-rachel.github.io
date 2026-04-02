@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（八）：URP 光照系统深度解析 — PBR、卡通渲染与 BRDF
-date: 2026-04-09 12:00:00
+date: 2026-04-01 10:10:00
 tags: [HLSL, URP, PBR光照, 卡通渲染, BRDF]
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效
-date: 2026-04-16 12:00:00
+date: 2026-04-01 11:20:00
 tags: [HLSL, URP, 域扭曲, 特效Shader, UV动画]
 ---
 

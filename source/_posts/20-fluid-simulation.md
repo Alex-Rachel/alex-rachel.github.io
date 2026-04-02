@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲
-date: 2026-04-21 12:00:00
+date: 2026-04-01 12:10:00
 tags: [HLSL, URP, Compute Shader, 流体模拟, GPU物理]
 ---
 

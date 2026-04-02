@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（十七）：Unity 全局光照系统深度指南
-date: 2026-04-18 12:00:00
+date: 2026-04-01 11:40:00
 tags: [HLSL, URP, 全局光照, 光照烘焙, GI]
 ---
 

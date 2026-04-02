@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用
-date: 2026-04-28 12:00:00
+date: 2026-04-01 13:20:00
 tags: [HLSL, URP, Voronoi, 程序化纹理, 破碎效果]
 ---
 

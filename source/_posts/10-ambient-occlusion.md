@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（十）：URP AO 技术全景 — SSAO、烘焙 AO 与洞穴材质实战
-date: 2026-04-11 12:00:00
+date: 2026-04-01 10:30:00
 tags: [HLSL, URP, AO, SSAO, 环境光遮蔽, 光照烘焙]
 ---
 

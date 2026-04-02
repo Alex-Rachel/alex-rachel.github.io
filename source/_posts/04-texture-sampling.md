@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（四）：URP 纹理采样全面指南 — 从基础到水面 Shader
-date: 2026-04-05 12:00:00
+date: 2026-04-01 09:30:00
 tags: [HLSL, URP, 纹理采样, 材质系统, Unity]
 ---
 

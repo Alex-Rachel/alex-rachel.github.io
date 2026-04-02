@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效
-date: 2026-04-14 12:00:00
+date: 2026-04-01 11:00:00
 tags: [HLSL, URP, CSG, SDF布尔运算, 程序化特效]
 ---
 

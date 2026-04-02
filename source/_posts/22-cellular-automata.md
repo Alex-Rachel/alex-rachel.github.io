@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二十二）：Compute Shader 实现元胞自动机
-date: 2026-04-23 12:00:00
+date: 2026-04-01 12:30:00
 tags: [HLSL, URP, Compute Shader, 元胞自动机, 程序化纹理]
 ---
 

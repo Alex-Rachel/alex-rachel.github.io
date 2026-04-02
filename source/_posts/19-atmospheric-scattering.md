@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（十九）：Unity 天空系统深度指南：从 Skybox 到程序化大气散射
-date: 2026-04-20 12:00:00
+date: 2026-04-01 12:00:00
 tags: [HLSL, URP, 大气散射, 天空盒, 程序化天空]
 ---
 

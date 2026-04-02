@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二十六）：Unity 程序化纹理与材质生成
-date: 2026-04-27 12:00:00
+date: 2026-04-01 13:10:00
 tags: [HLSL, URP, 程序化纹理, UI Shader, 六边形网格]
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样
-date: 2026-05-03 12:00:00
+date: 2026-04-01 14:10:00
 tags: [HLSL, URP, 三面投影, Triplanar, 无缝纹理]
 ---
 

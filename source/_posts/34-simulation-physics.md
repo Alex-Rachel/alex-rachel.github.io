@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群
-date: 2026-05-05 12:00:00
+date: 2026-04-01 14:30:00
 tags: [HLSL, URP, Compute Shader, 布料模拟, GPU物理]
 ---
 

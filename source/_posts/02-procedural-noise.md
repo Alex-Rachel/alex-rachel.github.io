@@ -1,6 +1,6 @@
 ---
 title: Unity Shader 系列（二）：URP 程序化噪声 — FBM 火焰特效与程序化材质
-date: 2026-04-03 12:00:00
+date: 2026-04-01 09:10:00
 tags: [HLSL, URP, 程序化噪声, FBM, 特效Shader]
 ---
 
