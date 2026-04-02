@@ -12,8 +12,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          submodules: ''
-          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Cleanup submodule config
+        run: |
+          git submodule deinit --all || true
+          rm -rf .gitmodules
+          git config --remove-section submodule.themes/fluid || true
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
