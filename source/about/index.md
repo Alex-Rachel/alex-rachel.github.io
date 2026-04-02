@@ -6,23 +6,10 @@ type: about
 
 # 关于我 👋
 
-你好！我是 Alex。
-
-## 技术栈
-
-- 编程语言：JavaScript / Python / Go
-- 框架：React, Node.js, Hexo
-- 工具：Git, Docker, Linux
-
-## 兴趣爱好
-
-- 探索新技术
-- 写代码
-- 记录生活
-
-## 联系方式
-
-- GitHub: https://github.com/Alex-Rachel
+🕹️ 游戏开发者  
+🚢 开源贡献者  
+💬 专注于 Unity 与技术美术  
+👑 技术栈：HotChocolate、MassTransit、Quartz
 
 ---
 
