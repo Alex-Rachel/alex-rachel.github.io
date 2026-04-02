@@ -1,329 +1,430 @@
-# 第7篇｜法线估算：曲面细节的精确表达
-
-## 摘要
-
-**法线（Normal）**是渲染中最重要的几何信息之一，它决定了光线如何与表面交互。本篇将讲解如何从 SDF（尤其是 SDF 3D）计算表面法线，包括**有限差分法（Finite Differences）**和**四面体法（Tetrahedron Method）**两种主流算法，分析法线估算的精度与性能权衡，并给出 Unity HLSL 的适配实现。法线估算的正确实现直接决定了光照和阴影的质量。
-
+---
+title: Unity Shader 系列（七）：URP 法线体系完整讲解 — TBN 矩阵与视差贴图
+date: 2026-04-08 12:00:00
+tags: [HLSL, URP, 法线贴图, 视差贴图, 切线空间]
 ---
 
-## 适用场景与问题定义
+## Unity 法线体系：为什么有三种空间？
 
-### 什么时候需要计算法线
+法线数据在 Unity 中以三种形式存在，每种有其适用场景：
 
-1. **光照计算** - Lambert/Phong/PBR 等光照模型都需要法线
-2. **阴影计算** - 软阴影的 ray shadow 需要沿法线方向步进
-3. **环境映射** - 反射需要法线计算反射方向
-4. **纹理映射** - 法线贴图扰动需要原始法线作为输入
+**1. 切线空间（Tangent Space）法线** — 最常见
+- 存储为蓝紫色贴图（未扰动时法线朝上 = (0,0,1) = RGB(0.5,0.5,1.0)）
+- 相对于网格表面，与模型的平移/旋转无关
+- 可以在不同模型间复用（如砖墙法线贴图可用于任意朝向的墙壁）
+- Unity 默认法线贴图格式
 
-### 核心问题
+**2. 世界空间（World Space）法线**
+- 直接存储世界坐标系中的方向，不依赖切线空间
+- 优点：无需 TBN 矩阵变换，性能更低
+- 缺点：贴图无法在不同旋转的模型间复用
+- 常见于地形 Shader
 
-如何从离散的 SDF 值快速准确地估算连续曲面的法线方向？
+**3. 对象空间（Object Space）法线**
+- 相对于模型局部坐标系
+- 烘焙时使用，运行时少见
 
----
+## 切线空间与 TBN 矩阵
 
-## 核心原理拆解
+**TBN 矩阵**由三个互相正交的向量组成，将切线空间的向量变换到世界空间：
+- **T（Tangent，切线）**：沿 UV.x 方向
+- **B（Bitangent，副切线）**：沿 UV.y 方向（也叫 Binormal）
+- **N（Normal，法线）**：垂直于表面
 
-### 1. 法线的数学定义
+```hlsl
+// URP 中获取 TBN 的标准方式（顶点着色器）
+VertexNormalInputs normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);
+float3 tangentWS   = normalInputs.tangentWS;    // 世界空间切线
+float3 bitangentWS = normalInputs.bitangentWS;  // 世界空间副切线
+float3 normalWS    = normalInputs.normalWS;     // 世界空间法线
 
-对于曲面 $S: f(x, y, z) = 0$，曲面在某点的**法线**是**梯度向量**：
+// 在片元着色器中构建 TBN 矩阵
+float3x3 TBN = float3x3(
+    normalize(tangentWS),
+    normalize(bitangentWS),
+    normalize(normalWS)
+);
 
-$$\vec{N} = \nabla f = \left(\frac{\partial f}{\partial x}, \frac{\partial f}{\partial y}, \frac{\partial f}{\partial z}\right)$$
+// 切线空间 → 世界空间
+float3 normalTS = UnpackNormal(normalMap);           // 解码法线贴图
+float3 normalWS = TransformTangentToWorld(normalTS, TBN); // URP 内置函数
+// 等价手动写法：normalize(mul(normalTS, TBN))
+```
 
-对于 SDF，$f(P) = 0$ 的等值面就是曲面表面。SDF 的梯度方向恰好指向曲面的法线方向。
+## UnpackNormal 的内部实现
 
-### 2. 有限差分法 (Finite Differences)
+Unity 的法线贴图有两种压缩格式，`UnpackNormal` 内部会根据平台自动选择解码方式：
 
-#### 原理
+```hlsl
+// UnpackNormal 源码（来自 Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl）
+float3 UnpackNormal(float4 packedNormal)
+{
+    #if defined(UNITY_NO_DXT5nm)
+        // 部分移动端：直接使用 RGB，范围 [0,1] → [-1,1]
+        return packedNormal.xyz * 2.0 - 1.0;
+    #else
+        // DX11/DXT5nm（BC5）格式：只存 RG，重建 Z
+        // 法线贴图的 A 通道存 X，G 通道存 Y
+        float3 normal;
+        normal.xy = packedNormal.ag * 2.0 - 1.0;
+        normal.z = sqrt(max(0.0, 1.0 - dot(normal.xy, normal.xy)));
+        return normal;
+    #endif
+}
 
-用差分近似偏导数：
-
-$$\frac{\partial f}{\partial x} \approx \frac{f(x+\epsilon) - f(x-\epsilon)}{2\epsilon}$$
-
-类似地计算 $y$ 和 $z$ 方向的偏导数，然后归一化：
-
-```glsl
-vec3 calcNormal(vec3 p) {
-    const float eps = 0.001;
-    vec2 e = vec2(eps, 0.0);
-    
-    // 中心差分
-    float nx = map(p + e.xyy).x - map(p - e.xyy).x;
-    float ny = map(p + e.yxy).x - map(p - e.yxy).x;
-    float nz = map(p + e.yyx).x - map(p - e.yyx).x;
-    
-    return normalize(vec3(nx, ny, nz));
+// UnpackNormalScale：带强度缩放的版本
+float3 UnpackNormalScale(float4 packedNormal, float bumpScale)
+{
+    float3 normal = UnpackNormal(packedNormal);
+    normal.xy *= bumpScale; // 只缩放 XY，Z 重建保证单位向量
+    normal = normalize(normal);
+    return normal;
 }
 ```
 
-#### 精度分析
+**重要踩坑：DXT5nm 格式**
+Unity 在 Windows/DX11 上默认将法线贴图压缩为 `DXT5nm`（实际是 `BC5`），此格式只保存两个通道（X 和 Y）。Z 分量在运行时通过 `sqrt(1 - x² - y²)` 重建。
 
-| 差分类型 | 公式 | 精度 |
-|---------|------|------|
-| 前向差分 | $(f(x+\epsilon) - f(x))/\epsilon$ | O(ε) |
-| 后向差分 | $(f(x) - f(x-\epsilon))/\epsilon$ | O(ε) |
-| **中心差分** | $(f(x+\epsilon) - f(x-\epsilon))/(2\epsilon)$ | O(ε²) |
+这意味着：
+- 永远不要直接读取法线贴图的 `.rgb`，始终用 `UnpackNormal`
+- DXT5nm 贴图显示为绿色偏蓝（而非蓝紫），这是正常现象
 
-### 3. 四面体法 (Tetrahedron Method)
+## 法线混合技术
 
-#### 原理
+当需要叠加两张法线贴图时（如宏观地形起伏 + 微观岩石纹理），混合方式至关重要：
 
-在四面体的四个顶点上采样 SDF 值，根据值的大小关系确定法线方向：
+```hlsl
+// ===== 方法一：线性叠加（Linear Blending）— 错误，不推荐 =====
+// 简单相加，但会破坏法线的单位向量属性
+float3 badBlend = normalize(n1 + n2); // 在 n1 和 n2 差异较大时结果错误
 
-```glsl
-vec3 calcNormalTetrahedron(vec3 p) {
-    const float eps = 0.001;
-    vec3 e = vec3(eps, -eps, 0.0);
-    
-    // 四面体四个顶点的偏移
-    return normalize(
-        e.xyy * map(p + e.xyy).x +
-        e.yyx * map(p + e.yyx).x +
-        e.yxy * map(p + e.yxy).x +
-        e.xxx * map(p + e.xxx).x
-    );
+// ===== 方法二：Partial Derivative（偏导数混合）— 简单正确 =====
+// 将两张法线都视为高度场的偏导数，直接相加
+float3 pdBlend(float3 n1, float3 n2)
+{
+    return normalize(float3(n1.xy + n2.xy, n1.z * n2.z));
+    // 注意：z 分量相乘而非相加，避免法线过于平坦
 }
+
+// ===== 方法三：Reoriented Normal Mapping（RNM）— 最准确 =====
+// 以 n1 为基础，将 n2 "重定向"到 n1 的切线空间
+float3 blendNormalsRNM(float3 n1, float3 n2)
+{
+    float3 t = n1 + float3(0, 0, 1);  // n1 偏移
+    float3 u = n2 * float3(-1, -1, 1); // n2 翻转 XY
+    return normalize(t * dot(t, u) / t.z - u);
+}
+
+// ===== URP 内置：BlendNormal（类似 Partial Derivative）=====
+// 在 Lighting.hlsl 中：BlendNormal(n1, n2) 等价于 pdBlend
 ```
 
-**数学原理**：四个采样点的加权组合直接给出了梯度方向。
+## 完整示例：URP 标准 PBR 扩展 Shader（法线 + 视差）
 
-### 4. 自动微分 (Automatic Differentiation)
+支持法线强度调节和视差贴图深度调节的完整 URP Shader：
 
-对于纯数学函数，可以使用链式法则精确计算导数：
+```hlsl
+Shader "Custom/URP/StandardPBRExtended"
+{
+    Properties
+    {
+        // 基础 PBR 属性
+        _BaseColor      ("Base Color",     Color)  = (1,1,1,1)
+        _BaseMap        ("Base Albedo",    2D)     = "white" {}
+        _Metallic       ("Metallic",       Range(0,1)) = 0.0
+        _Smoothness     ("Smoothness",     Range(0,1)) = 0.5
 
-```glsl
-// 简化的自动微分结构
-struct AD {
-    float value;
-    vec3 derivative;
-};
+        // 法线贴图
+        _BumpMap        ("Normal Map",     2D)     = "bump" {}
+        _BumpScale      ("Normal Strength",Range(0,3)) = 1.0
 
-AD adSqrt(AD x) {
-    float sqrtVal = sqrt(x.value);
-    return AD(
-        sqrtVal,
-        0.5 * x.derivative / sqrtVal
-    );
-}
+        // 第二层法线（宏观起伏）
+        _BumpMap2       ("Normal Map 2",   2D)     = "bump" {}
+        _BumpScale2     ("Normal Strength 2", Range(0,1)) = 0.5
+        _BumpTiling2    ("Normal Map 2 Tiling", Range(0.1, 5)) = 0.3
 
-AD adMul(AD a, AD b) {
-    return AD(
-        a.value * b.value,
-        a.derivative * b.value + a.value * b.derivative
-    );
-}
-```
+        // 高度图（视差贴图）
+        _HeightMap      ("Height Map",     2D)     = "black" {}
+        _ParallaxScale  ("Parallax Depth", Range(0.001, 0.08)) = 0.02
+        _ParallaxSteps  ("Parallax Steps", Range(4, 32)) = 16  // 陡峭视差步数
 
----
-
-## 关键代码片段
-
-### 完整法线计算库
-
-```glsl
-// ============ 法线计算库 ============
-
-// 方法 1：中心差分法
-vec3 calcNormalCentralDiff(vec3 p, float eps) {
-    vec2 e = vec2(eps, 0.0);
-    float nx = map(p + e.xyy).x - map(p - e.xyy).x;
-    float ny = map(p + e.yxy).x - map(p - e.yxy).x;
-    float nz = map(p + e.yyx).x - map(p - e.yyx).x;
-    return normalize(vec3(nx, ny, nz));
-}
-
-// 方法 2：四面体法（更高效，只需 4 次 SDF 查询）
-vec3 calcNormalTetrahedron(vec3 p, float eps) {
-    vec3 e = vec3(eps, -eps, 0.0);
-    return normalize(
-        e.xyy * map(p + e.xyy).x +
-        e.yyx * map(p + e.yyx).x +
-        e.yxy * map(p + e.yxy).x +
-        e.xxx * map(p + e.xxx).x
-    );
-}
-
-// 方法 3：前向差分（只在光线前进方向采样，更快但精度低）
-vec3 calcNormalForwardDiff(vec3 p, vec3 rd, float eps) {
-    vec2 e = vec2(0.0, eps);
-    float base = map(p).x;
-    float nx = map(p + e.yxx).x - base;
-    float ny = map(p + e.xyx).x - base;
-    float nz = map(p + e.xxy).x - base;
-    return normalize(vec3(nx, ny, nz));
-}
-
-// Unity HLSL 适配
-float3 CalcNormalHLSL(float3 pos, float eps) {
-    float2 e = float2(eps, 0);
-    float nx = SceneSDF(pos + float3(e.x, e.y, e.y)) 
-             - SceneSDF(pos - float3(e.x, e.y, e.y));
-    float ny = SceneSDF(pos + float3(e.y, e.x, e.y)) 
-             - SceneSDF(pos - float3(e.y, e.x, e.y));
-    float nz = SceneSDF(pos + float3(e.y, e.y, e.x)) 
-             - SceneSDF(pos - float3(e.y, e.y, e.x));
-    return normalize(float3(nx, ny, nz));
-}
-
-// 带材质 ID 的法线计算
-struct SurfaceHit {
-    float dist;
-    int materialID;
-    vec3 normal;
-};
-
-SurfaceHit rayMarchWithNormal(vec3 ro, vec3 rd) {
-    float t = 0.0;
-    SurfaceHit hit;
-    hit.materialID = 0;
-    
-    for (int i = 0; i < 128; i++) {
-        vec3 p = ro + rd * t;
-        vec2 res = map(p);
-        
-        if (res.x < 0.001) {
-            hit.dist = t;
-            hit.materialID = int(res.y);
-            hit.normal = calcNormalTetrahedron(p, 0.001);
-            return hit;
-        }
-        
-        t += res.x;
-        if (t > 100.0) break;
+        // 遮蔽/自发光
+        _OcclusionMap   ("Occlusion Map",  2D)     = "white" {}
+        _OcclusionStrength ("Occlusion Strength", Range(0,1)) = 1.0
+        [HDR] _EmissionColor ("Emission", Color) = (0,0,0,1)
+        _EmissionMap    ("Emission Map",   2D)     = "black" {}
     }
-    
-    hit.dist = -1.0;
-    return hit;
+
+    SubShader
+    {
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _SHADOWS_SOFT
+            #pragma multi_compile_fog
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            TEXTURE2D(_BaseMap);     SAMPLER(sampler_BaseMap);
+            TEXTURE2D(_BumpMap);     SAMPLER(sampler_BumpMap);
+            TEXTURE2D(_BumpMap2);    SAMPLER(sampler_BumpMap2);
+            TEXTURE2D(_HeightMap);   SAMPLER(sampler_HeightMap);
+            TEXTURE2D(_OcclusionMap);SAMPLER(sampler_OcclusionMap);
+            TEXTURE2D(_EmissionMap); SAMPLER(sampler_EmissionMap);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                float4 _BumpMap_ST;
+                float4 _BumpMap2_ST;
+                float4 _HeightMap_ST;
+                float4 _OcclusionMap_ST;
+                float4 _EmissionMap_ST;
+                float4 _BaseColor;
+                float4 _EmissionColor;
+                float  _Metallic;
+                float  _Smoothness;
+                float  _BumpScale;
+                float  _BumpScale2;
+                float  _BumpTiling2;
+                float  _ParallaxScale;
+                float  _ParallaxSteps;
+                float  _OcclusionStrength;
+            CBUFFER_END
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+                float4 tangentOS  : TANGENT;
+                float2 uv         : TEXCOORD0;
+                float2 uv2        : TEXCOORD1;  // 第二 UV（Lightmap UV）
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS  : SV_POSITION;
+                float2 uv           : TEXCOORD0;
+                float2 lightmapUV   : TEXCOORD1;
+                float3 positionWS   : TEXCOORD2;
+                float3 normalWS     : TEXCOORD3;
+                float3 tangentWS    : TEXCOORD4;
+                float3 bitangentWS  : TEXCOORD5;
+                float3 viewDirTS    : TEXCOORD6;  // 切线空间视线方向（视差贴图使用）
+                float4 shadowCoord  : TEXCOORD7;
+                float  fogFactor    : TEXCOORD8;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            // ======== 视差贴图（Parallax Occlusion Mapping）========
+
+            // 简单视差（Parallax Mapping）
+            float2 parallaxSimple(float2 uv, float3 viewDirTS, float scale)
+            {
+                // 用高度图采样计算偏移量
+                float height = SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, uv, 0).r;
+                // 偏移量 = 高度 × 视线切线分量（越斜视越大）
+                float2 offset = viewDirTS.xy / viewDirTS.z * (height * scale);
+                return uv - offset; // 减法：高区域 UV 向视线方向偏移
+            }
+
+            // 陡峭视差（Steep Parallax Mapping）
+            // 多步采样，处理大深度时的锯齿问题
+            float2 parallaxSteep(float2 uv, float3 viewDirTS, float scale, int steps)
+            {
+                float stepSize = 1.0 / float(steps);
+                float2 uvStep = viewDirTS.xy / abs(viewDirTS.z) * scale * stepSize;
+
+                float currentHeight = 1.0; // 从顶部开始向下步进
+                float2 currentUV = uv;
+                float sampledHeight = SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, currentUV, 0).r;
+
+                [loop]
+                for (int i = 0; i < steps; i++)
+                {
+                    if (sampledHeight >= currentHeight) break;
+                    currentHeight -= stepSize;
+                    currentUV -= uvStep; // 每步向视线方向偏移
+                    sampledHeight = SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, currentUV, 0).r;
+                }
+
+                // 线性插值（在最后两步之间插值，消除锯齿）
+                float2 prevUV = currentUV + uvStep;
+                float prevHeight = SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, prevUV, 0).r;
+                float prevDiff = prevHeight - (currentHeight + stepSize);
+                float currDiff = sampledHeight - currentHeight;
+                float blend = currDiff / (currDiff - prevDiff);
+                return lerp(currentUV, prevUV, blend);
+            }
+
+            Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                UNITY_SETUP_INSTANCE_ID(IN);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
+
+                VertexPositionInputs posInputs    = GetVertexPositionInputs(IN.positionOS.xyz);
+                VertexNormalInputs   normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);
+
+                OUT.positionHCS = posInputs.positionCS;
+                OUT.positionWS  = posInputs.positionWS;
+                OUT.normalWS    = normalInputs.normalWS;
+                OUT.tangentWS   = normalInputs.tangentWS;
+                OUT.bitangentWS = normalInputs.bitangentWS;
+                OUT.uv          = TRANSFORM_TEX(IN.uv, _BaseMap);
+                OUT.shadowCoord = GetShadowCoord(posInputs);
+                OUT.fogFactor   = ComputeFogFactor(posInputs.positionCS.z);
+
+                // 计算切线空间视线方向（视差贴图在顶点着色器中预计算更高效）
+                float3 viewDirWS = GetCameraPositionWS() - posInputs.positionWS;
+                // 构建 TBN 逆矩阵（正交矩阵的逆 = 转置）
+                float3x3 TBN = float3x3(normalInputs.tangentWS, normalInputs.bitangentWS, normalInputs.normalWS);
+                // 世界空间视线 → 切线空间（mul(v, M) 等价于 transpose(M) * v）
+                OUT.viewDirTS = mul(TBN, viewDirWS); // 注意：这里 TBN 行主序，等价于切线空间变换
+
+                OUTPUT_LIGHTMAP_UV(IN.uv2, unity_LightmapST, OUT.lightmapUV);
+
+                return OUT;
+            }
+
+            half4 frag(Varyings IN) : SV_Target
+            {
+                float3 viewDirTS = normalize(IN.viewDirTS);
+
+                // ===== 1. 视差贴图 UV 偏移 =====
+                float2 uv = IN.uv;
+                #ifdef _PARALLAX_MAP
+                    // 使用陡峭视差（更大 _ParallaxScale 时推荐）
+                    uv = parallaxSteep(uv, viewDirTS, _ParallaxScale, (int)_ParallaxSteps);
+                #else
+                    // 简单视差（低性能消耗）
+                    uv = parallaxSimple(uv, viewDirTS, _ParallaxScale);
+                #endif
+
+                // ===== 2. 基础颜色 =====
+                half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
+
+                // ===== 3. 法线（双层叠加）=====
+                // 第一层法线（主要细节）
+                float4 normalPacked1 = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv);
+                float3 normalTS1 = UnpackNormalScale(normalPacked1, _BumpScale);
+
+                // 第二层法线（宏观起伏，使用不同缩放）
+                float2 uv2 = IN.uv * _BumpTiling2;
+                float4 normalPacked2 = SAMPLE_TEXTURE2D(_BumpMap2, sampler_BumpMap2, uv2);
+                float3 normalTS2 = UnpackNormalScale(normalPacked2, _BumpScale2);
+
+                // RNM 法线混合
+                float3 t = normalTS1 + float3(0, 0, 1);
+                float3 u = normalTS2 * float3(-1, -1, 1);
+                float3 blendedNormalTS = normalize(t * dot(t, u) / t.z - u);
+
+                // 切线空间 → 世界空间
+                float3x3 TBN = float3x3(
+                    normalize(IN.tangentWS),
+                    normalize(IN.bitangentWS),
+                    normalize(IN.normalWS)
+                );
+                float3 normalWS = TransformTangentToWorld(blendedNormalTS, TBN);
+
+                // ===== 4. PBR 材质属性 =====
+                float metallic   = _Metallic;
+                float smoothness = _Smoothness;
+                float occlusion  = lerp(1.0, SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g, _OcclusionStrength);
+                half3 emission   = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;
+
+                // ===== 5. URP 标准 PBR 光照 =====
+                SurfaceData surfaceData;
+                surfaceData.albedo      = albedo.rgb;
+                surfaceData.alpha       = albedo.a;
+                surfaceData.metallic    = metallic;
+                surfaceData.smoothness  = smoothness;
+                surfaceData.normalTS    = blendedNormalTS; // 保存切线空间法线（URP 内部处理）
+                surfaceData.occlusion   = occlusion;
+                surfaceData.emission    = emission;
+                surfaceData.specular    = 0;
+                surfaceData.clearCoatMask = 0;
+                surfaceData.clearCoatSmoothness = 0;
+
+                InputData inputData;
+                inputData.positionWS            = IN.positionWS;
+                inputData.normalWS              = normalize(normalWS);
+                inputData.viewDirectionWS       = normalize(GetCameraPositionWS() - IN.positionWS);
+                inputData.shadowCoord           = IN.shadowCoord;
+                inputData.fogCoord              = IN.fogFactor;
+                inputData.vertexLighting        = 0;
+                inputData.bakedGI               = SAMPLE_GI(IN.lightmapUV, SampleSH(inputData.normalWS), inputData.normalWS);
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(IN.positionHCS);
+                inputData.shadowMask            = SAMPLE_SHADOWMASK(IN.lightmapUV);
+
+                // URP 内置 PBR 光照（封装了主光源 + 额外光源 + GI + 阴影）
+                half4 color = UniversalFragmentPBR(inputData, surfaceData);
+
+                // 雾效
+                color.rgb = MixFog(color.rgb, IN.fogFactor);
+                return color;
+            }
+            ENDHLSL
+        }
+
+        // 阴影投射 Pass（使用 URP 内置）
+        UsePass "Universal Render Pipeline/Lit/ShadowCaster"
+        // 深度 Pass
+        UsePass "Universal Render Pipeline/Lit/DepthOnly"
+        // 法线深度 Pass（用于 SSAO）
+        UsePass "Universal Render Pipeline/Lit/DepthNormals"
+    }
 }
 ```
 
----
+## ShaderGraph 中的法线贴图实现
 
-## 性能优化要点
+ShaderGraph 提供了完整的法线支持：
+1. `Sample Texture 2D` 节点，类型选 `Normal`（自动 UnpackNormal）
+2. `Normal Strength` 节点：缩放法线 XY 强度
+3. `Normal Blend` 节点：混合两张法线（内部使用 Partial Derivative 方法）
+4. `Parallax Occlusion Mapping` 节点：内置视差贴图（Unity 2022+）
 
-### 1. 减少 SDF 查询次数
+## 性能考量
 
-| 方法 | SDF 查询次数 | 精度 |
-|------|------------|------|
-| 中心差分 | 6 次 | 高 |
-| 四面体法 | 4 次 | 中高 |
-| 前向差分 | 3 次 | 中 |
+**各平台的法线贴图压缩格式：**
+| 平台 | 格式 | `UNITY_NO_DXT5nm` |
+|------|------|-------------------|
+| Windows (DX11) | DXT5nm / BC5 | 未定义（使用 AG 通道） |
+| Android (OpenGL ES) | ETC2 RGBA8 | 已定义（使用 RGB） |
+| iOS (Metal) | ASTC | 已定义（使用 RGB） |
+| macOS (Metal) | BPTC（BC5） | 未定义 |
 
-### 2. 动态 epsilon
+**视差贴图的性能开销：**
+- 简单视差：1 次额外采样，开销极小
+- 陡峭视差：N 步 × 1 次采样，16 步开销约为 3-4 个完整 PBR 材质采样
+- 移动端建议：简单视差 + `_ParallaxScale <= 0.02`，陡峭视差限制在 8 步以内
 
-```glsl
-// 根据距离调整 epsilon
-vec3 calcNormalAdaptive(vec3 p) {
-    // 远处用更大的 epsilon，减少噪点
-    float scale = 1.0 / (1.0 + length(p) * 0.1);
-    float eps = 0.001 * scale;
-    return calcNormalTetrahedron(p, eps);
-}
-```
+## 常见踩坑
 
-### 3. 时间复杂度
+1. **DXT5nm 格式看起来颜色偏绿**：DXT5nm 将法线 X 存在 Alpha，Y 存在 Green，Inspector 预览会是偏绿的而非蓝紫，这是正常的。如果法线贴图显示蓝紫说明是旧版未压缩格式，也没问题（`UnpackNormal` 兼容两种）。
 
-| 操作 | 时间复杂度 |
-|------|--------|
-| 中心差分 | O(6·map) |
-| 四面体法 | O(4·map) |
-| 预计算法线 | O(1) |
+2. **非均匀缩放破坏 TBN**：如果模型有非均匀缩放（如 `Scale(2, 1, 1)`），`GetVertexNormalInputs` 内部会用法线矩阵（逆转置）正确处理，手动计算 TBN 时需要特别注意。
 
----
+3. **切线方向与 UV 方向不对齐**：当模型 UV 在 DCC 工具中翻转过（`mirrorX = true`），切线方向会反向，导致法线贴图"凹凸反转"。检查 `tangentOS.w`（存储翻转符号）：`bitangentWS = cross(normalWS, tangentWS) * tangentOS.w`。
 
-## 常见坑与调试方法
+4. **视差贴图在低 poly 模型上效果差**：视差贴图只是 UV 偏移，不是真实几何体，在掠射角（接近 90°）时会产生明显的剪切伪影。物体边缘要有足够的多边形数量，或者用 `abs(viewDirTS.z)` 控制极端视角时关闭效果。
 
-### 坑 1：epsilon 太大导致法线不准确
+5. **陡峭视差的步数在 OpenGL ES 中报错**：部分老版 Android GPU 不支持循环变量为浮点或动态步数。将 `_ParallaxSteps` 改为整型常量，或用 `[unroll(16)]` 强制展开。
 
-**问题**：曲面平坦区域法线正确，但曲率大的区域法线偏离
-
-**原因**：epsilon 相对于曲率半径过大
-
-**解决**：对高曲率区域使用更小的 epsilon
-
-### 坑 2：epsilon 太小导致数值不稳定
-
-**问题**：法线出现随机噪声
-
-**原因**：epsilon 小于浮点精度
-
-**解决**：`epsilon = 0.001 ~ 0.01` 是通常的安全范围
-
-### 坑 3：法线未归一化
-
-**问题**：光照计算结果过亮或过暗
-
-**解决**：始终 `normalize()` 计算后的法线
-
----
-
-## 与相近技术的对比
-
-| 技术 | 精度 | 性能 | 适用场景 |
-|------|------|------|---------|
-| **解析法线** | 数学精确 | 取决于函数 | 简单几何 |
-| **差分估算** | 近似 | 中 | SDF |
-| **顶点法线** | 插值精度 | 高 | 传统 Mesh |
-| **法线贴图** | 高频细节 | 中 | 表面细节 |
-
----
-
-## 实战案例：带法线的 PBR 光照
-
-```glsl
-vec3 pbrLighting(vec3 p, vec3 n, vec3 albedo, float roughness, vec3 lightDir, vec3 viewDir) {
-    // Fresnel-Schlick
-    vec3 F0 = vec3(0.04);
-    vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(viewDir, n), 0.0), 5.0);
-    
-    // 漫反射
-    vec3 diff = (vec3(1.0) - F) * albedo / 3.14159;
-    
-    // GGX 镜面反射
-    float NdotH = max(dot(n, normalize(viewDir + lightDir)), 0.0);
-    float alpha = roughness * roughness;
-    float D = alpha * alpha / (3.14159 * pow(NdotH * NdotH * (alpha * alpha - 1.0) + 1.0, 2.0));
-    
-    // 几何遮蔽
-    float G = min(1.0, 2.0 * NdotH * max(dot(viewDir, n)) / max(dot(viewDir, normalize(viewDir + lightDir)), 0.001));
-    
-    vec3 spec = D * F * G / (4.0 * max(dot(viewDir, n), 0.001));
-    
-    return diff + spec;
-}
-
-void main() {
-    vec3 p = /* 命中点 */;
-    vec3 n = calcNormalTetrahedron(p, 0.001);
-    vec3 col = pbrLighting(p, n, albedo, roughness, lightDir, viewDir);
-    fragColor = vec4(col, 1.0);
-}
-```
-
----
-
-## 小结
-
-本篇介绍了法线估算的核心概念：
-1. 法线的数学定义（梯度向量）
-2. 中心差分法与四面体法
-3. Unity HLSL 适配
-4. 性能优化与常见坑
-
----
-
-## 延伸阅读与下一篇衔接
-
-**前置知识**：SDF 3D（第 6 篇）
-
-**下一篇**：第 8 篇「光照模型」将讲解 Phong、Blinn-Phong、PBR 等光照模型的数学原理与实现。
-
----
-
-## 知识点清单（Checklist）
-
-- [ ] 理解法线是 SDF 梯度向量 $\nabla f$
-- [ ] 掌握中心差分法的公式和代码
-- [ ] 理解四面体法只需 4 次 SDF 查询的原理
-- [ ] 知道 epsilon 取值过大/过小的问题
-- [ ] 掌握带材质 ID 的法线计算
-- [ ] 理解不同法线计算方法的精度与性能权衡
+下一篇文章将深入 URP 光照系统——PBR BRDF 的内部实现、卡通渲染（Toon Shading）色阶漫反射、以及各向异性布料材质。

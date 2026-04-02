@@ -1,606 +1,365 @@
-# 第5篇｜调色板：色彩数学与视觉映射
-
-## 摘要
-
-**调色板（Color Palette）**技术是程序化图形中的色彩核心工具。本篇将系统讲解从 HSL/HSV 到 Oklab 的色彩空间转换，剖析 **余弦调色板（Cosine Palette）** 的数学原理，探讨色阶生成、色彩对比与和谐配色的理论与实践。学习本篇后，你将能够用几行代码生成任意风格的色彩系统，为程序化材质和后处理效果奠定色彩基础。
-
+---
+title: Unity Shader 系列（五）：Unity 颜色管理与 URP 后处理 — 赛博朋克风格特效
+date: 2026-04-06 12:00:00
+tags: [HLSL, URP, 颜色空间, 后处理, Color Grading]
 ---
 
-## 适用场景与问题定义
+## Linear vs Gamma：最容易踩的颜色陷阱
 
-### 什么时候需要程序化调色
+许多 Unity 项目的颜色看起来"不对"——材质太亮、阴影太浅、HDR 泛光颜色偏差——根本原因往往是对 Linear/Gamma 工作流的误解。
 
-1. **程序化材质** - 草地、皮肤、木材等需要自然色彩变化
-2. **后处理** - 色调映射、色彩分级
-3. **数据可视化** - 热力图、伪彩色、高度着色
-4. **风格化渲染** - 卡通着色、赛博朋克色调
-5. **昼夜循环** - 天空色彩随时间平滑过渡
+**核心问题：**人眼对亮度的感知是非线性的（gamma 约 2.2）。显示器为适配人眼也用 gamma 编码存储颜色。但物理光照计算必须在线性空间进行，否则结果是错误的。
 
-### 核心问题
+**Unity 的两种工作流：**
 
-如何用**数学函数**而非预设色表来**连续、可控、富有表现力**地生成色彩？
+| 设置 | 位置 | 推荐场景 |
+|------|------|---------|
+| `Linear` | Project Settings → Player → Color Space | 所有写实渲染项目（URP 默认） |
+| `Gamma` | 同上 | 旧项目兼容，2D 像素风格游戏 |
 
----
+**在 Linear 工作流下，Unity 自动处理：**
+- 纹理从 sRGB（gamma 编码）读取时自动线性化（如果纹理标记为 `sRGB`）
+- 最终渲染结果自动应用 gamma 编码后输出到显示器
+- Shader 中的颜色属性（`Color` 类型）自动从 sRGB 转换为线性传入
 
-## 核心原理拆解
+**不会自动处理的情况（需要手动注意）：**
+- 法线贴图、Mask 贴图：必须在 Import Settings 中取消 `sRGB` 勾选，否则 Unity 会错误地对非颜色数据进行线性化
+- 自定义 RenderTexture：需要手动设置 `RenderTextureFormat` 的 sRGB 标志
+- 在 Shader 中手动做颜色空间转换
 
-### 1. 色彩空间基础
+## Shader 中的颜色空间转换
 
-#### RGB 色彩空间
+```hlsl
+// ===== URP 内置颜色空间转换函数（在 Color.hlsl 中）=====
 
-最常用的色彩空间，用红、绿、蓝三原色加法混合：
+// Linear → sRGB（输出前编码）
+float3 LinearToSRGB(float3 color);
 
+// sRGB → Linear（从非标记纹理手动解码）
+float3 SRGBToLinear(float3 color);
+
+// 近似版本（性能更好）
+// Gamma 编码近似：pow(color, 1.0/2.2)
+// Gamma 解码近似：pow(color, 2.2)
+
+// ===== URP Color Grading 相关 =====
+// 获取 Color Grading LUT（用于 Custom Post Process Volume）
+// 通过 _InternalLut 访问，但通常不直接使用
+
+// HDR 色调映射（用于 Emission 颜色控制）
+// Emission = _EmissionColor * intensity
+// 当 intensity > 1 时产生 HDR 发光，配合 Bloom 使用
 ```
-        青色
-         ↑
-    (0,1,0) ────→ 黄色
-         |       / |
-    绿色 |     /   |  蓝色
-         |   /      |
-         | /        |
-    (0,0,1) ────→ (1,1,1) 白色
-         ↓
-       洋红
+
+## URP 后处理架构
+
+URP 的后处理系统基于 **Volume** 框架：
+1. 在场景中创建 `Global Volume` 对象
+2. 添加 `Bloom`、`Color Grading`、`Tonemapping` 等 Override
+3. URP 在最终 Blit 阶段自动应用这些效果
+
+**内置效果链（执行顺序）：**
+```
+Render Scene → Bloom（泛光） → Color Grading（LUT 应用）→ Tonemapping → Film Grain → Vignette → Output
 ```
 
-**问题**：RGB 不是感知均匀的——相同数值距离在不同颜色区域对人眼感知差异很大。
+**自定义后处理：Custom Renderer Feature**
 
-#### HSL 色彩空间
+URP 允许通过 `ScriptableRendererFeature` 插入自定义 Pass：
 
-用色相 (Hue)、饱和度 (Saturation)、亮度 (Lightness) 表示颜色：
+```csharp
+// C# 侧：注册自定义后处理 Pass
+public class CyberpunkPostProcess : ScriptableRendererFeature
+{
+    public CyberpunkSettings settings;
 
-```glsl
-// RGB 转 HSL
-vec3 rgb2hsl(vec3 rgb) {
-    float maxC = max(rgb.r, max(rgb.g, rgb.b));
-    float minC = min(rgb.r, min(rgb.g, rgb.b));
-    float l = (maxC + minC) * 0.5;
-    
-    if (maxC == minC) {
-        return vec3(0.0, 0.0, l);  // 无色相（灰度）
+    class CyberpunkPass : ScriptableRenderPass
+    {
+        // 后处理材质
+        Material _material;
+        RTHandle _tempRT;
+
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            // 获取当前帧的颜色缓冲
+            var source = renderingData.cameraData.renderer.cameraColorTargetHandle;
+            // Blit：将当前帧颜色作为 _MainTex 传入后处理 Shader
+            Blitter.BlitCameraTexture(cmd, source, _tempRT, _material, 0);
+            Blitter.BlitCameraTexture(cmd, _tempRT, source);
+        }
     }
-    
-    float d = maxC - minC;
-    float s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
-    
-    float h;
-    if (maxC == rgb.r) {
-        h = (rgb.g - rgb.b) / d + (rgb.g < rgb.b ? 6.0 : 0.0);
-    } else if (maxC == rgb.g) {
-        h = (rgb.b - rgb.r) / d + 2.0;
-    } else {
-        h = (rgb.r - rgb.g) / d + 4.0;
+}
+```
+
+## 完整示例：赛博朋克风格后处理 Shader
+
+色相偏移 + 扫描线 + 故障噪声（Glitch）的完整 URP Custom Post Process Shader：
+
+```hlsl
+Shader "Custom/URP/PostProcess/Cyberpunk"
+{
+    Properties
+    {
+        // 后处理 Shader 通常不在 Inspector 暴露参数，由 C# Volume 控制
+        [HideInInspector] _MainTex ("Screen Texture", 2D) = "white" {}
     }
-    h /= 6.0;
-    
-    return vec3(h, s, l);
-}
 
-// HSL 转 RGB
-vec3 hsl2rgb(vec3 hsl) {
-    float h = hsl.x;
-    float s = hsl.y;
-    float l = hsl.z;
-    
-    float c = (1.0 - abs(2.0 * l - 1.0)) * s;
-    float x = c * (1.0 - abs(mod(h * 6.0, 2.0) - 1.0));
-    float m = l - c * 0.5;
-    
-    vec3 rgb;
-    if (h < 1.0/6.0) {
-        rgb = vec3(c, x, 0.0);
-    } else if (h < 2.0/6.0) {
-        rgb = vec3(x, c, 0.0);
-    } else if (h < 3.0/6.0) {
-        rgb = vec3(0.0, c, x);
-    } else if (h < 4.0/6.0) {
-        rgb = vec3(0.0, x, c);
-    } else if (h < 5.0/6.0) {
-        rgb = vec3(x, 0.0, c);
-    } else {
-        rgb = vec3(c, 0.0, x);
+    SubShader
+    {
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+        }
+
+        // 后处理不需要深度测试/写入
+        Cull Off
+        ZWrite Off
+        ZTest Always
+
+        Pass
+        {
+            Name "CyberpunkPost"
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+
+            // _BlitTexture 是 URP Blit 框架注入的屏幕纹理
+            // 通过 Blit.hlsl 的 vert 函数自动处理全屏三角形
+
+            // 可调参数（由 C# 通过 Material.SetFloat 传入）
+            // 在 CBUFFER 中声明保证 SRP Batcher 兼容
+            CBUFFER_START(UnityPerMaterial)
+                float _ChromaticAberration;   // 色差强度
+                float _ScanlineIntensity;     // 扫描线强度
+                float _ScanlineFrequency;     // 扫描线频率
+                float _GlitchStrength;        // 故障强度
+                float _GlitchSpeed;           // 故障速度
+                float _VignetteStrength;      // 暗角强度
+                float _HueShift;              // 色相偏移（0~1）
+                float _SaturationBoost;       // 饱和度增强
+                float _Contrast;              // 对比度
+            CBUFFER_END
+
+            // ======== 颜色工具函数 ========
+
+            // RGB → HSV（用于色相调整）
+            float3 RGBtoHSV(float3 c)
+            {
+                float4 K = float4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+                float4 p = c.g < c.b ? float4(c.bg, K.wz) : float4(c.gb, K.xy);
+                float4 q = c.r < p.x ? float4(p.xyw, c.r) : float4(c.r, p.yzx);
+                float d = q.x - min(q.w, q.y);
+                float e = 1.0e-10;
+                return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+            }
+
+            // HSV → RGB
+            float3 HSVtoRGB(float3 c)
+            {
+                float4 K = float4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+                float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+                return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
+            }
+
+            // ======== 噪声（用于 Glitch 效果） ========
+            float hash11(float p)
+            {
+                return frac(sin(p * 127.1) * 43758.5453);
+            }
+
+            float hash21(float2 p)
+            {
+                return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
+            }
+
+            // ======== 色差（Chromatic Aberration）========
+            // 红/绿/蓝通道各自在 UV 上微小偏移，模拟镜头色散
+            float3 chromaticAberration(TEXTURE2D_X(tex), SAMPLER(samp), float2 uv, float strength)
+            {
+                // 从屏幕中心向外的方向
+                float2 dir = uv - 0.5;
+                float2 offset = dir * strength * 0.01;
+
+                float r = SAMPLE_TEXTURE2D_X(tex, samp, uv + offset).r;
+                float g = SAMPLE_TEXTURE2D_X(tex, samp, uv).g;
+                float b = SAMPLE_TEXTURE2D_X(tex, samp, uv - offset).b;
+                return float3(r, g, b);
+            }
+
+            // ======== 扫描线 ========
+            float scanlines(float2 uv, float frequency, float intensity)
+            {
+                // 水平扫描线（基于 UV.y）
+                float line = sin(uv.y * frequency * 3.14159 * 2.0) * 0.5 + 0.5;
+                // 动态扫描（随时间向下移动）
+                float moving = frac(uv.y - _Time.y * 0.1) > 0.99 ? 0.5 : 0.0;
+                return 1.0 - intensity * (1.0 - line) - moving * intensity * 0.5;
+            }
+
+            // ======== 故障效果（Glitch）========
+            float3 glitchEffect(TEXTURE2D_X(tex), SAMPLER(samp), float2 uv, float strength, float speed)
+            {
+                float time = _Time.y * speed;
+
+                // 将屏幕分成水平条带，每条带随机偏移
+                float stripHeight = 0.05 + hash11(floor(time * 3.0)) * 0.1;
+                float stripID = floor(uv.y / stripHeight);
+                float glitchTime = floor(time * 10.0 + stripID);
+
+                // 随机触发故障（不是每帧都触发）
+                float trigger = step(0.92, hash11(glitchTime));
+                float glitchOffsetX = (hash21(float2(stripID, glitchTime)) - 0.5) * strength * 0.1;
+
+                // 应用水平偏移
+                float2 glitchUV = uv + float2(glitchOffsetX * trigger, 0.0);
+
+                // 颜色偏移（模拟数字信号错误）
+                float r = SAMPLE_TEXTURE2D_X(tex, samp, glitchUV + float2(strength * 0.005 * trigger, 0)).r;
+                float g = SAMPLE_TEXTURE2D_X(tex, samp, glitchUV).g;
+                float b = SAMPLE_TEXTURE2D_X(tex, samp, glitchUV - float2(strength * 0.005 * trigger, 0)).b;
+                return float3(r, g, b);
+            }
+
+            // ======== 暗角（Vignette）========
+            float vignetteEffect(float2 uv, float strength)
+            {
+                float2 center = uv - 0.5;
+                float dist = length(center);
+                return 1.0 - smoothstep(0.4, 0.9, dist) * strength;
+            }
+
+            // ======== 对比度/亮度调整 ========
+            float3 adjustContrast(float3 color, float contrast)
+            {
+                // pivot = 0.5（中点不变）
+                return (color - 0.5) * contrast + 0.5;
+            }
+
+            // ======== 片元着色器 ========
+            half4 frag(Varyings input) : SV_Target
+            {
+                float2 uv = input.texcoord;
+
+                // === 1. 色差效果 ===
+                float3 col = chromaticAberration(
+                    TEXTURE2D_X_ARGS(_BlitTexture, sampler_LinearClamp),
+                    uv,
+                    _ChromaticAberration
+                );
+
+                // === 2. 故障效果（叠加在色差之上）===
+                if (_GlitchStrength > 0.001)
+                {
+                    col = glitchEffect(
+                        TEXTURE2D_X_ARGS(_BlitTexture, sampler_LinearClamp),
+                        uv,
+                        _GlitchStrength,
+                        _GlitchSpeed
+                    );
+                }
+
+                // === 3. 色相偏移（赛博朋克青紫色调）===
+                float3 hsv = RGBtoHSV(col);
+                hsv.x = frac(hsv.x + _HueShift);  // 色相偏移（frac 保证循环）
+                hsv.y = saturate(hsv.y * _SaturationBoost);  // 饱和度增强
+                col = HSVtoRGB(hsv);
+
+                // === 4. 对比度调整 ===
+                col = adjustContrast(col, _Contrast);
+
+                // === 5. 扫描线叠加 ===
+                float scanFactor = scanlines(uv, _ScanlineFrequency, _ScanlineIntensity);
+                col *= scanFactor;
+
+                // === 6. 暗角 ===
+                float vignette = vignetteEffect(uv, _VignetteStrength);
+                col *= vignette;
+
+                // === 7. 色调映射 + Gamma（后处理中通常不再做，由 URP 自动处理）===
+                // 注意：URP 的 Color Grading Pass 在 Custom Post Process 之后，
+                // 如果自定义 Pass 插在 Color Grading 之前，不需要手动做 Tonemapping
+
+                return half4(col, 1.0);
+            }
+            ENDHLSL
+        }
     }
-    
-    return rgb + m;
 }
 ```
 
-#### Oklab 色彩空间（现代感知均匀空间）
+## HDR 与 Bloom 的正确配合
 
-由 Björn Ottosson 提出的新色彩空间，在色相维度完全感知均匀：
+在 Unity Linear 工作流中，`_EmissionColor` 超过 1 就进入 HDR 范围，Bloom 效果只提取亮度超过阈值的像素：
 
-```glsl
-// RGB 转 Oklab（简化版）
-vec3 rgb2oklab(vec3 rgb) {
-    // 线性化 RGB
-    rgb = pow(rgb, vec3(2.2));
-    
-    // RGB 转 LMS
-    mat3 M1 = mat3(
-        0.4122214708, 0.5363325363, 0.0514459929,
-        0.2119034982, 0.6806995451, 0.1073969566,
-        0.0883024619, 0.2817188376, 0.6299787005
-    );
-    vec3 lms = M1 * rgb;
-    
-    // 对数变换
-    lms = pow(lms, vec3(1.0/3.0));
-    
-    // LMS 转 Oklab
-    mat3 M2 = mat3(
-        0.2104542553, 0.7936177850, -0.0040720468,
-        1.9779984951, -2.4285922050, 0.4505937099,
-        0.0259040371, 0.7827717662, -0.8086757660
-    );
-    
-    return M2 * lms;
-}
+```hlsl
+// 材质中正确设置 Emission 的方式
+// 在 Properties 中：
+[HDR] _EmissionColor ("Emission Color", Color) = (0, 0, 0, 1)
 
-vec3 oklab2rgb(vec3 oklab) {
-    // Oklab 转 LMS
-    mat3 M1_inv = mat3(
-        4.0767416621, -3.3077115913, 0.2309699292,
-        -1.2684380046, 2.6097574011, -0.3413193965,
-        -0.0041960863, -0.7034186147, 1.7076147010
-    );
-    vec3 lms = M1_inv * oklab;
-    
-    // 逆对数变换
-    lms = lms * lms * lms;
-    
-    // LMS 转 RGB
-    mat3 M2_inv = mat3(
-        4.0730451039, -1.7902116620, -0.0225604683,
-        -1.0320121725, 2.2997178286, -0.1022032486,
-        0.0014272391, -0.5086955709, 1.2044633473
-    );
-    vec3 rgb = M2_inv * lms;
-    
-    // 伽马校正
-    rgb = pow(rgb, vec3(1.0/2.2));
-    
-    return clamp(rgb, 0.0, 1.0);
-}
+// 在 Fragment Shader 中：
+half3 emission = _EmissionColor.rgb; // 已在 Linear 空间
+// 当 _EmissionColor 的亮度 > 1 时，URP Bloom 会自动提取并发光
+// 无需手动乘以强度，直接使用 HDR 颜色值
+
+// 技巧：用 emission 的亮度控制自发光（如 UI 能量条满时发光）
+float energyLevel = 0.8; // 0~1
+half3 glowEmission = _EmissionColor.rgb * energyLevel * 3.0; // ×3 进入 HDR 范围
 ```
 
-### 2. 余弦调色板 (Cosine Palette)
+## URP Color Grading LUT 工作原理
 
-#### 数学原理
+URP 的 Color Grading 使用 3D LUT（Look-Up Table）实现：
+1. 将渲染好的 HDR 画面通过 Tonemapping 映射到 [0,1]
+2. 用映射后的 RGB 值作为 3D 坐标，查找 LUT 纹理中的目标颜色
+3. 输出最终 sRGB 颜色
 
-Inigo Quilez 提出的经典调色板生成算法，用余弦函数驱动色彩变化：
+**自定义 LUT 工作流：**
+1. 从 Unity 导出基础 LUT 图片（`Post Processing → Export LUT`）
+2. 在 Photoshop/DaVinci Resolve 中调色
+3. 保存为 `.png` 并导入 Unity（取消 sRGB，格式选 `R8G8B8`）
+4. 在 `Color Lookup` Volume Override 中指定
 
-$$f(t) = a + b \cdot \cos(2\pi(c \cdot t + d))$$
+## ShaderGraph 实现色彩调整
 
-```glsl
-// 余弦调色板
-// t: [0,1] 调色板位置
-// a: 基础亮度偏移
-// b: 振幅（对比度）
-// c: 频率（颜色变化速度）
-// d: 相位（颜色偏移）
-vec3 cosinePalette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
-    return a + b * cos(6.28318 * (c * t + d));
-}
+ShaderGraph 在 URP 中也支持后处理（通过 `Fullscreen Shader Graph`）：
+1. 创建 `Fullscreen Shader Graph`（6.0+ 支持）
+2. 节点连接：
+   - `URP Sample Buffer` 节点（采样屏幕颜色）
+   - `Hue` 节点（调整色相）
+   - `Saturation` 节点（调整饱和度）
+   - `Contrast` 节点（调整对比度）
+3. 在 `Custom Post Process Volume` C# 脚本中引用材质
 
-// 预设调色板
-vec3 paletteRainbow(float t) {
-    return cosinePalette(t, 
-        vec3(0.5),           // 基础亮度
-        vec3(0.5),           // 振幅
-        vec3(1.0),           // 频率
-        vec3(0.0, 0.33, 0.67)  // 相位错开 120 度
-    );
-}
+## 性能考量
 
-vec3 paletteWarm(float t) {
-    return cosinePalette(t,
-        vec3(0.5, 0.4, 0.3),
-        vec3(0.5, 0.4, 0.3),
-        vec3(1.0, 1.0, 0.8),
-        vec3(0.0, 0.15, 0.3)
-    );
-}
+| 效果 | 移动端开销 | 建议 |
+|------|-----------|------|
+| 色差（3 次采样） | 低-中 | 强度限制在 0.3 以内 |
+| 扫描线（纯数学） | 极低 | 可在移动端保留 |
+| Glitch（随机 + 采样） | 中 | 移动端可降低触发频率 |
+| 色相/饱和度调整 | 低 | HSV 转换约 8 条指令 |
+| 暗角（smoothstep） | 极低 | 可在所有平台使用 |
 
-vec3 paletteCool(float t) {
-    return cosinePalette(t,
-        vec3(0.3, 0.4, 0.5),
-        vec3(0.4, 0.4, 0.4),
-        vec3(1.0, 1.0, 0.7),
-        vec3(0.5, 0.6, 0.8)
-    );
-}
+**移动端优化：**
+- 色差的 3 次采样中，绿通道直接用屏幕中心 UV，只有红蓝偏移，减少 1 次采样
+- 扫描线用 `step` 代替 `sin`（更快，但有锯齿感）
+- Glitch 效果默认关闭（`_GlitchStrength = 0`），用 `#pragma shader_feature` 编译变体
 
-vec3 paletteEarth(float t) {
-    return cosinePalette(t,
-        vec3(0.3, 0.25, 0.2),
-        vec3(0.7, 0.6, 0.5),
-        vec3(1.0, 1.0, 0.5),
-        vec3(0.0, 0.1, 0.2)
-    );
-}
-```
+## 常见踩坑
 
-### 3. 色阶生成 (Color Ramp)
+1. **Gamma 空间下的颜色看起来"过曝"**：如果项目用 Gamma 色彩空间，美术在 Linear 显示器上调的颜色在 Gamma 空间会显得更亮。团队要统一在 Linear 空间工作。
 
-从单色生成多层级色彩：
+2. **法线贴图/Mask 贴图被错误地 sRGB 处理**：在 Texture Import Settings 中，法线贴图要选 `Normal map` 类型（自动关闭 sRGB），自定义数据纹理要手动取消 `sRGB Color` 勾选。混淆后法线会偏蓝，AO/Roughness 贴图值会非线性偏移。
 
-```glsl
-// 高度着色（高度图转色彩）
-vec3 heightToColor(float h, vec3 deep, vec3 shallow, vec3 sand, vec3 grass, vec3 rock, vec3 snow) {
-    if (h < 0.3) return mix(deep, shallow, h / 0.3);
-    if (h < 0.4) return mix(shallow, sand, (h - 0.3) / 0.1);
-    if (h < 0.6) return mix(sand, grass, (h - 0.4) / 0.2);
-    if (h < 0.8) return mix(grass, rock, (h - 0.6) / 0.2);
-    return mix(rock, snow, (h - 0.8) / 0.2);
-}
+3. **后处理 Shader 中不要手动做 Gamma 编码**：URP 的后处理 Pass 在 Linear 空间运行，最终由 URP 的输出阶段自动处理 Gamma。如果手动 `pow(color, 1.0/2.2)`，颜色会被双重 Gamma 编码变得过暗。
 
-// 温度着色（热力图）
-vec3 thermalColor(float t) {  // t in [0, 1]
-    t = clamp(t, 0.0, 1.0);
-    return vec3(
-        t < 0.5 ? t * 2.0 : 1.0,  // R: 0 -> 1 -> 1
-        t < 0.25 ? 0.0 : (t < 0.75 ? (t - 0.25) * 2.0 : 1.0),  // G: 0 -> 1 -> 1
-        t > 0.5 ? (1.0 - t) * 2.0 : 1.0  // B: 1 -> 0
-    );
-}
+4. **HDR 颜色属性 `[HDR]` 标签**：在 Properties 中不加 `[HDR]` 的颜色属性只能设置 [0,1] 范围，Inspector 中的颜色选择器不会显示强度滑块，无法设置超过 1 的 HDR 值。
 
-// 赛博朋克调色
-vec3 cyberpunkColor(float t) {
-    vec3 pink = vec3(0.9, 0.3, 0.8);
-    vec3 cyan = vec3(0.1, 0.9, 1.0);
-    vec3 yellow = vec3(1.0, 0.9, 0.2);
-    
-    t = fract(t);
-    if (t < 0.33) return mix(pink, cyan, t / 0.33);
-    if (t < 0.66) return mix(cyan, yellow, (t - 0.33) / 0.33);
-    return mix(yellow, pink, (t - 0.66) / 0.34);
-}
-```
+5. **`_Time.y` 在暂停时不会停止**：Unity 的 `_Time.y` 是不受 `Time.timeScale = 0` 影响的（实际上受影响，但 UI 后处理材质可能使用 `_UnscaledTime`）。如果需要响应游戏暂停，在 C# 中传入自定义 float 代替直接使用 `_Time.y`。
 
----
-
-## 关键代码片段
-
-### 完整调色板库
-
-```glsl
-// ============ 调色板库 ============
-
-// IQ 余弦调色板（最经典）
-vec3 iqPalette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
-    return a + b * cos(6.28318 * (c * t + d));
-}
-
-// Material Design 色板
-vec3 materialPalette(float t, vec3 primary) {
-    // Material Design 色彩系统
-    vec3 accent = 1.0 - primary;
-    return mix(primary, accent, t);
-}
-
-// 渐变调色板（任意数量站点）
-struct ColorStop {
-    float pos;   // 位置 [0, 1]
-    vec3 color;  // 颜色
-};
-
-vec3 gradientPalette(float t, ColorStop stops[5]) {
-    // 寻找左右站点
-    int leftIdx = 0;
-    int rightIdx = stops.length() - 1;
-    
-    for (int i = 0; i < stops.length(); i++) {
-        if (stops[i].pos <= t) leftIdx = i;
-        if (stops[i].pos >= t && rightIdx == stops.length() - 1) rightIdx = i;
-    }
-    
-    // 边界情况
-    if (t <= stops[0].pos) return stops[0].color;
-    if (t >= stops[rightIdx].pos) return stops[rightIdx].color;
-    
-    // 插值
-    ColorStop left = stops[leftIdx];
-    ColorStop right = stops[rightIdx];
-    float localT = (t - left.pos) / (right.pos - left.pos);
-    
-    // 可使用 smoothstep 进行平滑
-    localT = smoothstep(0.0, 1.0, localT);
-    
-    return mix(left.color, right.color, localT);
-}
-
-// 噪声驱动调色板偏移
-vec3 noiseDrivenPalette(vec2 uv, float time) {
-    // 获取基础噪声值
-    float n = perlinNoise(uv * 3.0 + time * 0.1);
-    n = n * 0.5 + 0.5;  // [0, 1]
-    
-    // 用噪声偏移调色板位置
-    vec3 col = cosinePalette(n,
-        vec3(0.5, 0.45, 0.4),
-        vec3(0.5, 0.5, 0.5),
-        vec3(1.0, 1.0, 0.8),
-        vec3(0.0, 0.1, 0.2)
-    );
-    
-    return col;
-}
-
-// HSV 辅助函数
-vec3 hsv2rgb(vec3 hsv) {
-    float h = hsv.x * 6.0;
-    float s = hsv.y;
-    float v = hsv.z;
-    
-    float c = v * s;
-    float x = c * (1.0 - abs(mod(h, 2.0) - 1.0));
-    float m = v - c;
-    
-    vec3 rgb;
-    if (h < 1.0) rgb = vec3(c, x, 0.0);
-    else if (h < 2.0) rgb = vec3(x, c, 0.0);
-    else if (h < 3.0) rgb = vec3(0.0, c, x);
-    else if (h < 4.0) rgb = vec3(0.0, x, c);
-    else if (h < 5.0) rgb = vec3(x, 0.0, c);
-    else rgb = vec3(c, 0.0, x);
-    
-    return rgb + m;
-}
-
-vec3 rgb2hsv(vec3 rgb) {
-    float maxC = max(rgb.r, max(rgb.g, rgb.b));
-    float minC = min(rgb.r, min(rgb.g, rgb.b));
-    float d = maxC - minC;
-    
-    float h = 0.0;
-    if (d > 0.0) {
-        if (maxC == rgb.r) h = mod((rgb.g - rgb.b) / d, 6.0);
-        else if (maxC == rgb.g) h = (rgb.b - rgb.r) / d + 2.0;
-        else h = (rgb.r - rgb.g) / d + 4.0;
-    }
-    h /= 6.0;
-    
-    float s = maxC == 0.0 ? 0.0 : d / maxC;
-    float v = maxC;
-    
-    return vec3(h, s, v);
-}
-
-// 基于色相的调色板
-vec3 huePalette(float t, float hueStart, float hueEnd) {
-    float h = mix(hueStart, hueEnd, t);
-    return hsv2rgb(vec3(fract(h), 0.8, 0.9));
-}
-```
-
----
-
-## 性能优化要点
-
-### 1. 避免在片元着色器中做色彩空间转换
-
-```glsl
-// 低效：每像素计算色彩空间转换
-for (int i = 0; i < paletteSize; i++) {
-    vec3 hsv = rgb2hsv(palette[i]);  // 昂贵！
-    palette[i] = hsv2rgb(vec3(hsv.x, hsv.y * 1.2, hsv.z));
-}
-
-// 高效：预计算或使用数学等效
-vec3 fastAdjust(vec3 c) {
-    // 在 RGB 空间近似调整饱和度
-    float l = dot(c, vec3(0.299, 0.587, 0.114));
-    return mix(vec3(l), c, 1.2);  // 近似增加饱和度
-}
-```
-
-### 2. 使用查找表 (LUT) 替代实时计算
-
-```glsl
-// 对于复杂的调色板，预计算为纹理
-uniform sampler2D u_paletteLUT;  // 256x1 的调色板纹理
-
-vec3 fastLookup(float t) {
-    return texture(u_paletteLUT, vec2(t, 0.5)).rgb;
-}
-```
-
-### 3. 利用 SIMD 并行
-
-GPU 的 SIMD 架构使向量化的色彩运算非常高效：
-
-```glsl
-// 高效：向量运算
-vec3 result = a + b * cos(6.28 * (c * t + d));  // 一次运算处理三个通道
-
-// 低效：逐通道
-float r = a.r + b.r * cos(6.28 * (c.r * t + d.r));
-float g = a.g + b.g * cos(6.28 * (c.g * t + d.g));
-float b = a.b + b.b * cos(6.28 * (c.b * t + d.b));  // 三次运算
-```
-
----
-
-## 常见坑与调试方法
-
-### 坑 1：色彩超出 [0,1] 范围
-
-**问题**：颜色出现负值或过曝
-
-**原因**：余弦函数输出可能超出预期范围
-
-**解决**：
-```glsl
-vec3 col = cosinePalette(t, a, b, c, d);
-col = clamp(col, 0.0, 1.0);  // 安全限制
-```
-
-### 坑 2：调色板在边界处不连续
-
-**问题**：颜色在 t=0 和 t=1 处跳跃
-
-**原因**：首尾颜色差异过大
-
-**解决**：确保首尾颜色接近，或使用 wrap 模式
-```glsl
-// 让调色板循环
-vec3 cyclicPalette(float t) {
-    return palette(fract(t));  // fract 自动循环
-}
-```
-
-### 坑 3：饱和度/亮度数值不稳定
-
-**问题**：小量色彩变化导致大视觉效果差异
-
-**原因**：HSV 在低亮度时饱和度对噪声极度敏感
-
-**解决**：使用 Oklab 或在 RGB 做小调整
-
-### 坑 4：gamma 校正被忽略
-
-**问题**：调色板在显示器上显示过暗
-
-**原因**：显示器使用 sRGB gamma，着色器计算使用线性
-
-**解决**：
-```glsl
-vec3 linearToSRGB(vec3 linear) {
-    return pow(linear, vec3(1.0/2.2));
-}
-```
-
----
-
-## 与相近技术的对比
-
-| 技术 | 灵活性 | 性能 | 色彩品质 | 适用场景 |
-|------|--------|------|---------|---------|
-| 硬编码色表 | 差 | 最高 | 取决于美术 | 固定风格 |
-| 余弦调色板 | 高 | 高 | 中等 | 程序化场景 |
-| LUT 查找 | 中 | 高 | 最好 | 电影级调色 |
-| HSL 插值 | 高 | 中 | 中等 | 简单渐变 |
-| Oklab 插值 | 最高 | 中低 | 最好 | 感知均匀调色 |
-
-**对比结论**：大多数程序化场景用 **余弦调色板 + clamp** 足够；对色彩精度要求高时用 **Oklab**。
-
----
-
-## 实战案例：程序化日落天空
-
-### 需求
-
-实现一个程序化日落天空，具备：
-- 渐变的日落色彩（天顶深蓝 → 地平线橙红）
-- 太阳光晕
-- 大气散射效果模拟
-
-### 实现
-
-```glsl
-// 日落调色板
-vec3 sunsetSky(float elevation) {
-    // elevation: 0 = 地平线, 1 = 天顶
-    // 余弦调色板生成平滑过渡
-    vec3 zenith = vec3(0.05, 0.1, 0.3);      // 天顶：深蓝
-    vec3 mid = vec3(0.4, 0.3, 0.2);         // 中间：暖橙
-    vec3 horizon = vec3(0.9, 0.4, 0.1);     // 地平线：橙红
-    vec3 glow = vec3(1.0, 0.8, 0.3);        // 光晕：金黄
-    
-    // 非线性插值，更真实
-    float t = pow(elevation, 0.5);
-    
-    vec3 col;
-    if (t < 0.3) {
-        col = mix(glow, horizon, t / 0.3);
-    } else if (t < 0.6) {
-        col = mix(horizon, mid, (t - 0.3) / 0.3);
-    } else {
-        col = mix(mid, zenith, (t - 0.6) / 0.4);
-    }
-    
-    return col;
-}
-
-// 太阳渲染
-float sunDisc(vec2 uv, vec2 sunPos, float radius) {
-    float d = length(uv - sunPos);
-    return smoothstep(radius, radius * 0.8, d);
-}
-
-float sunGlow(vec2 uv, vec2 sunPos, float intensity) {
-    float d = length(uv - sunPos);
-    return intensity / (d * d + 0.01);  // 简单光晕
-}
-
-// 完整天空着色器
-void main() {
-    vec2 uv = (2.0 * gl_FragCoord.xy - u_resolution) / u_resolution.y;
-    
-    // 计算高度（uv.y 在这里是方向的角度）
-    float elevation = max(uv.y * 0.5 + 0.5, 0.0);
-    
-    // 天空颜色
-    vec3 skyColor = sunsetSky(elevation);
-    
-    // 太阳位置（稍微低于地平线）
-    vec2 sunPos = vec2(0.5, 0.05);
-    
-    // 太阳光晕
-    float glow = sunGlow(uv, sunPos, 0.02);
-    skyColor += vec3(1.0, 0.6, 0.2) * glow;
-    
-    // 太阳圆盘
-    float disc = sunDisc(uv, sunPos, 0.03);
-    skyColor = mix(skyColor, vec3(1.0, 0.95, 0.8), disc);
-    
-    // Gamma 校正
-    skyColor = pow(skyColor, vec3(1.0/2.2));
-    
-    fragColor = vec4(skyColor, 1.0);
-}
-```
-
----
-
-## 小结
-
-本篇介绍了调色板的核心概念：
-
-1. **色彩空间** - RGB、HSL/HSV、Oklab 及其转换
-2. **余弦调色板** - Inigo Quilez 的经典算法
-3. **色阶生成** - 从单色到多色的程序化方法
-4. **噪声调色** - 动态变化的色彩系统
-5. **Gamma 校正** - 线性与 sRGB 的转换
-
-调色板是程序化材质和后处理的色彩基础。
-
----
-
-## 延伸阅读与下一篇衔接
-
-**延伸阅读**：
-- Inigo Quilez - ["Better Gradient Meshes"](https://iquilezles.org/articles/palettes/)：余弦调色板原文
-- Björn Ottosson - ["A perceptual color space for image processing"](https://bottosson.github.io/posts/oklab/)：Oklab 色彩空间
-
-**前置知识**：
-- 基本三角函数
-- RGB 色彩基础
-
-**下一篇衔接**：
-第 6 篇「SDF 3D：隐式曲面的数学语言」将把 SDF 从 2D 扩展到 3D，讲解 3D 基本体素 SDF 的公式推导，这是理解 Ray Marching 和复杂 3D 场景的基础。
-
----
-
-## 知识点清单（Checklist）
-
-- [ ] 理解 RGB 和 HSL/HSV 色彩空间的区别及转换方法
-- [ ] 掌握余弦调色板的数学公式 $a + b \cdot \cos(2\pi(c \cdot t + d))$
-- [ ] 能够实现基本的 RGB ↔ HSL 转换函数
-- [ ] 理解 Oklab 色彩空间相对于 RGB 的优势（感知均匀）
-- [ ] 掌握色阶生成（gradient）的实现方法
-- [ ] 理解 Material Design、赛博朋克等常见调色风格的生成方式
-- [ ] 知道 Gamma 校正的重要性及线性 ↔ sRGB 转换
-- [ ] 能够实现一个完整的程序化天空着色器
-- [ ] 理解调色板在 t=0 和 t=1 边界处不连续的问题及解决方法
-- [ ] 掌握余弦调色板参数的物理含义（a=偏移, b=振幅, c=频率, d=相位）
+下一篇文章将转向 3D SDF 在 Unity 中的实际应用——体积雾、软粒子，以及如何用 URP Custom Render Feature 实现基于 SDF 的局部雾效。
