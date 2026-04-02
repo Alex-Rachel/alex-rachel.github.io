@@ -13,12 +13,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
-
-      - name: Cleanup submodule config
-        run: |
-          git submodule deinit --all || true
-          rm -rf .gitmodules
-          git config --remove-section submodule.themes/fluid || true
+          submodules: false
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
