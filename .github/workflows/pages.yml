@@ -28,7 +28,9 @@ jobs:
             ${{ runner.OS }}-npm-cache
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          cd themes/fluid && npm install
 
       - name: Build
         run: npm run build
