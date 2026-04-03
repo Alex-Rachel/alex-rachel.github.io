@@ -1,6 +1,7 @@
 // ================== Live2D 看板娘高级功能 ===================
+// TTS 已关闭
 
-// ================== 点击触发动作 & TTS ===================
+// ================== 点击触发气泡 ===================
 document.addEventListener('click', function(e) {
     if (e.target.closest('#live2dcanvas') || e.target.closest('.live2d')) {
         const phrases = [
@@ -13,30 +14,17 @@ document.addEventListener('click', function(e) {
         ];
         const phrase = phrases[Math.floor(Math.random() * phrases.length)];
         showSpeechBubble(phrase);
-        speak(phrase);
     }
 });
 
-// ================== 悬停 TTS ===================
+// ================== 悬停气泡 ===================
 document.addEventListener('mouseover', function(e) {
     if (e.target.closest('#live2dcanvas') || e.target.closest('.live2d')) {
         const phrases = ['主人来啦～', '看我看我！', '今天也要加油哦', '一起玩耍吧～'];
         const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-        speak(phrase);
+        showSpeechBubble(phrase);
     }
 });
-
-// ================== 语音合成 ===================
-function speak(text) {
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-CN';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.2;
-        utterance.volume = 0.7;
-        speechSynthesis.speak(utterance);
-    }
-}
 
 // ================== 气泡对话 ===================
 function showSpeechBubble(text) {
@@ -98,7 +86,7 @@ function showSpeechBubble(text) {
     }, 3000);
 }
 
-// ================== 一言 API ===================
+// ================== 一言 API（仅气泡，无TTS） ===================
 async function fetchHitokoto() {
     try {
         const res = await fetch('https://v1.hitokoto.cn/');
@@ -109,11 +97,10 @@ async function fetchHitokoto() {
     }
 }
 
-// 每60秒自动说一言
+// 每60秒自动说一言（仅气泡）
 setInterval(async () => {
     if (!document.querySelector('.live2d-speech-bubble')) {
         const phrase = await fetchHitokoto();
         showSpeechBubble(phrase);
-        speak(phrase);
     }
 }, 60000);
