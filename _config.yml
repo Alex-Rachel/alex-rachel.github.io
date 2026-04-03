@@ -106,3 +106,21 @@ deploy:
   repo: https://github.com/alex/alex.github.io.git
   branch: master
   message: "Site updated: {{ now('YYYY-MM-DD HH:mm:ss') }}"
+
+# Live2D 看板娘
+live2d:
+  enable: true
+  scriptFrom: local
+  pluginRootPath: live2d
+  tagMode: false
+  debug: false
+  model:
+    use: live2d-widget-model-shizuku
+  display:
+    position: right
+    width: 150
+    height: 200
+    mobile:
+      show: true
+  react:
+    opacity: 0.7
