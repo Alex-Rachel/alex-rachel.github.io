@@ -3011,6 +3011,11 @@ libnpmconfig@^1.2.1:
     find-up "^3.0.0"
     ini "^1.3.5"
 
+live2d-widget-model-hibiki@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.npmmirror.com/live2d-widget-model-hibiki/-/live2d-widget-model-hibiki-1.0.5.tgz"
+  integrity sha512-MPtmSb0WFRz+gaOAhOyz5xbrpX9wO5utuhqEQwx7rRXIYo/YmQcjLSnMVXWC6tQ7tBQPkAKeQ55RunlnNM3b2A==
+
 live2d-widget-model-koharu@^1.0.5:
   version "1.0.5"
   resolved "https://registry.npmmirror.com/live2d-widget-model-koharu/-/live2d-widget-model-koharu-1.0.5.tgz"
