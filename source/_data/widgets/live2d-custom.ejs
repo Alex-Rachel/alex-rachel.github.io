@@ -1,0 +1,136 @@
+---
+title: Live2D 高级配置
+date: 2026-04-03
+---
+
+<script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/live2d.js"></script>
+
+<script>
+// ================== Live2D 高级功能配置 ===================
+
+// 初始化 Live2D
+window.onload = function() {
+    loadlive2d("live2dcanvas", "https://cdn.jsdelivr.net/npm/live2d-widget-model-koharu@1.0.5/assets/koharu.model.json");
+};
+
+// ================== 点击触发动作 ===================
+// 点击看板娘时随机切换表情/动作
+document.addEventListener('click', function(e) {
+    // 只响应点击看板娘区域
+    if (e.target.closest('#live2dcanvas') || e.target.closest('.live2d')) {
+        const phrases = [
+            '主人～点我干嘛呀～',
+            '嘿嘿，被你发现了！',
+            '专心看博客哦～',
+            '要好好学习天天向上！',
+            'coding time!'
+        ];
+        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+        showSpeechBubble(phrase);
+        speak(phrase);
+    }
+});
+
+// ================== 悬停触发 TTS ===================
+document.addEventListener('mouseover', function(e) {
+    if (e.target.closest('#live2dcanvas') || e.target.closest('.live2d')) {
+        const phrases = [
+            '主人来啦～',
+            '看我看我！',
+            '今天也要加油哦',
+            '一起玩耍吧～'
+        ];
+        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+        speak(phrase);
+    }
+});
+
+// ================== 语音合成 (TTS) ===================
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.2; // 音调稍高，更可爱
+        utterance.volume = 0.7;
+        speechSynthesis.speak(utterance);
+    }
+}
+
+// ================== 气泡对话 ===================
+function showSpeechBubble(text) {
+    // 创建气泡元素
+    const bubble = document.createElement('div');
+    bubble.className = 'live2d-speech-bubble';
+    bubble.style.cssText = `
+        position: fixed;
+        bottom: 240px;
+        right: 20px;
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        color: #333;
+        padding: 12px 18px;
+        border-radius: 20px;
+        font-size: 14px;
+        max-width: 180px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 9999;
+        animation: fadeInUp 0.3s ease;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    `;
+    
+    // 添加小尾巴
+    bubble.innerHTML = `
+        ${text}
+        <div style="
+            position: absolute;
+            bottom: -8px;
+            right: 30px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #fecfef;
+        "></div>
+    `;
+    
+    // 添加动画样式
+    if (!document.getElementById('bubble-animation')) {
+        const style = document.createElement('style');
+        style.id = 'bubble-animation';
+        style.textContent = `
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(bubble);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        bubble.style.opacity = '0';
+        bubble.style.transition = 'opacity 0.3s';
+        setTimeout(() => bubble.remove(), 300);
+    }, 3000);
+}
+
+// ================== 一言 API（随机语录） ===================
+async function fetchHitokoto() {
+    try {
+        const res = await fetch('https://v1.hitokoto.cn/');
+        const data = await res.json();
+        return data.hitokoto;
+    } catch {
+        return '今天也要开心哦～';
+    }
+}
+
+// 定期让看板娘说一言（可选，每60秒）
+setInterval(async () => {
+    const phrase = await fetchHitokoto();
+    showSpeechBubble(phrase);
+    speak(phrase);
+}, 60000);
+</script>

@@ -3011,6 +3011,11 @@ libnpmconfig@^1.2.1:
     find-up "^3.0.0"
     ini "^1.3.5"
 
+live2d-widget-model-koharu@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.npmmirror.com/live2d-widget-model-koharu/-/live2d-widget-model-koharu-1.0.5.tgz"
+  integrity sha512-tziYYbBvkLFbYmizb6Sij4rF1Vmne9ZJwwD8dljt3QPeWxYBjxuQspzLrFOjMtvCSeE5dncNG7qdnTUb5nD2DQ==
+
 live2d-widget-model-shizuku@^1.0.5:
   version "1.0.5"
   resolved "https://registry.npmmirror.com/live2d-widget-model-shizuku/-/live2d-widget-model-shizuku-1.0.5.tgz"
