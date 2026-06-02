@@ -1,0 +1,962 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="Voronoi 噪声（也称 Worley 噪声）将空间划分为以特征点为核心的”细胞区域”，是游戏中皮革纹理、玻璃破碎、裂纹地面、科技感 UI 等视觉效果的核心算法。本文对比 ShaderGraph 内置节点与手写实现，并给出完整的 URP 裂纹地面材质和动态科技感 UI Shader。 ShaderGraph 的 Voronoi 节点 vs 手写实现Unity ShaderGraph 提供了内置的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/27-voronoi-cellular-noise/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="Voronoi 噪声（也称 Worley 噪声）将空间划分为以特征点为核心的”细胞区域”，是游戏中皮革纹理、玻璃破碎、裂纹地面、科技感 UI 等视觉效果的核心算法。本文对比 ShaderGraph 内置节点与手写实现，并给出完整的 URP 裂纹地面材质和动态科技感 UI Shader。 ShaderGraph 的 Voronoi 节点 vs 手写实现Unity ShaderGraph 提供了内置的">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T05:20:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.722Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="程序化纹理">
+<meta property="article:tag" content="Voronoi">
+<meta property="article:tag" content="破碎效果">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 13:20" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          93 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>Voronoi 噪声（也称 Worley 噪声）将空间划分为以特征点为核心的”细胞区域”，是游戏中皮革纹理、玻璃破碎、裂纹地面、科技感 UI 等视觉效果的核心算法。本文对比 ShaderGraph 内置节点与手写实现，并给出完整的 URP 裂纹地面材质和动态科技感 UI Shader。</p>
+<h2 id="ShaderGraph-的-Voronoi-节点-vs-手写实现"><a href="#ShaderGraph-的-Voronoi-节点-vs-手写实现" class="headerlink" title="ShaderGraph 的 Voronoi 节点 vs 手写实现"></a>ShaderGraph 的 Voronoi 节点 vs 手写实现</h2><p>Unity ShaderGraph 提供了内置的 <code>Voronoi</code> 节点，但其局限性明显：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>ShaderGraph Voronoi 节点</th>
+<th>手写 HLSL 实现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F1 距离</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>F2 距离</td>
+<td>不支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>F2-F1（边界）</td>
+<td>不支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>精确边界距离</td>
+<td>不支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>自定义距离度量</td>
+<td>不支持</td>
+<td>支持（曼哈顿、切比雪夫等）</td>
+</tr>
+<tr>
+<td>细胞 ID 输出</td>
+<td>有限</td>
+<td>完全可控</td>
+</tr>
+<tr>
+<td>动画特征点</td>
+<td>有限</td>
+<td>完全可控</td>
+</tr>
+</tbody></table>
+<p>对于皮革&#x2F;鳞片&#x2F;玻璃破碎等高质量效果，建议使用 Custom Function 节点嵌入手写 HLSL，或直接写完整 Shader。</p>
+<h2 id="Voronoi-核心实现（URP-HLSL）"><a href="#Voronoi-核心实现（URP-HLSL）" class="headerlink" title="Voronoi 核心实现（URP HLSL）"></a>Voronoi 核心实现（URP HLSL）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 2D Voronoi 函数（返回 F1, F2, 最近细胞 ID）<br>// 支持 F1/F2/精确边界三种模式<br>struct VoronoiResult<br>&#123;<br>    float f1;           // 到最近特征点的距离<br>    float f2;           // 到第二近特征点的距离<br>    float2 cellID;      // 最近细胞的整数 ID<br>    float2 cellOffset;  // 特征点相对格子中心的偏移<br>&#125;;<br><br>float2 VoronoiHash(float2 p)<br>&#123;<br>    p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));<br>    return frac(sin(p) * 43758.5453);<br>&#125;<br><br>// 基础 Voronoi（含 F1 + F2）<br>VoronoiResult Voronoi2D(float2 x, float animTime)<br>&#123;<br>    float2 n = floor(x);<br>    float2 f = frac(x);<br><br>    VoronoiResult result;<br>    result.f1 = 8.0;<br>    result.f2 = 8.0;<br>    result.cellID = n;<br>    result.cellOffset = 0.0;<br><br>    for (int j = -1; j &lt;= 1; j++)<br>    for (int i = -1; i &lt;= 1; i++)<br>    &#123;<br>        float2 g = float2(i, j);<br>        float2 o = VoronoiHash(n + g);<br><br>        // 动画：特征点随时间移动<br>        o = 0.5 + 0.5 * sin(animTime + 6.2831 * o);<br><br>        float2 r = g + o - f;<br>        float d = dot(r, r); // 欧氏距离平方<br><br>        if (d &lt; result.f1)<br>        &#123;<br>            result.f2 = result.f1;<br>            result.f1 = d;<br>            result.cellID = n + g;<br>            result.cellOffset = o;<br>        &#125;<br>        else if (d &lt; result.f2)<br>        &#123;<br>            result.f2 = d;<br>        &#125;<br>    &#125;<br><br>    result.f1 = sqrt(result.f1);<br>    result.f2 = sqrt(result.f2);<br>    return result;<br>&#125;<br><br>// 精确边界距离（两遍算法，用于裂纹效果）<br>float VoronoiBorder(float2 x, float animTime)<br>&#123;<br>    float2 ip = floor(x);<br>    float2 fp = frac(x);<br><br>    // 第一遍：找最近特征点<br>    float2 mg, mr;<br>    float md = 8.0;<br>    for (int j = -1; j &lt;= 1; j++)<br>    for (int i = -1; i &lt;= 1; i++)<br>    &#123;<br>        float2 g = float2(i, j);<br>        float2 o = VoronoiHash(ip + g);<br>        o = 0.5 + 0.5 * sin(animTime + 6.2831 * o);<br>        float2 r = g + o - fp;<br>        float d = dot(r, r);<br>        if (d &lt; md) &#123; md = d; mr = r; mg = g; &#125;<br>    &#125;<br><br>    // 第二遍：精确边界（5×5 范围搜索）<br>    md = 8.0;<br>    for (int j = -2; j &lt;= 2; j++)<br>    for (int i = -2; i &lt;= 2; i++)<br>    &#123;<br>        float2 g = mg + float2(i, j);<br>        float2 o = VoronoiHash(ip + g);<br>        o = 0.5 + 0.5 * sin(animTime + 6.2831 * o);<br>        float2 r = g + o - fp;<br><br>        // 对分线距离公式（两个 Voronoi 细胞边界的精确距离）<br>        if (dot(mr - r, mr - r) &gt; 0.00001)<br>            md = min(md, dot(0.5 * (mr + r), normalize(r - mr)));<br>    &#125;<br>    return md;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="裂纹地面材质：完整-URP-Shader"><a href="#裂纹地面材质：完整-URP-Shader" class="headerlink" title="裂纹地面材质：完整 URP Shader"></a>裂纹地面材质：完整 URP Shader</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/CrackedGround&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _BaseColor (&quot;基础颜色（土地）&quot;, Color) = (0.4, 0.28, 0.15, 1)<br>        _CrackColor (&quot;裂缝颜色&quot;, Color) = (0.1, 0.05, 0.02, 1)<br>        _VoronoiScale (&quot;Voronoi 缩放（裂纹密度）&quot;, Float) = 5.0<br>        _CrackWidth (&quot;裂缝宽度&quot;, Range(0, 0.1)) = 0.02<br>        _CrackDepth (&quot;裂缝深度（法线强度）&quot;, Float) = 2.0<br>        _CrackBlend (&quot;裂缝边缘过渡&quot;, Range(0, 0.05)) = 0.01<br>        _SecondaryScale (&quot;二级裂纹缩放&quot;, Float) = 15.0<br>        _SecondaryStrength (&quot;二级裂纹强度&quot;, Range(0, 1)) = 0.4<br>        _DryMudTex (&quot;干土纹理&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _TextureScale (&quot;纹理缩放&quot;, Float) = 2.0<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            TEXTURE2D(_DryMudTex); SAMPLER(sampler_DryMudTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BaseColor, _CrackColor;<br>                float _VoronoiScale, _CrackWidth, _CrackDepth, _CrackBlend;<br>                float _SecondaryScale, _SecondaryStrength;<br>                float4 _DryMudTex_ST;<br>                float _TextureScale;<br>            CBUFFER_END<br><br>            struct Attributes &#123; float4 posOS : POSITION; float3 normalOS : NORMAL; float4 tangentOS : TANGENT; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings<br>            &#123;<br>                float4 posCS : SV_POSITION;<br>                float3 posWS : TEXCOORD0;<br>                float3 normalWS : TEXCOORD1;<br>                float3 tangentWS : TEXCOORD2;<br>                float3 bitangentWS : TEXCOORD3;<br>                float2 uv : TEXCOORD4;<br>            &#125;;<br><br>            float2 VoronoiHash(float2 p)<br>            &#123;<br>                p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));<br>                return frac(sin(p) * 43758.5453);<br>            &#125;<br><br>            float VoronoiBorderDist(float2 x)<br>            &#123;<br>                float2 ip = floor(x);<br>                float2 fp = frac(x);<br>                float2 mg, mr; float md = 8.0;<br>                for (int j = -1; j &lt;= 1; j++)<br>                for (int i = -1; i &lt;= 1; i++)<br>                &#123;<br>                    float2 g = float2(i, j);<br>                    float2 o = VoronoiHash(ip + g);<br>                    float2 r = g + o - fp;<br>                    float d = dot(r, r);<br>                    if (d &lt; md) &#123; md = d; mr = r; mg = g; &#125;<br>                &#125;<br>                md = 8.0;<br>                for (int j = -2; j &lt;= 2; j++)<br>                for (int i = -2; i &lt;= 2; i++)<br>                &#123;<br>                    float2 g = mg + float2(i, j);<br>                    float2 o = VoronoiHash(ip + g);<br>                    float2 r = g + o - fp;<br>                    if (dot(mr - r, mr - r) &gt; 0.00001)<br>                        md = min(md, dot(0.5 * (mr + r), normalize(r - mr)));<br>                &#125;<br>                return md;<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.posCS = TransformObjectToHClip(IN.posOS.xyz);<br>                OUT.posWS = TransformObjectToWorld(IN.posOS.xyz);<br>                OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);<br>                OUT.tangentWS = TransformObjectToWorldDir(IN.tangentOS.xyz);<br>                OUT.bitangentWS = cross(OUT.normalWS, OUT.tangentWS) * IN.tangentOS.w;<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.posWS.xz; // 使用世界坐标 XZ 驱动 Voronoi（避免 UV 拉伸）<br><br>                // 主裂纹<br>                float crack1 = VoronoiBorderDist(uv * _VoronoiScale);<br>                float crackMask1 = 1.0 - smoothstep(_CrackWidth - _CrackBlend, _CrackWidth + _CrackBlend, crack1);<br><br>                // 二级裂纹（更细小）<br>                float crack2 = VoronoiBorderDist(uv * _SecondaryScale);<br>                float crackMask2 = 1.0 - smoothstep(_CrackWidth * 0.5, _CrackWidth, crack2);<br>                crackMask2 *= _SecondaryStrength;<br><br>                float totalCrack = saturate(crackMask1 + crackMask2 * (1.0 - crackMask1));<br><br>                // 采样基础纹理<br>                half4 mudTex = SAMPLE_TEXTURE2D(_DryMudTex, sampler_DryMudTex, IN.uv * _TextureScale);<br>                half3 baseAlbedo = _BaseColor.rgb * mudTex.rgb;<br><br>                // 颜色混合<br>                half3 finalAlbedo = lerp(baseAlbedo, _CrackColor.rgb, totalCrack);<br><br>                // 法线扰动（裂缝处法线向下倾斜）<br>                // 通过有限差分计算 Voronoi 的梯度作为法线贡献<br>                float e = 0.01;<br>                float d_dx = VoronoiBorderDist((uv + float2(e, 0)) * _VoronoiScale) -<br>                             VoronoiBorderDist((uv - float2(e, 0)) * _VoronoiScale);<br>                float d_dz = VoronoiBorderDist((uv + float2(0, e)) * _VoronoiScale) -<br>                             VoronoiBorderDist((uv - float2(0, e)) * _VoronoiScale);<br>                float3 crackNormalTS = normalize(float3(<br>                    d_dx * _CrackDepth * totalCrack,<br>                    1.0,<br>                    d_dz * _CrackDepth * totalCrack<br>                ));<br><br>                // 切线空间法线转世界空间<br>                float3x3 TBN = float3x3(<br>                    normalize(IN.tangentWS),<br>                    normalize(IN.bitangentWS),<br>                    normalize(IN.normalWS)<br>                );<br>                float3 normalWS = normalize(mul(crackNormalTS, TBN));<br><br>                // 光照<br>                Light mainLight = GetMainLight(TransformWorldToShadowCoord(IN.posWS));<br>                float NdotL = saturate(dot(normalWS, mainLight.direction));<br>                half3 ambient = SampleSH(normalWS);<br>                half3 finalColor = finalAlbedo * (ambient + mainLight.color * NdotL * mainLight.shadowAttenuation);<br><br>                return half4(finalColor, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="动态科技感-UI-Shader（Voronoi-六边形网格-扫描线）"><a href="#动态科技感-UI-Shader（Voronoi-六边形网格-扫描线）" class="headerlink" title="动态科技感 UI Shader（Voronoi 六边形网格 + 扫描线）"></a>动态科技感 UI Shader（Voronoi 六边形网格 + 扫描线）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/TechHUD&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _CellScale (&quot;细胞缩放&quot;, Float) = 8.0<br>        _EdgeColor (&quot;边缘颜色&quot;, Color) = (0.0, 0.8, 1.0, 1.0)<br>        _CellColor (&quot;细胞颜色&quot;, Color) = (0.0, 0.1, 0.2, 1.0)<br>        _EdgeWidth (&quot;边缘宽度&quot;, Range(0, 0.1)) = 0.03<br>        _ScanSpeed (&quot;扫描线速度&quot;, Float) = 0.5<br>        _ScanFrequency (&quot;扫描线频率&quot;, Float) = 10.0<br>        _ScanAlpha (&quot;扫描线强度&quot;, Range(0, 1)) = 0.3<br>        _GlowPulse (&quot;光芒脉冲速度&quot;, Float) = 1.5<br>        _ActiveCells (&quot;激活细胞比例（0=全暗, 1=全亮）&quot;, Range(0, 1)) = 0.5<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Transparent&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &quot;Queue&quot;=&quot;Overlay&quot; &#125;<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        ZWrite Off ZTest Always<br><br>        Pass<br>        &#123;<br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float _CellScale;<br>                float4 _EdgeColor, _CellColor;<br>                float _EdgeWidth;<br>                float _ScanSpeed, _ScanFrequency, _ScanAlpha;<br>                float _GlowPulse;<br>                float _ActiveCells;<br>            CBUFFER_END<br><br>            struct Attributes &#123; float4 posOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings &#123; float4 posCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.posCS = TransformObjectToHClip(IN.posOS.xyz);<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            float2 VoronoiHash(float2 p)<br>            &#123;<br>                p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));<br>                return frac(sin(p) * 43758.5453);<br>            &#125;<br><br>            // F1 + 细胞 ID Voronoi<br>            float4 Voronoi(float2 x)<br>            &#123;<br>                float2 n = floor(x);<br>                float2 f = frac(x);<br>                float md = 8.0;<br>                float2 nearCell = n;<br><br>                for (int j = -1; j &lt;= 1; j++)<br>                for (int i = -1; i &lt;= 1; i++)<br>                &#123;<br>                    float2 g = float2(i, j);<br>                    float2 o = VoronoiHash(n + g);<br>                    float2 r = g + o - f;<br>                    float d = dot(r, r);<br>                    if (d &lt; md) &#123; md = d; nearCell = n + g; &#125;<br>                &#125;<br>                return float4(sqrt(md), 0, nearCell);<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br>                float aspect = _ScreenParams.x / _ScreenParams.y;<br>                uv.x *= aspect;<br>                uv *= _CellScale;<br><br>                float4 v = Voronoi(uv);<br>                float f1 = v.x;<br>                float2 cellID = v.zw;<br><br>                // 细胞随机激活（基于细胞 ID 的哈希）<br>                float cellRand = frac(sin(dot(cellID, float2(12.9898, 78.233))) * 43758.5453);<br>                bool isCellActive = cellRand &lt; _ActiveCells;<br><br>                // 边缘高亮<br>                float edgeMask = 1.0 - smoothstep(_EdgeWidth - 0.005, _EdgeWidth + 0.005, f1);<br><br>                // 细胞内部亮度（激活细胞有微弱内部光）<br>                float cellInterior = (1.0 - smoothstep(0.0, 0.5, f1)) * (isCellActive ? 0.3 : 0.0);<br><br>                // 脉冲动画（边缘随时间闪烁）<br>                float pulse = 0.6 + 0.4 * sin(_Time.y * _GlowPulse + cellRand * 6.28);<br><br>                // 颜色合成<br>                half3 color = _CellColor.rgb;<br>                color += _EdgeColor.rgb * edgeMask * pulse;<br>                color += _EdgeColor.rgb * cellInterior;<br><br>                // 扫描线效果<br>                float scanLine = sin(IN.uv.y * _ScanFrequency * 3.14159 - _Time.y * _ScanSpeed) * 0.5 + 0.5;<br>                scanLine = pow(scanLine, 4.0); // 锐化扫描线<br>                color += _EdgeColor.rgb * scanLine * _ScanAlpha;<br><br>                // Alpha：边缘和激活细胞可见<br>                float alpha = edgeMask * _EdgeColor.a + cellInterior * 0.5;<br>                alpha = saturate(alpha);<br><br>                return half4(color, alpha);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Voronoi-Distance-Field：程序化破碎效果"><a href="#Voronoi-Distance-Field：程序化破碎效果" class="headerlink" title="Voronoi Distance Field：程序化破碎效果"></a>Voronoi Distance Field：程序化破碎效果</h2><p>Voronoi 距离场可以驱动网格破碎效果，配合顶点 Shader 让每个”碎片”沿 Voronoi 细胞 ID 确定的方向飞散：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 顶点着色器中实现破碎效果<br>Varyings vert(Attributes IN)<br>&#123;<br>    Varyings OUT;<br><br>    // 在世界空间计算 Voronoi 细胞 ID<br>    float3 posWS = TransformObjectToWorld(IN.posOS.xyz);<br>    float2 voroUV = posWS.xz * _FragmentScale;<br><br>    float4 v = Voronoi(voroUV);<br>    float2 cellID = v.zw;<br><br>    // 基于细胞 ID 计算飞散方向（每个碎片独立方向）<br>    float2 cellHash = VoronoiHash(cellID);<br>    float3 flyDir = normalize(float3(<br>        cellHash.x * 2.0 - 1.0,<br>        abs(cellHash.y) + 0.3, // 向上飞散<br>        cellHash.x * cellHash.y * 2.0 - 1.0<br>    ));<br><br>    // 根据破碎进度（_BreakAmount: 0=完整, 1=完全破碎）偏移顶点<br>    float3 displacement = flyDir * _BreakAmount * 2.0;<br>    posWS += displacement;<br><br>    // 旋转（每个碎片随机旋转）<br>    float rotAngle = _BreakAmount * 6.28 * (cellHash.x - 0.5);<br>    // 绕飞散方向轴旋转（简化版）<br>    posWS += cross(flyDir, posWS - TransformObjectToWorld(float3(0,0,0))) * sin(rotAngle) * _BreakAmount * 0.1;<br><br>    OUT.posCS = TransformWorldToHClip(posWS);<br>    // ... 其他输出<br>    return OUT;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-实现思路"><a href="#ShaderGraph-实现思路" class="headerlink" title="ShaderGraph 实现思路"></a>ShaderGraph 实现思路</h2><ol>
+<li><strong>Custom Function 节点</strong>：粘贴 <code>VoronoiBorderDist</code> 函数（ShaderGraph 内置 Voronoi 节点不支持精确边界）</li>
+<li><strong>Voronoi 节点</strong>（简单版可用）：Cell Density 控制密度，Angle Offset 控制随机性</li>
+<li><strong>One Minus + Step</strong>：将 F1 距离转换为边缘遮罩</li>
+<li><strong>Normal From Height</strong>：将 Voronoi 距离值转换为法线贴图（裂纹高度信息）</li>
+<li><strong>Lerp</strong>：在基础颜色和裂纹颜色之间混合</li>
+</ol>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>搜索邻居数</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>基础 F1（3×3）</td>
+<td>9</td>
+<td>一般纹理、手机端</td>
+</tr>
+<tr>
+<td>F1+F2（3×3）</td>
+<td>9</td>
+<td>边缘检测、细胞着色</td>
+</tr>
+<tr>
+<td>精确边界（5×5）</td>
+<td>25</td>
+<td>高质量裂纹材质</td>
+</tr>
+<tr>
+<td>3D Voronoi（3×3×3）</td>
+<td>27</td>
+<td>体积纹理（云、火焰）</td>
+</tr>
+</tbody></table>
+<p><strong>踩坑提醒</strong>：Voronoi 的哈希函数在某些 GPU 上（特别是 Adreno 系列）使用 <code>sin</code> 函数计算时精度不稳定。如果出现闪烁或噪点，改用整数位运算哈希：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 更稳定的哈希（避免 sin 精度问题）<br>float2 SafeHash(float2 p)<br>&#123;<br>    uint2 q = uint2(p);<br>    q = q * uint2(1597334673U, 3812015801U);<br>    q = (q.x ^ q.y) * uint2(1597334673U, 3812015801U);<br>    return float2(q) / float(0xFFFFFFFFU);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Voronoi 噪声是游戏程序化内容的瑞士军刀——从微观的皮革纹理到宏观的地图划分，从静态的材质到动态的 UI，都能找到它的身影。理解其数学本质（最近邻空间划分），才能真正灵活运用各种变体。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E7%A8%8B%E5%BA%8F%E5%8C%96%E4%B8%8E%E5%99%AA%E5%A3%B0/" class="category-chain-item">程序化与噪声</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BA%B9%E7%90%86/" class="print-no-link">#程序化纹理</a>
+      
+        <a href="/tags/Voronoi/" class="print-no-link">#Voronoi</a>
+      
+        <a href="/tags/%E7%A0%B4%E7%A2%8E%E6%95%88%E6%9E%9C/" class="print-no-link">#破碎效果</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用</div>
+      <div>https://alex-rachel.github.io/2026/04/01/27-voronoi-cellular-noise/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/28-post-processing/" title="Unity Shader 系列（二十八）：URP 后处理完整指南">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（二十八）：URP 后处理完整指南</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/26-procedural-2d-pattern/" title="Unity Shader 系列（二十六）：Unity 程序化纹理与材质生成">
+                        <span class="hidden-mobile">Unity Shader 系列（二十六）：Unity 程序化纹理与材质生成</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '249511198dc2342a06d60174eb51f587'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

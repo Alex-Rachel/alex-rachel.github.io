@@ -1,0 +1,1222 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="技术爱好者的博客">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Alex&#39;s Blog">
+<meta property="og:url" content="https://alex-rachel.github.io/page/3/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="技术爱好者的博客">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="Hexo, Fluid, 技术, 生活">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 100vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="An elegant Material-Design theme for Hexo"></span>
+          
+        </div>
+
+        
+      </div>
+
+      
+        <div class="scroll-down-bar">
+          <i class="iconfont icon-arrowdown"></i>
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      <div class="container nopadding-x-md">
+        <div id="board"
+          style="margin-top: 0">
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
+                
+
+<h1 style="display: none">Alex&#39;s Blog</h1>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/23-water-ocean/" target="_self">
+          Unity Shader 系列（二十三）：URP 水面渲染完整指南
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/23-water-ocean/" target="_self">
+        <div>
+          水面渲染是游戏中最考验 Shader 技术综合能力的场景之一——它需要几何波形、Fresnel 反射、折射、焦散、泡沫等多种技术的协同配合。本文以 URP 为目标平台，从 Gerstner 波的顶点着色器实现到完整的低多边形风格水面 Shader，给出可直接在 Unity 项目中使用的代码。 Gerstner 波：URP 顶点着色器实现Gerstner 波（余摆线波）比简单的正弦波更接近真实海浪形
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 12:40" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E8%87%AA%E7%84%B6%E5%9C%BA%E6%99%AF/" class="category-chain-item">自然场景</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E6%B0%B4%E9%9D%A2%E6%B8%B2%E6%9F%93/">#水面渲染</a>
+            
+              <a href="/tags/Gerstner%E6%B3%A2/">#Gerstner波</a>
+            
+              <a href="/tags/Fresnel/">#Fresnel</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/22-cellular-automata/" target="_self">
+          Unity Shader 系列（二十二）：Compute Shader 实现元胞自动机
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/22-cellular-automata/" target="_self">
+        <div>
+          元胞自动机（Cellular Automata）和反应扩散系统（Reaction-Diffusion）是程序化纹理生成的强大工具。在 Unity 中，Compute Shader 让这些计算密集型模拟可以完全在 GPU 上运行，以极高效率生成皮革纹、斑纹、裂纹、生命游戏等动态或静态纹理。 为什么用 Compute Shader？传统 CPU 实现的元胞自动机每帧需要遍历所有格子（O(N²)），10
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 12:30" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/GPU-%E8%AE%A1%E7%AE%97%E4%B8%8E%E6%A8%A1%E6%8B%9F/" class="category-chain-item">GPU 计算与模拟</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BA%B9%E7%90%86/">#程序化纹理</a>
+            
+              <a href="/tags/Compute-Shader/">#Compute Shader</a>
+            
+              <a href="/tags/%E5%85%83%E8%83%9E%E8%87%AA%E5%8A%A8%E6%9C%BA/">#元胞自动机</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/21-particle-system/" target="_self">
+          Unity Shader 系列（二十一）：粒子系统与 Shader 深度整合
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/21-particle-system/" target="_self">
+        <div>
+          Unity 的粒子特效系统与 Shader 的深度结合，是游戏中火焰、魔法、爆炸、雨雪等视觉效果的核心技术基础。本文从 Shuriken 粒子系统到 VFX Graph，从自定义粒子 Shader 到软粒子深度排序，全面讲解 URP 环境下的粒子渲染技术。 Particle System（Shuriken）vs VFX Graph：如何选择Unity 提供两套粒子系统，选择取决于项目规模和复杂度：
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 12:20" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/GPU-%E8%AE%A1%E7%AE%97%E4%B8%8E%E6%A8%A1%E6%8B%9F/" class="category-chain-item">GPU 计算与模拟</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E7%B2%92%E5%AD%90%E7%B3%BB%E7%BB%9F/">#粒子系统</a>
+            
+              <a href="/tags/VFX-Graph/">#VFX Graph</a>
+            
+              <a href="/tags/%E7%89%B9%E6%95%88/">#特效</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/20-fluid-simulation/" target="_self">
+          Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/20-fluid-simulation/" target="_self">
+        <div>
+          GPU 流体模拟是 Unity 开发中技术深度最高的方向之一，也是游戏中实现交互式水面、墨水扩散、烟雾流动的核心技术。与 ShaderToy 的帧缓冲反馈不同，Unity 中的 GPU 流体模拟使用 Compute Shader + RenderTexture Ping-Pong：一个 Compute Shader 读取上一帧的流体状态，计算新状态写入另一张 RenderTexture，然后通过
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 12:10" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/GPU-%E8%AE%A1%E7%AE%97%E4%B8%8E%E6%A8%A1%E6%8B%9F/" class="category-chain-item">GPU 计算与模拟</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/Compute-Shader/">#Compute Shader</a>
+            
+              <a href="/tags/%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F/">#流体模拟</a>
+            
+              <a href="/tags/GPU%E7%89%A9%E7%90%86/">#GPU物理</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/19-atmospheric-scattering/" target="_self">
+          Unity Shader 系列（十九）：Unity 天空系统深度指南：从 Skybox 到程序化大气散射
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/19-atmospheric-scattering/" target="_self">
+        <div>
+          天空是游戏场景的”第一印象”——蔚蓝的晴天、橙红的日落、阴郁的暴风雨前夕，天空的颜色和光照决定了整个场景的基调。Unity URP 提供了从简单天空盒到完整物理大气散射的完整工具链。本文深入讲解 Unity 天空系统的每个层次：URP 内置 Sky 组件的配置、自定义 Skybox Shader 的编写，以及在地面 Shader 中正确读取天空颜色用于环境光和反射。 Unity 天空系统的层次结构
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 12:00" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E4%BD%93%E7%A7%AF%E4%B8%8E%E5%A4%A7%E6%B0%94/" class="category-chain-item">体积与大气</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E5%A4%A7%E6%B0%94%E6%95%A3%E5%B0%84/">#大气散射</a>
+            
+              <a href="/tags/%E5%A4%A9%E7%A9%BA%E7%9B%92/">#天空盒</a>
+            
+              <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E5%A4%A9%E7%A9%BA/">#程序化天空</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/18-volumetric-rendering/" target="_self">
+          Unity Shader 系列（十八）：URP 体积效果实战：体积光与程序化云朵
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/18-volumetric-rendering/" target="_self">
+        <div>
+          体积效果（Volumetric Effects）是现代游戏视觉表现的重要组成部分：体积光从窗缝穿入的丁达尔效应、浓雾中透出的光柱、漂浮在低处的地面雾气。Unity URP 提供了内置的体积雾系统，但当你需要更定制化的体积效果时，就需要自己编写 Renderer Feature 和 Compute Shader。本文从 URP Volume Framework 的使用方法出发，到完整的自定义体积光束
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 11:50" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E4%BD%93%E7%A7%AF%E4%B8%8E%E5%A4%A7%E6%B0%94/" class="category-chain-item">体积与大气</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E4%BD%93%E7%A7%AF%E9%9B%BE/">#体积雾</a>
+            
+              <a href="/tags/%E4%BD%93%E7%A7%AF%E6%B8%B2%E6%9F%93/">#体积渲染</a>
+            
+              <a href="/tags/%E4%BD%93%E7%A7%AF%E5%85%89/">#体积光</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/17-path-tracing-gi/" target="_self">
+          Unity Shader 系列（十七）：Unity 全局光照系统深度指南
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/17-path-tracing-gi/" target="_self">
+        <div>
+          全局光照（Global Illumination，GI）是让 3D 场景看起来真实的最重要因素——间接光、环境反射、颜色溢出，这些物理现象使场景有了深度和质感。Unity 提供了一套完整的 GI 系统，从静态光照烘焙到实时动态 GI，从 Light Probe 到自适应探针体（APV）。理解如何在 URP Shader 中正确读取和使用这些 GI 数据，是让自定义 Shader 融入真实感场景的关
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 11:40" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%85%89%E7%85%A7%E4%B8%8E%E9%98%B4%E5%BD%B1/" class="category-chain-item">光照与阴影</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E5%85%89%E7%85%A7%E7%83%98%E7%84%99/">#光照烘焙</a>
+            
+              <a href="/tags/%E5%85%A8%E5%B1%80%E5%85%89%E7%85%A7/">#全局光照</a>
+            
+              <a href="/tags/GI/">#GI</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/16-sdf-tricks/" target="_self">
+          Unity Shader 系列（十六）：URP Shader 性能优化实战
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/16-sdf-tricks/" target="_self">
+        <div>
+          Shader 性能优化是 Unity 游戏开发中最具影响力、也最容易被忽视的技术方向。一个写得好的 Shader 可以在同等视觉质量下比粗糙实现快 5-10 倍，这在移动端上往往是游戏能否流畅运行的关键。本文从 Unity 官方工具（Frame Debugger、Shader Profiler、RenderDoc）的实际使用方法出发，深入讲解每一种优化技术，并提供完整的优化版 SDF UI Sha
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 11:30" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E6%80%A7%E8%83%BD%E4%B8%8E%E8%B0%83%E8%AF%95/" class="category-chain-item">性能与调试</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/Shader%E4%BC%98%E5%8C%96/">#Shader优化</a>
+            
+              <a href="/tags/%E6%80%A7%E8%83%BD/">#性能</a>
+            
+              <a href="/tags/SDF%E6%8A%80%E5%B7%A7/">#SDF技巧</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/15-domain-warping/" target="_self">
+          Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/15-domain-warping/" target="_self">
+        <div>
+          域扭曲（Domain Warping）是 Unity 特效制作中最具表现力的技术之一：用噪波偏移 UV 坐标，产生流动、扭曲、有机变形的视觉效果——传送门的空间撕裂感、熔岩的粘稠流动、毒液泡沫的涌动，这些效果的核心都是域扭曲。与纯粹的 UV 动画不同，域扭曲利用多层 FBM 噪波的嵌套叠加，产生无法预测的有机感，本文提供两个完整可用的 URP Shader。 域扭曲 vs 顶点扭曲在 Unity
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 11:20" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/SDF-%E6%8A%80%E6%9C%AF/" class="category-chain-item">SDF 技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E7%89%B9%E6%95%88Shader/">#特效Shader</a>
+            
+              <a href="/tags/%E5%9F%9F%E6%89%AD%E6%9B%B2/">#域扭曲</a>
+            
+              <a href="/tags/UV%E5%8A%A8%E7%94%BB/">#UV动画</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/04/01/14-domain-repetition/" target="_self">
+          Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/14-domain-repetition/" target="_self">
+        <div>
+          域重复（Domain Repetition）在 Unity 开发中是一项被严重低估的技术。当你需要渲染无限延伸的地面、密集的地砖、重复的建筑外墙细节，或是任何存在大量重复几何的场景时，域重复技术可以在完全不增加 GPU 内存带宽的情况下，让单张纹理渲染出无限变化的视觉效果，同时避免明显的重复感。本文深入讲解 Unity URP 地形 Shader 中的域重复实践，以及如何与 GPU Instanc
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 11:10" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/SDF-%E6%8A%80%E6%9C%AF/" class="category-chain-item">SDF 技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/%E5%9F%9F%E9%87%8D%E5%A4%8D/">#域重复</a>
+            
+              <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BA%B9%E7%90%86/">#程序化纹理</a>
+            
+              <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">#性能优化</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+
+
+  <nav aria-label="navigation">
+    <span class="pagination" id="pagination">
+      <a class="extend prev" rel="prev" href="/page/2/#board"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/#board">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/#board">4</a><a class="page-number" href="/page/5/#board">5</a><a class="extend next" rel="next" href="/page/4/#board"><i class="iconfont icon-arrowright"></i></a>
+    </span>
+  </nav>
+
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

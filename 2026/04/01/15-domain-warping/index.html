@@ -1,0 +1,964 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="域扭曲（Domain Warping）是 Unity 特效制作中最具表现力的技术之一：用噪波偏移 UV 坐标，产生流动、扭曲、有机变形的视觉效果——传送门的空间撕裂感、熔岩的粘稠流动、毒液泡沫的涌动，这些效果的核心都是域扭曲。与纯粹的 UV 动画不同，域扭曲利用多层 FBM 噪波的嵌套叠加，产生无法预测的有机感，本文提供两个完整可用的 URP Shader。 域扭曲 vs 顶点扭曲在 Unity">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/15-domain-warping/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="域扭曲（Domain Warping）是 Unity 特效制作中最具表现力的技术之一：用噪波偏移 UV 坐标，产生流动、扭曲、有机变形的视觉效果——传送门的空间撕裂感、熔岩的粘稠流动、毒液泡沫的涌动，这些效果的核心都是域扭曲。与纯粹的 UV 动画不同，域扭曲利用多层 FBM 噪波的嵌套叠加，产生无法预测的有机感，本文提供两个完整可用的 URP Shader。 域扭曲 vs 顶点扭曲在 Unity">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T03:20:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.720Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="特效Shader">
+<meta property="article:tag" content="域扭曲">
+<meta property="article:tag" content="UV动画">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 11:20" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          14k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          115 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>域扭曲（Domain Warping）是 Unity 特效制作中最具表现力的技术之一：用噪波偏移 UV 坐标，产生流动、扭曲、有机变形的视觉效果——传送门的空间撕裂感、熔岩的粘稠流动、毒液泡沫的涌动，这些效果的核心都是域扭曲。与纯粹的 UV 动画不同，域扭曲利用多层 FBM 噪波的嵌套叠加，产生无法预测的有机感，本文提供两个完整可用的 URP Shader。</p>
+<h2 id="域扭曲-vs-顶点扭曲"><a href="#域扭曲-vs-顶点扭曲" class="headerlink" title="域扭曲 vs 顶点扭曲"></a>域扭曲 vs 顶点扭曲</h2><p>在 Unity 中，制作扭曲变形效果有两种路线，各有适用场景：</p>
+<table>
+<thead>
+<tr>
+<th>对比维度</th>
+<th>UV 域扭曲（片段着色器）</th>
+<th>顶点扭曲（顶点着色器）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>扭曲内容</td>
+<td>纹理坐标 &#x2F; 视觉图案</td>
+<td>实际几何形状</td>
+</tr>
+<tr>
+<td>性能瓶颈</td>
+<td>Fragment ALU</td>
+<td>Vertex ALU</td>
+</tr>
+<tr>
+<td>适用场景</td>
+<td>传送门、纹理流动、UI 扭曲</td>
+<td>旗帜飘动、水面波浪</td>
+</tr>
+<tr>
+<td>与碰撞的关系</td>
+<td>纯视觉，不影响碰撞体</td>
+<td>影响渲染，不影响碰撞体</td>
+</tr>
+<tr>
+<td>典型组合</td>
+<td>Particle System + UV 扭曲</td>
+<td>Skinned Mesh + 顶点偏移</td>
+</tr>
+</tbody></table>
+<p>域扭曲通常指 UV 级别的扭曲，更适合制作特效 Shader（传送门、火焰、魔法效果），而顶点扭曲更适合有物理感的几何形变（衣物、水面）。</p>
+<h2 id="FBM-噪波与域扭曲基础"><a href="#FBM-噪波与域扭曲基础" class="headerlink" title="FBM 噪波与域扭曲基础"></a>FBM 噪波与域扭曲基础</h2><p>在 HLSL 中构建域扭曲所需的噪波函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 2D 值噪波（无 sin 版本，移动端精度更稳定）<br>float Hash(float2 p)<br>&#123;<br>    p = frac(p * float2(0.1031, 0.1030));<br>    p += dot(p, p.yx + 33.33);<br>    return frac((p.x + p.y) * p.x);<br>&#125;<br><br>float ValueNoise(float2 p)<br>&#123;<br>    float2 i = floor(p);<br>    float2 f = frac(p);<br>    // Hermite 平滑插值（去掉 C0 接缝）<br>    f = f * f * (3.0 - 2.0 * f);<br><br>    return lerp(<br>        lerp(Hash(i + float2(0, 0)), Hash(i + float2(1, 0)), f.x),<br>        lerp(Hash(i + float2(0, 1)), Hash(i + float2(1, 1)), f.x),<br>        f.y<br>    );<br>&#125;<br><br>// FBM：多频率噪波叠加（旋转去相关，避免方向性伪影）<br>float FBM(float2 p, int octaves)<br>&#123;<br>    // 约 36.87° 的旋转矩阵，使相邻频率的噪波方向错开<br>    const float2x2 m = float2x2(0.80, 0.60, -0.60, 0.80);<br><br>    float value = 0.0, amplitude = 0.5, norm = 0.0;<br>    for (int i = 0; i &lt; octaves; i++)<br>    &#123;<br>        value     += amplitude * ValueNoise(p);<br>        norm      += amplitude;<br>        p          = mul(m, p) * 2.02;  // 频率略微偏移，避免格点对齐伪影<br>        amplitude *= 0.5;<br>    &#125;<br>    return value / norm;  // 归一化到 [0, 1]<br>&#125;<br><br>// 向量版 FBM（用于域扭曲的偏移量，xy 两个独立 FBM）<br>float2 FBM2(float2 p, int octaves)<br>&#123;<br>    // 用不同的种子偏移获得独立的 X 和 Y 分量<br>    return float2(<br>        FBM(p + float2(0.0, 0.0), octaves),<br>        FBM(p + float2(5.2, 1.3), octaves)<br>    );<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例一：URP-传送门特效-Shader"><a href="#完整示例一：URP-传送门特效-Shader" class="headerlink" title="完整示例一：URP 传送门特效 Shader"></a>完整示例一：URP 传送门特效 Shader</h2><p>传送门效果需要：双层 FBM 扭曲（产生撕裂感）+ 颜色渐变 + 边缘辉光 + 中心扭曲强度更大（表现空间被撕开的感觉）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/PortalEffect&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        // 传送门内部纹理（目标场景的截图或 RenderTexture）<br>        _PortalTex (&quot;传送门内部纹理&quot;, 2D) = &quot;black&quot; &#123;&#125;<br>        _NoiseTex (&quot;噪波辅助纹理（可选）&quot;, 2D) = &quot;gray&quot; &#123;&#125;<br><br>        // 扭曲参数<br>        _WarpStrength (&quot;扭曲强度&quot;, Range(0, 0.5)) = 0.15<br>        _WarpSpeed (&quot;扭曲速度&quot;, Range(0, 3)) = 0.5<br>        _WarpScale (&quot;扭曲尺度&quot;, Range(0.5, 5)) = 2.0<br><br>        // 颜色参数<br>        _InnerColor (&quot;内圈颜色&quot;, Color) = (0.2, 0.5, 1.0, 1)<br>        _OuterColor (&quot;外圈颜色&quot;, Color) = (0.8, 0.2, 1.0, 1)<br>        _EdgeGlow (&quot;边缘辉光强度&quot;, Range(1, 10)) = 4.0<br>        _GlowColor (&quot;辉光颜色&quot;, Color) = (0.5, 0.3, 1.0, 1)<br><br>        // 形状控制<br>        _PortalRadius (&quot;传送门半径（UV 空间）&quot;, Range(0.1, 0.5)) = 0.45<br>        _EdgeWidth (&quot;边缘辉光宽度&quot;, Range(0.01, 0.15)) = 0.05<br><br>        // 中心涡旋强度<br>        _SwirlStrength (&quot;涡旋强度&quot;, Range(0, 5)) = 2.0<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>            &quot;Queue&quot; = &quot;Transparent&quot;<br>        &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;ForwardLit&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            Blend SrcAlpha OneMinusSrcAlpha<br>            ZWrite Off<br>            Cull Back<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            TEXTURE2D(_PortalTex); SAMPLER(sampler_PortalTex);<br>            TEXTURE2D(_NoiseTex);  SAMPLER(sampler_NoiseTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _PortalTex_ST;<br>                float  _WarpStrength;<br>                float  _WarpSpeed;<br>                float  _WarpScale;<br>                float4 _InnerColor;<br>                float4 _OuterColor;<br>                float  _EdgeGlow;<br>                float4 _GlowColor;<br>                float  _PortalRadius;<br>                float  _EdgeWidth;<br>                float  _SwirlStrength;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>            &#125;;<br><br>            float Hash(float2 p)<br>            &#123;<br>                p = frac(p * float2(0.1031, 0.1030));<br>                p += dot(p, p.yx + 33.33);<br>                return frac((p.x + p.y) * p.x);<br>            &#125;<br><br>            float ValueNoise(float2 p)<br>            &#123;<br>                float2 i = floor(p);<br>                float2 f = frac(p);<br>                f = f * f * (3.0 - 2.0 * f);<br>                return lerp(<br>                    lerp(Hash(i), Hash(i + float2(1,0)), f.x),<br>                    lerp(Hash(i + float2(0,1)), Hash(i + float2(1,1)), f.x),<br>                    f.y<br>                );<br>            &#125;<br><br>            // 带时间的 FBM（仅最低频层注入时间，其他层静止，视觉最自然）<br>            float FBM_Animated(float2 p, float t)<br>            &#123;<br>                const float2x2 m = float2x2(0.80, 0.60, -0.60, 0.80);<br>                float v = 0.0, a = 0.5, norm = 0.0;<br><br>                // 第 0 层：整体流动（注入时间）<br>                v += a * ValueNoise(p + t * _WarpSpeed); norm += a; a *= 0.5;<br>                p = mul(m, p) * 2.02;<br><br>                // 第 1-3 层：静止细节<br>                v += a * ValueNoise(p); norm += a; a *= 0.5;<br>                p = mul(m, p) * 2.03;<br>                v += a * ValueNoise(p); norm += a; a *= 0.5;<br>                p = mul(m, p) * 2.01;<br>                v += a * ValueNoise(p); norm += a;<br><br>                return v / norm;<br>            &#125;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);<br>                output.uv          = TRANSFORM_TEX(input.uv, _PortalTex);<br>                return output;<br>            &#125;<br><br>            half4 frag(Varyings input) : SV_Target<br>            &#123;<br>                float2 uv = input.uv;<br>                float2 centered = uv - 0.5;  // 以中心为原点<br><br>                float t = _Time.y;  // Unity 内置时间变量<br><br>                // ---- 1. 涡旋变换（中心区域旋转更强）----<br>                float dist = length(centered);<br>                float swirlAngle = _SwirlStrength * exp(-dist * 5.0) * t;<br>                float cosS = cos(swirlAngle), sinS = sin(swirlAngle);<br>                float2 swirlUV = float2(<br>                    cosS * centered.x - sinS * centered.y,<br>                    sinS * centered.x + cosS * centered.y<br>                ) + 0.5;<br><br>                // ---- 2. 第一层域扭曲 ----<br>                float2 scaledUV1 = swirlUV * _WarpScale;<br>                float2 warp1     = float2(<br>                    FBM_Animated(scaledUV1 + float2(0.0, 0.0), t),<br>                    FBM_Animated(scaledUV1 + float2(5.2, 1.3), t)<br>                ) * 2.0 - 1.0;  // 映射到 [-1, 1]<br><br>                // ---- 3. 第二层域扭曲（用第一层偏移后的坐标再次扭曲）----<br>                float2 warpedUV = swirlUV + warp1 * _WarpStrength;<br>                float2 scaledUV2 = warpedUV * _WarpScale;<br>                float2 warp2 = float2(<br>                    FBM_Animated(scaledUV2 + float2(1.7, 9.2), t * 0.7),<br>                    FBM_Animated(scaledUV2 + float2(8.3, 2.8), t * 0.7)<br>                ) * 2.0 - 1.0;<br><br>                // 最终扭曲 UV（双层叠加）<br>                float2 finalWarpedUV = warpedUV + warp2 * _WarpStrength * 0.5;<br><br>                // ---- 4. 圆形裁剪（传送门形状）----<br>                float portalDist   = length(centered);<br>                float portalMask   = 1.0 - smoothstep(_PortalRadius - _EdgeWidth, _PortalRadius, portalDist);<br>                float edgeMask     = smoothstep(_PortalRadius - _EdgeWidth * 2, _PortalRadius - _EdgeWidth, portalDist);<br><br>                if (portalMask &lt; 0.001) discard;<br><br>                // ---- 5. 内部纹理采样（使用扭曲后的 UV）----<br>                float3 portalColor = SAMPLE_TEXTURE2D(_PortalTex, sampler_PortalTex, finalWarpedUV).rgb;<br><br>                // ---- 6. 径向颜色渐变（内圈到外圈）----<br>                float radialT = saturate(portalDist / _PortalRadius);<br>                float3 gradientColor = lerp(_InnerColor.rgb, _OuterColor.rgb, radialT * radialT);<br><br>                // FBM 值直接用于颜色混合（无纹理时也能有漂亮的效果）<br>                float patternVal = FBM_Animated(finalWarpedUV * 3.0, t * 0.3);<br>                float3 patternColor = lerp(_InnerColor.rgb, _OuterColor.rgb, patternVal);<br><br>                // 如果有 PortalTex 则混合纹理，否则纯程序化颜色<br>                float3 innerColor = lerp(patternColor, portalColor, 0.5);<br>                innerColor = lerp(innerColor, gradientColor, 0.3);<br><br>                // ---- 7. 边缘辉光（HDR 高亮，配合 Bloom 后处理）----<br>                float3 glowColor = _GlowColor.rgb * _EdgeGlow * edgeMask;<br><br>                float3 finalColor = innerColor * portalMask + glowColor;<br><br>                // 传送门整体 alpha（边缘渐隐）<br>                float alpha = portalMask * 0.95 + edgeMask * 0.05;<br><br>                return half4(finalColor, alpha);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例二：URP-熔岩流动材质"><a href="#完整示例二：URP-熔岩流动材质" class="headerlink" title="完整示例二：URP 熔岩流动材质"></a>完整示例二：URP 熔岩流动材质</h2><p>熔岩效果使用域扭曲模拟粘稠流体的运动：黑色岩石（冷却表面）+ 橙红发光裂缝（熔岩流）+ 随时间流动的 UV 动画。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/LavaFlow&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _LavaRamp (&quot;熔岩颜色渐变 (Gradient Ramp)&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _NoiseTex (&quot;噪波纹理&quot;, 2D) = &quot;gray&quot; &#123;&#125;<br>        _CrackTex (&quot;裂缝纹理&quot;, 2D) = &quot;white&quot; &#123;&#125;<br><br>        _FlowSpeed (&quot;流动速度&quot;, Range(0, 2)) = 0.3<br>        _FlowDirection (&quot;流动方向 (XY)&quot;, Vector) = (0, -1, 0, 0)<br>        _WarpStrength (&quot;域扭曲强度&quot;, Range(0, 0.5)) = 0.2<br>        _WarpScale (&quot;扭曲尺度&quot;, Range(1, 8)) = 3.0<br><br>        _LavaIntensity (&quot;熔岩发光强度&quot;, Range(1, 20)) = 8.0<br>        _CrackWidth (&quot;裂缝宽度&quot;, Range(0, 1)) = 0.3<br>        _RockColor (&quot;岩石颜色&quot;, Color) = (0.08, 0.06, 0.05, 1)<br>        _CoolLavaColor (&quot;冷却熔岩颜色&quot;, Color) = (0.3, 0.1, 0.05, 1)<br><br>        _Roughness (&quot;岩石粗糙度&quot;, Range(0, 1)) = 0.95<br>        _NormalStrength (&quot;法线强度&quot;, Range(0, 2)) = 0.8<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;ForwardLit&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _SHADOWS_SOFT<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            TEXTURE2D(_LavaRamp); SAMPLER(sampler_LavaRamp);<br>            TEXTURE2D(_NoiseTex);  SAMPLER(sampler_NoiseTex);<br>            TEXTURE2D(_CrackTex);  SAMPLER(sampler_CrackTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _LavaRamp_ST;<br>                float4 _NoiseTex_ST;<br>                float4 _CrackTex_ST;<br>                float  _FlowSpeed;<br>                float4 _FlowDirection;<br>                float  _WarpStrength;<br>                float  _WarpScale;<br>                float  _LavaIntensity;<br>                float  _CrackWidth;<br>                float4 _RockColor;<br>                float4 _CoolLavaColor;<br>                float  _Roughness;<br>                float  _NormalStrength;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float4 tangentOS  : TANGENT;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS    : SV_POSITION;<br>                float3 worldPos       : TEXCOORD0;<br>                float3 worldNormal    : TEXCOORD1;<br>                float3 worldTangent   : TEXCOORD2;<br>                float3 worldBitangent : TEXCOORD3;<br>                float2 uv             : TEXCOORD4;<br>                float4 shadowCoord    : TEXCOORD5;<br>            &#125;;<br><br>            float Hash(float2 p)<br>            &#123;<br>                p = frac(p * float2(0.1031, 0.1030));<br>                p += dot(p, p.yx + 33.33);<br>                return frac((p.x + p.y) * p.x);<br>            &#125;<br><br>            float Noise(float2 p)<br>            &#123;<br>                float2 i = floor(p);<br>                float2 f = frac(p);<br>                f = f * f * (3.0 - 2.0 * f);<br>                return lerp(lerp(Hash(i), Hash(i + float2(1,0)), f.x),<br>                            lerp(Hash(i + float2(0,1)), Hash(i + float2(1,1)), f.x), f.y);<br>            &#125;<br><br>            // 带方向流动的 FBM<br>            float FlowFBM(float2 p, float2 flowDir, float t)<br>            &#123;<br>                const float2x2 m = float2x2(0.80, 0.60, -0.60, 0.80);<br>                float v = 0.0, a = 0.5, norm = 0.0;<br><br>                // 流动：沿方向平移<br>                p += flowDir * t * _FlowSpeed;<br><br>                v += a * Noise(p); norm += a; a *= 0.5; p = mul(m, p) * 2.02;<br>                v += a * Noise(p); norm += a; a *= 0.5; p = mul(m, p) * 2.03;<br>                v += a * Noise(p); norm += a; a *= 0.5; p = mul(m, p) * 2.01;<br>                v += a * Noise(p); norm += a;<br><br>                return v / norm;<br>            &#125;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);<br>                VertexNormalInputs   norInputs = GetVertexNormalInputs(input.normalOS, input.tangentOS);<br><br>                output.positionHCS    = posInputs.positionCS;<br>                output.worldPos       = posInputs.positionWS;<br>                output.worldNormal    = norInputs.normalWS;<br>                output.worldTangent   = norInputs.tangentWS;<br>                output.worldBitangent = norInputs.bitangentWS;<br>                output.uv             = TRANSFORM_TEX(input.uv, _NoiseTex);<br>                output.shadowCoord    = GetShadowCoord(posInputs);<br>                return output;<br>            &#125;<br><br>            half4 frag(Varyings input) : SV_Target<br>            &#123;<br>                float2 uv = input.uv;<br>                float  t  = _Time.y;<br>                float2 flowDir = normalize(_FlowDirection.xy);<br><br>                // ---- 域扭曲：两层嵌套 FBM ----<br>                float2 scaledUV = uv * _WarpScale;<br><br>                // 第一层扭曲偏移（带流动方向）<br>                float2 warp1 = float2(<br>                    FlowFBM(scaledUV + float2(0, 0), flowDir, t),<br>                    FlowFBM(scaledUV + float2(5.2, 1.3), flowDir, t)<br>                ) * 2.0 - 1.0;<br><br>                float2 warpedUV1 = uv + warp1 * _WarpStrength;<br><br>                // 第二层扭曲（在第一层扭曲后的坐标上再次扭曲，速度稍慢）<br>                float2 warp2 = float2(<br>                    FlowFBM(warpedUV1 * _WarpScale + float2(1.7, 9.2), flowDir, t * 0.6),<br>                    FlowFBM(warpedUV1 * _WarpScale + float2(8.3, 2.8), flowDir, t * 0.6)<br>                ) * 2.0 - 1.0;<br><br>                float2 finalUV = warpedUV1 + warp2 * _WarpStrength * 0.5;<br><br>                // ---- 熔岩图案（域扭曲后的 FBM 值）----<br>                float lavaPattern = FlowFBM(finalUV * _WarpScale, flowDir, t * 0.3);<br><br>                // 裂缝贴图（控制熔岩裂缝的形态）<br>                float crack = SAMPLE_TEXTURE2D(_CrackTex, sampler_CrackTex, finalUV).r;<br><br>                // 熔岩值：FBM 图案 + 裂缝叠加<br>                float lavaVal = lavaPattern * (0.6 + 0.4 * crack);<br><br>                // ---- 颜色映射 ----<br>                // 熔岩渐变：黑色岩石 -&gt; 冷却熔岩（暗红）-&gt; 热熔岩（橙红）-&gt; 中心高温（黄白）<br>                float3 lavaColor = SAMPLE_TEXTURE2D(_LavaRamp, sampler_LavaRamp,<br>                    float2(lavaVal, 0.5)).rgb;<br><br>                // 岩石/熔岩混合（超过阈值才显示熔岩发光）<br>                float lavaMask = smoothstep(_CrackWidth, _CrackWidth + 0.1, lavaVal);<br><br>                float3 rockColor = lerp(_RockColor.rgb, _CoolLavaColor.rgb, lavaVal * 0.3);<br>                float3 albedo    = lerp(rockColor, lavaColor, lavaMask);<br><br>                // 熔岩自发光（HDR 强度，配合 Bloom 产生辉光）<br>                float3 emission  = lavaColor * lavaMask * _LavaIntensity;<br><br>                // ---- 法线扰动（模拟熔岩表面起伏）----<br>                float3 n = normalize(input.worldNormal);<br>                // 通过对 lavaPattern 的有限差分估算表面法线<br>                float eps = 0.01;<br>                float dx = FlowFBM((finalUV + float2(eps, 0)) * _WarpScale, flowDir, t * 0.3)<br>                         - FlowFBM((finalUV - float2(eps, 0)) * _WarpScale, flowDir, t * 0.3);<br>                float dy = FlowFBM((finalUV + float2(0, eps)) * _WarpScale, flowDir, t * 0.3)<br>                         - FlowFBM((finalUV - float2(0, eps)) * _WarpScale, flowDir, t * 0.3);<br><br>                float3 tangent    = normalize(input.worldTangent);<br>                float3 bitangent  = normalize(input.worldBitangent);<br>                float3 bumpNormal = normalize(n + tangent * (-dx * _NormalStrength)<br>                                              + bitangent * (-dy * _NormalStrength));<br><br>                // ---- URP PBR 光照 ----<br>                Light mainLight = GetMainLight(input.shadowCoord);<br>                float  NdotL    = saturate(dot(bumpNormal, mainLight.direction));<br>                float3 diffuse  = mainLight.color * NdotL * mainLight.shadowAttenuation;<br><br>                float3 ambient = SampleSH(bumpNormal);<br><br>                // 粗糙度随熔岩状态变化：冷却岩石粗糙，热熔岩略微有反光<br>                float roughness = lerp(_Roughness, 0.3, lavaMask);<br><br>                float3 finalColor = albedo * (ambient * 0.3 + diffuse);<br>                finalColor += emission; // 发光叠加（不受光照影响）<br><br>                return half4(finalColor, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="在游戏中的实际应用场景"><a href="#在游戏中的实际应用场景" class="headerlink" title="在游戏中的实际应用场景"></a>在游戏中的实际应用场景</h2><p><strong>1. 传送门&#x2F;空间撕裂</strong><br>传送门 Shader 配合 <code>RenderTexture</code> 可以实现真正意义上的”透过传送门看到另一个场景”：将目标摄像机渲染到 RenderTexture，作为 <code>_PortalTex</code> 传入 Shader，扭曲效果让传送门边缘看起来像空间正在被撕裂。</p>
+<p><strong>2. VFX Graph 粒子扰动</strong><br>在 VFX Graph 的 Output Particle Quad 节点中，可以直接引用域扭曲 Shader 作为粒子材质，让每个粒子表面都有流动的扰动效果，适合制作魔法粒子、能量球等效果。</p>
+<p><strong>3. 毒液&#x2F;水面折射</strong><br>在水面 Shader 中，用域扭曲偏移 <code>_CameraOpaqueTexture</code>（URP 的 Grab Pass 等价物）的采样坐标，产生透过水面的折射扭曲效果。扭曲强度随波浪高度变化，近处强远处弱。</p>
+<h2 id="ShaderGraph-对应实现思路"><a href="#ShaderGraph-对应实现思路" class="headerlink" title="ShaderGraph 对应实现思路"></a>ShaderGraph 对应实现思路</h2><p>域扭曲在 ShaderGraph 中的实现：</p>
+<ul>
+<li><code>Tiling and Offset</code> 节点控制噪波尺度</li>
+<li><code>Simple Noise</code> 或 <code>Gradient Noise</code> 节点生成基础噪波</li>
+<li>用两个独立的噪波节点分别生成 X&#x2F;Y 扭曲量，合并为 <code>Vector2</code></li>
+<li><code>Add</code> 节点将扭曲量叠加到原始 UV 上</li>
+<li>重复此过程构建第二层扭曲</li>
+<li>最终 UV 输入到 <code>Sample Texture 2D</code> 节点</li>
+</ul>
+<p>ShaderGraph 的限制：多层嵌套 FBM 需要大量节点，逻辑容易变得混乱。建议将 FBM 函数封装为 <code>Custom Function</code> 节点，在子图（Sub-Graph）中复用。</p>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><p>三层域扭曲（3层×4倍频FBM）每像素约执行 36 次噪波采样。以下是各平台的建议配置：</p>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>建议层数</th>
+<th>FBM 倍频程</th>
+<th>预计开销</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PC&#x2F;主机</td>
+<td>3 层嵌套</td>
+<td>4-6 频</td>
+<td>中</td>
+</tr>
+<tr>
+<td>移动端高端</td>
+<td>2 层嵌套</td>
+<td>3 频</td>
+<td>低</td>
+</tr>
+<tr>
+<td>移动端低端</td>
+<td>1 层扭曲</td>
+<td>2 频</td>
+<td>极低</td>
+</tr>
+</tbody></table>
+<p><strong>移动端优化技巧</strong>：</p>
+<ul>
+<li>将 FBM 噪波预烘焙到纹理（256×256 的多通道噪波图），直接采样代替计算，将 ALU 转换为 TEX 带宽</li>
+<li>使用 <code>half</code> 精度代替 <code>float</code> 进行噪波计算（移动端 16 位精度通常足够）</li>
+<li>关闭涡旋变换（省去 sin&#x2F;cos 计算）</li>
+</ul>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><p><strong>坑1：<code>_Time.y</code> 的精度丢失</strong><br>在游戏运行很长时间后（&gt; 几小时），<code>_Time.y</code> 的值很大，与小数值相乘时会有精度损失，导致噪波出现规律性图案。解决方案：使用 <code>frac(_Time.y * speed)</code> 让时间保持在小数范围内，或改用 C# 脚本每帧传入当前时间。</p>
+<p><strong>坑2：Grab Pass 的性能陷阱</strong><br>使用 <code>_CameraOpaqueTexture</code> 实现折射时，URP 会在需要时自动复制屏幕颜色。确保在 URP Asset 中启用 <code>Opaque Texture</code>，否则 Shader 中采样 <code>_CameraOpaqueTexture</code> 只会得到黑色。</p>
+<p><strong>坑3：VR 中的扭曲方向不一致</strong><br>在 VR 中，左右眼的视角不同，基于屏幕空间的 UV 扭曲可能在两只眼中产生不一致的效果，造成不适感。建议 VR 中的域扭曲基于世界空间坐标而不是屏幕空间 UV。</p>
+<p><strong>坑4：传送门 ZWrite Off 与深度排序</strong><br>传送门是透明物体，需要 <code>ZWrite Off</code>。如果场景中有其他透明物体（粒子、玻璃）靠近传送门，可能因排序问题出现错误的叠加顺序。使用 URP 的 <code>Renderer Feature</code> 将传送门渲染为独立 Pass，可以绕过透明排序问题。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/SDF-%E6%8A%80%E6%9C%AF/" class="category-chain-item">SDF 技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E7%89%B9%E6%95%88Shader/" class="print-no-link">#特效Shader</a>
+      
+        <a href="/tags/%E5%9F%9F%E6%89%AD%E6%9B%B2/" class="print-no-link">#域扭曲</a>
+      
+        <a href="/tags/UV%E5%8A%A8%E7%94%BB/" class="print-no-link">#UV动画</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效</div>
+      <div>https://alex-rachel.github.io/2026/04/01/15-domain-warping/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/16-sdf-tricks/" title="Unity Shader 系列（十六）：URP Shader 性能优化实战">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（十六）：URP Shader 性能优化实战</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/14-domain-repetition/" title="Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化">
+                        <span class="hidden-mobile">Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '0017bf9213c2e46064ee8c4deb597526'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

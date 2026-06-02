@@ -1,0 +1,931 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="URP ForwardLit Pass 光照流程在写自定义光照 Shader 之前，先理解 URP 内置 Lit.shader 的 ForwardLit Pass 是如何工作的： 12345678910111213141516片元着色器入口    ↓1. 解码法线（UnpackNormal）2. 计算 BRDFData（InitializeBRDFData）    - 将 Metallic&#x2F;Smo">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（八）：URP 光照系统深度解析 — PBR、卡通渲染与 BRDF">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/08-lighting-model/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="URP ForwardLit Pass 光照流程在写自定义光照 Shader 之前，先理解 URP 内置 Lit.shader 的 ForwardLit Pass 是如何工作的： 12345678910111213141516片元着色器入口    ↓1. 解码法线（UnpackNormal）2. 计算 BRDFData（InitializeBRDFData）    - 将 Metallic&#x2F;Smo">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T02:10:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.719Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="PBR光照">
+<meta property="article:tag" content="卡通渲染">
+<meta property="article:tag" content="BRDF">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（八）：URP 光照系统深度解析 — PBR、卡通渲染与 BRDF - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（八）：URP 光照系统深度解析 — PBR、卡通渲染与 BRDF"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 10:10" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          15k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          124 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（八）：URP 光照系统深度解析 — PBR、卡通渲染与 BRDF</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="URP-ForwardLit-Pass-光照流程"><a href="#URP-ForwardLit-Pass-光照流程" class="headerlink" title="URP ForwardLit Pass 光照流程"></a>URP ForwardLit Pass 光照流程</h2><p>在写自定义光照 Shader 之前，先理解 URP 内置 <code>Lit.shader</code> 的 ForwardLit Pass 是如何工作的：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs nestedtext">片元着色器入口<br>    ↓<br>1. 解码法线（UnpackNormal）<br>2. 计算 BRDFData（InitializeBRDFData）<br>    <span class="hljs-bullet">-</span> <span class="hljs-string">将 Metallic/Smoothness 转为 diffuse/specular/roughness</span><br>3. 计算 InputData（viewDir、positionWS 等）<br>4. GetMainLight() + TransformWorldToShadowCoord()<br>5. LightingPhysicallyBased(brdfData, mainLight, normalWS, viewDirWS)<br>    <span class="hljs-bullet">-</span> <span class="hljs-string">Lambert 漫反射</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">Cook-Torrance GGX 镜面反射（D * F * V）</span><br>6. 遍历额外光源（GetAdditionalLight × N）<br>7. 加入 GlobalIllumination（GI/Lightmap/SH）<br>8. 加入自发光（Emission）<br>9. 混合雾效<br>    ↓<br>输出最终颜色<br></code></pre></td></tr></table></figure>
+
+<h2 id="BRDFData-结构体深度解析"><a href="#BRDFData-结构体深度解析" class="headerlink" title="BRDFData 结构体深度解析"></a>BRDFData 结构体深度解析</h2><p><code>BRDFData</code> 是 URP 光照计算的核心数据结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// URP 内部 BRDFData 结构（来自 Lighting.hlsl）<br>struct BRDFData<br>&#123;<br>    half3 diffuse;          // 漫反射颜色 = albedo × (1 - metallic)<br>    half3 specular;         // 镜面反射颜色 = lerp(0.04, albedo, metallic)<br>    half  perceptualRoughness; // 粗糙度（0=光滑, 1=粗糙）<br>    half  roughness;        // perceptualRoughness²（GGX 中使用）<br>    half  roughness2;       // roughness²<br>    half  grazingTerm;      // 掠射角 Fresnel 项<br>    half  normalizationTerm; // GGX 中的归一化项<br>    half  roughness2MinusOne; // roughness² - 1（GGX 优化）<br>&#125;;<br><br>// 初始化 BRDFData（从 albedo/metallic/smoothness 计算）<br>// 对应调用：<br>BRDFData brdfData;<br>InitializeBRDFData(albedo, metallic, specular, smoothness, alpha, brdfData);<br>// 注意：Unity 的 Smoothness = 1 - Roughness，传入时要注意方向<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例-1：URP-卡通渲染-Shader"><a href="#完整示例-1：URP-卡通渲染-Shader" class="headerlink" title="完整示例 1：URP 卡通渲染 Shader"></a>完整示例 1：URP 卡通渲染 Shader</h2><p>色阶漫反射 + Rim Light + 描边效果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/ToonShading&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _BaseColor      (&quot;Base Color&quot;,    Color)  = (1,1,1,1)<br>        _BaseMap        (&quot;Base Texture&quot;,  2D)     = &quot;white&quot; &#123;&#125;<br>        // 色阶控制（卡通光照分级）<br>        _ShadowColor    (&quot;Shadow Color&quot;,  Color)  = (0.4, 0.5, 0.7, 1)<br>        _ShadowThreshold (&quot;Shadow Threshold&quot;, Range(0,1)) = 0.5<br>        _ShadowSmooth   (&quot;Shadow Smooth&quot;, Range(0.001, 0.3)) = 0.05<br>        _HighlightColor (&quot;Highlight Color&quot;, Color) = (1,1,1,1)<br>        _HighlightThreshold (&quot;Highlight Threshold&quot;, Range(0,1)) = 0.9<br>        _HighlightSmooth (&quot;Highlight Smooth&quot;, Range(0.001, 0.1)) = 0.02<br>        // Rim Light（边缘光）<br>        _RimColor       (&quot;Rim Color&quot;,     Color)  = (0.5, 0.7, 1.0, 1)<br>        _RimPower       (&quot;Rim Power&quot;,     Range(1, 8)) = 3.0<br>        _RimStrength    (&quot;Rim Strength&quot;,  Range(0, 1)) = 0.4<br>        // 描边（通过法线扩展实现）<br>        _OutlineColor   (&quot;Outline Color&quot;, Color)  = (0.1, 0.1, 0.15, 1)<br>        _OutlineWidth   (&quot;Outline Width&quot;, Range(0, 0.05)) = 0.01<br>        // 法线贴图<br>        _BumpMap        (&quot;Normal Map&quot;,    2D)     = &quot;bump&quot; &#123;&#125;<br>        _BumpScale      (&quot;Normal Scale&quot;,  Range(0,2)) = 1.0<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>            &quot;Queue&quot; = &quot;Geometry&quot;<br>        &#125;<br><br>        // ===== Pass 1：描边 Pass（法线外扩）=====<br>        Pass<br>        &#123;<br>            Name &quot;Outline&quot;<br>            // 只渲染背面（法线外扩后背面可见）<br>            Cull Front<br><br>            HLSLPROGRAM<br>            #pragma vertex vertOutline<br>            #pragma fragment fragOutline<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BaseMap_ST;<br>                float4 _BaseColor;<br>                float4 _ShadowColor;<br>                float4 _HighlightColor;<br>                float4 _RimColor;<br>                float4 _OutlineColor;<br>                float  _ShadowThreshold;<br>                float  _ShadowSmooth;<br>                float  _HighlightThreshold;<br>                float  _HighlightSmooth;<br>                float  _RimPower;<br>                float  _RimStrength;<br>                float  _OutlineWidth;<br>                float  _BumpScale;<br>            CBUFFER_END<br><br>            struct OutlineAttributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct OutlineVaryings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            OutlineVaryings vertOutline(OutlineAttributes IN)<br>            &#123;<br>                OutlineVaryings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br><br>                // 在对象空间沿法线方向外扩顶点<br>                float3 expandedPos = IN.positionOS.xyz + normalize(IN.normalOS) * _OutlineWidth;<br>                OUT.positionHCS = TransformObjectToHClip(expandedPos);<br>                return OUT;<br>            &#125;<br><br>            half4 fragOutline(OutlineVaryings IN) : SV_Target<br>            &#123;<br>                return _OutlineColor;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // ===== Pass 2：卡通光照 Pass =====<br>        Pass<br>        &#123;<br>            Name &quot;ToonForward&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            Cull Back<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _ADDITIONAL_LIGHTS<br>            #pragma multi_compile_fog<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);<br>            TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BaseMap_ST;<br>                float4 _BaseColor;<br>                float4 _ShadowColor;<br>                float4 _HighlightColor;<br>                float4 _RimColor;<br>                float4 _OutlineColor;<br>                float  _ShadowThreshold;<br>                float  _ShadowSmooth;<br>                float  _HighlightThreshold;<br>                float  _HighlightSmooth;<br>                float  _RimPower;<br>                float  _RimStrength;<br>                float  _OutlineWidth;<br>                float  _BumpScale;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float4 tangentOS  : TANGENT;<br>                float2 uv         : TEXCOORD0;<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>                float3 positionWS  : TEXCOORD1;<br>                float3 normalWS    : TEXCOORD2;<br>                float3 tangentWS   : TEXCOORD3;<br>                float3 bitangentWS : TEXCOORD4;<br>                float4 shadowCoord : TEXCOORD5;<br>                float  fogFactor   : TEXCOORD6;<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            // ======== 卡通色阶光照核心函数 ========<br><br>            // 将连续的 NdotL 值分级为离散的色阶<br>            float toonDiffuse(float NdotL, float threshold, float smooth)<br>            &#123;<br>                // smoothstep 产生软边缘，模拟软阴影效果<br>                // 硬边缘：step(threshold, NdotL)<br>                return smoothstep(threshold - smooth, threshold + smooth, NdotL);<br>            &#125;<br><br>            // 卡通高光（Toon Specular）<br>            float toonSpecular(float NdotH, float threshold, float smooth)<br>            &#123;<br>                return smoothstep(threshold - smooth, threshold + smooth, NdotH);<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br><br>                VertexPositionInputs posInputs    = GetVertexPositionInputs(IN.positionOS.xyz);<br>                VertexNormalInputs   normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);<br><br>                OUT.positionHCS = posInputs.positionCS;<br>                OUT.positionWS  = posInputs.positionWS;<br>                OUT.normalWS    = normalInputs.normalWS;<br>                OUT.tangentWS   = normalInputs.tangentWS;<br>                OUT.bitangentWS = normalInputs.bitangentWS;<br>                OUT.uv          = TRANSFORM_TEX(IN.uv, _BaseMap);<br>                OUT.shadowCoord = GetShadowCoord(posInputs);<br>                OUT.fogFactor   = ComputeFogFactor(posInputs.positionCS.z);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                // === 法线 ===<br>                float4 normalPacked = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, IN.uv);<br>                float3 normalTS = UnpackNormalScale(normalPacked, _BumpScale);<br>                float3x3 TBN = float3x3(normalize(IN.tangentWS), normalize(IN.bitangentWS), normalize(IN.normalWS));<br>                float3 normalWS = normalize(TransformTangentToWorld(normalTS, TBN));<br><br>                // === 基础颜色 ===<br>                half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;<br><br>                // === 主光源（带阴影） ===<br>                Light mainLight = GetMainLight(IN.shadowCoord);<br>                float3 lightDir = mainLight.direction;<br>                float3 lightColor = mainLight.color;<br>                float shadowAttenuation = mainLight.shadowAttenuation;<br><br>                float3 viewDirWS = normalize(GetCameraPositionWS() - IN.positionWS);<br><br>                // NdotL（乘以阴影衰减，让阴影影响色阶分级）<br>                float NdotL = saturate(dot(normalWS, lightDir)) * shadowAttenuation;<br>                float3 halfDir = normalize(viewDirWS + lightDir);<br>                float NdotH = saturate(dot(normalWS, halfDir));<br><br>                // === 卡通漫反射（三色阶：高光/中间/阴影）===<br>                float toonDiff = toonDiffuse(NdotL, _ShadowThreshold, _ShadowSmooth);<br>                float toonSpec = toonSpecular(NdotH, _HighlightThreshold, _HighlightSmooth);<br><br>                // 颜色混合：阴影色 → 基础色 → 高光色<br>                half3 diffuseColor = lerp(_ShadowColor.rgb, baseColor.rgb, toonDiff);<br>                diffuseColor = lerp(diffuseColor, _HighlightColor.rgb, toonSpec);<br><br>                // 乘以光源颜色<br>                half3 litColor = diffuseColor * lightColor;<br><br>                // === Rim Light（边缘光）===<br>                float NdotV = saturate(dot(normalWS, viewDirWS));<br>                float rimFactor = pow(1.0 - NdotV, _RimPower);<br>                // Rim 只在亮面出现（背光面不加边缘光）<br>                rimFactor *= saturate(NdotL * 2.0);<br>                half3 rimLight = _RimColor.rgb * rimFactor * _RimStrength;<br>                litColor += rimLight;<br><br>                // === 额外光源（简化为 Lambert，保持卡通风格） ===<br>                #ifdef _ADDITIONAL_LIGHTS<br>                    uint additionalLightCount = GetAdditionalLightsCount();<br>                    for (uint i = 0; i &lt; additionalLightCount; i++)<br>                    &#123;<br>                        Light addLight = GetAdditionalLight(i, IN.positionWS);<br>                        float addNdotL = saturate(dot(normalWS, addLight.direction));<br>                        float addToon  = toonDiffuse(addNdotL * addLight.distanceAttenuation, _ShadowThreshold, _ShadowSmooth);<br>                        litColor += baseColor.rgb * addLight.color * addToon * 0.5;<br>                    &#125;<br>                #endif<br><br>                // === 环境光（球谐函数）===<br>                half3 ambient = SampleSH(normalWS) * baseColor.rgb * 0.3;<br>                half3 finalColor = litColor + ambient;<br><br>                // 雾效<br>                finalColor = MixFog(finalColor, IN.fogFactor);<br><br>                return half4(finalColor, baseColor.a);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>        UsePass &quot;Universal Render Pipeline/Lit/DepthOnly&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例-2：布料材质-Shader（各向异性-Kajiya-Kay）"><a href="#完整示例-2：布料材质-Shader（各向异性-Kajiya-Kay）" class="headerlink" title="完整示例 2：布料材质 Shader（各向异性 Kajiya-Kay）"></a>完整示例 2：布料材质 Shader（各向异性 Kajiya-Kay）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/FabricAnisotropic&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _BaseColor      (&quot;Base Color&quot;,     Color)  = (0.5, 0.3, 0.1, 1)<br>        _BaseMap        (&quot;Base Texture&quot;,   2D)     = &quot;white&quot; &#123;&#125;<br>        _FiberDirection (&quot;Fiber Direction&quot;,Vector) = (0, 1, 0, 0)  // 纤维方向（切线空间）<br>        _SpecColor1     (&quot;Specular Color 1&quot;,Color) = (1.0, 0.9, 0.8, 1)<br>        _Shift1         (&quot;Spec Shift 1&quot;,   Range(-0.5, 0.5)) = 0.05<br>        _Roughness1     (&quot;Roughness 1&quot;,    Range(0.01, 1))   = 0.15<br>        _SpecColor2     (&quot;Specular Color 2&quot;,Color) = (0.7, 0.7, 0.9, 1)<br>        _Shift2         (&quot;Spec Shift 2&quot;,   Range(-0.5, 0.5)) = -0.1<br>        _Roughness2     (&quot;Roughness 2&quot;,    Range(0.01, 1))   = 0.35<br>        _BumpMap        (&quot;Normal Map&quot;,     2D)     = &quot;bump&quot; &#123;&#125;<br>        _BumpScale      (&quot;Normal Scale&quot;,   Range(0,2)) = 1.0<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;FabricForward&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);<br>            TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BaseMap_ST;<br>                float4 _BaseColor;<br>                float4 _FiberDirection;<br>                float4 _SpecColor1;<br>                float4 _SpecColor2;<br>                float  _Shift1;<br>                float  _Shift2;<br>                float  _Roughness1;<br>                float  _Roughness2;<br>                float  _BumpScale;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float4 tangentOS  : TANGENT;<br>                float2 uv         : TEXCOORD0;<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>                float3 positionWS  : TEXCOORD1;<br>                float3 normalWS    : TEXCOORD2;<br>                float3 tangentWS   : TEXCOORD3;<br>                float3 bitangentWS : TEXCOORD4;<br>                float4 shadowCoord : TEXCOORD5;<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            // ======== Kajiya-Kay 各向异性高光 ========<br>            // T: 切线方向（纤维方向）<br>            // V: 视线方向<br>            // L: 光线方向<br>            // shift: 高光偏移（模拟纤维层的相位差）<br>            float KajiyaKaySpec(float3 T, float3 V, float3 L, float shift, float roughness)<br>            &#123;<br>                // 偏移切线（模拟纤维的弯曲）<br>                float3 shiftedT = normalize(T + shift * cross(T, cross(T, L)));<br>                // 正弦投影：高光强度与光线和纤维方向的叉积有关<br>                float TdotL = dot(shiftedT, L);<br>                float TdotV = dot(shiftedT, V);<br>                float sinTL = sqrt(max(0, 1.0 - TdotL * TdotL));<br>                float sinTV = sqrt(max(0, 1.0 - TdotV * TdotV));<br>                // Kajiya-Kay BRDF<br>                float spec = sinTL * sinTV;<br>                // 用 roughness 控制高光宽度（类似 Blinn-Phong 的 shininess）<br>                spec = pow(max(0, spec), 1.0 / (roughness * roughness));<br>                return spec;<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br>                VertexPositionInputs posInputs    = GetVertexPositionInputs(IN.positionOS.xyz);<br>                VertexNormalInputs   normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);<br>                OUT.positionHCS = posInputs.positionCS;<br>                OUT.positionWS  = posInputs.positionWS;<br>                OUT.normalWS    = normalInputs.normalWS;<br>                OUT.tangentWS   = normalInputs.tangentWS;<br>                OUT.bitangentWS = normalInputs.bitangentWS;<br>                OUT.uv          = TRANSFORM_TEX(IN.uv, _BaseMap);<br>                OUT.shadowCoord = GetShadowCoord(posInputs);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float3 tangentWS   = normalize(IN.tangentWS);<br>                float3 bitangentWS = normalize(IN.bitangentWS);<br>                float3 normalWS    = normalize(IN.normalWS);<br><br>                // 法线贴图<br>                float4 normalPacked = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, IN.uv);<br>                float3 normalTS = UnpackNormalScale(normalPacked, _BumpScale);<br>                float3x3 TBN = float3x3(tangentWS, bitangentWS, normalWS);<br>                float3 bumpedNormal = normalize(TransformTangentToWorld(normalTS, TBN));<br><br>                // 纤维方向（在切线空间定义，变换到世界空间）<br>                float3 fiberDirTS = normalize(_FiberDirection.xyz);<br>                float3 fiberDirWS = normalize(mul(fiberDirTS, TBN));<br><br>                half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;<br>                float3 viewDirWS = normalize(GetCameraPositionWS() - IN.positionWS);<br><br>                Light mainLight = GetMainLight(IN.shadowCoord);<br>                float NdotL = saturate(dot(bumpedNormal, mainLight.direction)) * mainLight.shadowAttenuation;<br><br>                // 漫反射（Lambert）<br>                half3 diffuse = albedo.rgb * mainLight.color * NdotL;<br><br>                // 各向异性高光（双层 Kajiya-Kay）<br>                float spec1 = KajiyaKaySpec(fiberDirWS, viewDirWS, mainLight.direction, _Shift1, _Roughness1);<br>                float spec2 = KajiyaKaySpec(fiberDirWS, viewDirWS, mainLight.direction, _Shift2, _Roughness2);<br>                half3 specular = _SpecColor1.rgb * spec1 + _SpecColor2.rgb * spec2;<br>                specular *= mainLight.color * NdotL;<br><br>                // 环境光<br>                half3 ambient = SampleSH(bumpedNormal) * albedo.rgb * 0.3;<br><br>                return half4(diffuse + specular + ambient, albedo.a);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-中实现卡通渲染"><a href="#ShaderGraph-中实现卡通渲染" class="headerlink" title="ShaderGraph 中实现卡通渲染"></a>ShaderGraph 中实现卡通渲染</h2><ol>
+<li><code>Normal Vector</code> → <code>Dot Product(Light Direction)</code> → <code>Smoothstep(threshold-smooth, threshold+smooth)</code> → 色阶因子</li>
+<li><code>Lerp(Shadow Color, Base Color, 色阶因子)</code> → 分级颜色</li>
+<li><code>View Direction</code> → <code>Dot Product(Normal)</code> → <code>1 - result</code> → <code>Power(RimPower)</code> → Rim 遮罩</li>
+<li><code>Lerp(分级颜色, RimColor, Rim遮罩)</code> → 最终颜色</li>
+</ol>
+<h2 id="多光源处理最佳实践"><a href="#多光源处理最佳实践" class="headerlink" title="多光源处理最佳实践"></a>多光源处理最佳实践</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// URP 额外光源循环（ForwardLit Pass 标准写法）<br>half3 additionalLighting = 0;<br>uint additionalLightCount = GetAdditionalLightsCount();<br>for (uint i = 0; i &lt; additionalLightCount; i++)<br>&#123;<br>    // 传入世界空间位置，自动计算距离衰减和聚光灯锥角衰减<br>    Light addLight = GetAdditionalLight(i, IN.positionWS);<br><br>    // addLight 包含：<br>    // - direction: 光线方向（已归一化）<br>    // - color: 光源颜色<br>    // - distanceAttenuation: 距离衰减（1/d²）<br>    // - shadowAttenuation: 阴影衰减（0~1）<br><br>    float addNdotL = saturate(dot(normalWS, addLight.direction));<br>    additionalLighting += albedo.rgb * addLight.color<br>                        * addNdotL<br>                        * addLight.distanceAttenuation<br>                        * addLight.shadowAttenuation;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>移动端</th>
+<th>PC</th>
+<th>主机</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>卡通色阶（smoothstep）</td>
+<td>极低</td>
+<td>极低</td>
+<td>极低</td>
+</tr>
+<tr>
+<td>描边 Pass（额外 Cull Front Pass）</td>
+<td>增加 30-50% drawcall</td>
+<td>可接受</td>
+<td>可接受</td>
+</tr>
+<tr>
+<td>Kajiya-Kay（布料各向异性）</td>
+<td>2 次额外 sqrt</td>
+<td>可接受</td>
+<td>可接受</td>
+</tr>
+<tr>
+<td>额外光源（4 盏）</td>
+<td>建议 Forward+ 或 减少灯数</td>
+<td>可接受</td>
+<td>可接受</td>
+</tr>
+</tbody></table>
+<p><strong>描边 Pass 优化：</strong><br>描边 Pass 的 <code>Cull Front</code> 方案在 GPU 上相当于多渲染一遍（但只渲染片元数极少的边缘区域）。移动端可改用后处理描边（基于深度梯度检测），开销更小。</p>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><ol>
+<li><p><strong>卡通描边在非均匀缩放模型上错位</strong>：法线外扩方法对非均匀 Scale 的模型会产生不均匀的描边宽度。解决方案：将 <code>_OutlineWidth</code> 改为在裁剪空间中做固定像素宽度的外扩，避免受模型缩放影响。</p>
+</li>
+<li><p><strong>卡通高光在移动时闪烁</strong>：过于尖锐的 <code>smoothstep</code> 边缘在角色移动时会产生 aliasing 闪烁。将 <code>_HighlightSmooth</code> 设置大一些（0.05 以上），或在 Fragment Shader 中用 <code>fwidth(NdotH)</code> 做自适应平滑。</p>
+</li>
+<li><p><strong><code>GetAdditionalLightsCount()</code> 在 Forward 渲染中超过限制</strong>：URP Forward 渲染模式默认每对象最多 4 盏额外光源（可在 URP Asset 中调整）。超过限制的光源会被忽略。使用 <code>Forward+</code> 渲染模式可以处理更多光源。</p>
+</li>
+<li><p><strong>布料各向异性的 TBN 与模型 UV 不对齐</strong>：Kajiya-Kay 高光效果高度依赖 UV 方向（决定切线方向）。如果布料高光出现在错误位置，检查 DCC 工具导出时的 UV 映射和切线计算设置。</p>
+</li>
+</ol>
+<p>下一篇文章将讲解 URP 阴影系统的完整实现——级联阴影贴图（CSM）、PCF 软阴影、以及植被 Shader 中顶点动画与阴影的正确配合。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%85%89%E7%85%A7%E4%B8%8E%E9%98%B4%E5%BD%B1/" class="category-chain-item">光照与阴影</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/PBR%E5%85%89%E7%85%A7/" class="print-no-link">#PBR光照</a>
+      
+        <a href="/tags/%E5%8D%A1%E9%80%9A%E6%B8%B2%E6%9F%93/" class="print-no-link">#卡通渲染</a>
+      
+        <a href="/tags/BRDF/" class="print-no-link">#BRDF</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（八）：URP 光照系统深度解析 — PBR、卡通渲染与 BRDF</div>
+      <div>https://alex-rachel.github.io/2026/04/01/08-lighting-model/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/09-shadow-techniques/" title="Unity Shader 系列（九）：URP 阴影系统完整指南 — CSM、PCF 软阴影与植被 Shader">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（九）：URP 阴影系统完整指南 — CSM、PCF 软阴影与植被 Shader</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/07-normal-estimation/" title="Unity Shader 系列（七）：URP 法线体系完整讲解 — TBN 矩阵与视差贴图">
+                        <span class="hidden-mobile">Unity Shader 系列（七）：URP 法线体系完整讲解 — TBN 矩阵与视差贴图</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '39a72023e770f9de4d9e0e1e6de43792'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

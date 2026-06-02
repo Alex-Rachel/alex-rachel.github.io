@@ -1,0 +1,1103 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="为什么需要专门的 URP 调试指南？将一个在编辑器中完美运行的 Shader 发布到手机端时，可能出现：画面发白、深度排序错乱、法线贴图方向相反、颜色偏亮或偏暗……这些问题大多不是算法错误，而是 Unity&#x2F;URP 特有的平台差异、坐标系陷阱和颜色空间问题。 本篇系统梳理 8 大类常见陷阱，每类给出错误现象、根本原因和正确修复方案，配合 URP 调试工具使用说明。 陷阱一：坐标系与手性（">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/35-webgl-pitfalls/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="为什么需要专门的 URP 调试指南？将一个在编辑器中完美运行的 Shader 发布到手机端时，可能出现：画面发白、深度排序错乱、法线贴图方向相反、颜色偏亮或偏暗……这些问题大多不是算法错误，而是 Unity&#x2F;URP 特有的平台差异、坐标系陷阱和颜色空间问题。 本篇系统梳理 8 大类常见陷阱，每类给出错误现象、根本原因和正确修复方案，配合 URP 调试工具使用说明。 陷阱一：坐标系与手性（">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T06:40:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.724Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="调试">
+<meta property="article:tag" content="常见错误">
+<meta property="article:tag" content="平台兼容性">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 14:40" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.9k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          75 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="为什么需要专门的-URP-调试指南？"><a href="#为什么需要专门的-URP-调试指南？" class="headerlink" title="为什么需要专门的 URP 调试指南？"></a>为什么需要专门的 URP 调试指南？</h2><p>将一个在编辑器中完美运行的 Shader 发布到手机端时，可能出现：画面发白、深度排序错乱、法线贴图方向相反、颜色偏亮或偏暗……这些问题大多不是算法错误，而是 <strong>Unity&#x2F;URP 特有的平台差异、坐标系陷阱和颜色空间问题</strong>。</p>
+<p>本篇系统梳理 8 大类常见陷阱，每类给出错误现象、根本原因和正确修复方案，配合 URP 调试工具使用说明。</p>
+<h2 id="陷阱一：坐标系与手性（左手-vs-右手）"><a href="#陷阱一：坐标系与手性（左手-vs-右手）" class="headerlink" title="陷阱一：坐标系与手性（左手 vs 右手）"></a>陷阱一：坐标系与手性（左手 vs 右手）</h2><h3 id="Unity-坐标系"><a href="#Unity-坐标系" class="headerlink" title="Unity 坐标系"></a>Unity 坐标系</h3><p>Unity 使用<strong>左手坐标系</strong>：X 向右，Y 向上，<strong>Z 向屏幕内</strong>（即摄像机朝 +Z 看）。这与 OpenGL 的右手坐标系（Z 向屏幕外）相反。</p>
+<p>在 Shader 中计算叉积时必须注意手性：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// OpenGL/GLSL 右手坐标系<br>// vec3 bitangent = cross(normal, tangent) * tangent.w;<br><br>// Unity/HLSL 左手坐标系——结果相同公式，但含义不同<br>// URP 已在 Core.hlsl 中处理好，直接使用 GetVertexNormalInputs 即可<br>VertexNormalInputs normalInputs = GetVertexNormalInputs(normalOS, tangentOS);<br>// normalInputs.tangentWS、bitangentWS、normalWS 已考虑手性<br></code></pre></td></tr></table></figure>
+
+<h3 id="NDC-深度范围"><a href="#NDC-深度范围" class="headerlink" title="NDC 深度范围"></a>NDC 深度范围</h3><table>
+<thead>
+<tr>
+<th>平台&#x2F;API</th>
+<th>NDC Z 范围</th>
+<th>深度 Buffer 值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DirectX (DX11&#x2F;DX12)</td>
+<td>[0, 1]</td>
+<td>近&#x3D;1，远&#x3D;0（Reversed-Z）</td>
+</tr>
+<tr>
+<td>OpenGL&#x2F;OpenGL ES</td>
+<td>[-1, 1]</td>
+<td>近&#x3D;0，远&#x3D;1</td>
+</tr>
+<tr>
+<td>Metal (iOS&#x2F;macOS)</td>
+<td>[0, 1]</td>
+<td>近&#x3D;1，远&#x3D;0（Reversed-Z）</td>
+</tr>
+<tr>
+<td>Vulkan</td>
+<td>[0, 1]</td>
+<td>取决于设置</td>
+</tr>
+</tbody></table>
+<p>Unity URP 中用 <code>UNITY_REVERSED_Z</code> 宏处理差异：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 读取深度值时必须考虑 Reversed-Z<br>float rawDepth = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_CameraDepthTexture, uv).r;<br><br>#if UNITY_REVERSED_Z<br>    // DX/Metal：深度 1=近，0=远，需要反转<br>    float linearDepth = Linear01Depth(1.0 - rawDepth, _ZBufferParams);<br>#else<br>    float linearDepth = Linear01Depth(rawDepth, _ZBufferParams);<br>#endif<br><br>// 更简单的方式：URP 提供的宏自动处理<br>float linearDepth = LinearEyeDepth(rawDepth, _ZBufferParams);<br></code></pre></td></tr></table></figure>
+
+<h2 id="陷阱二：平台-UV-差异（纹理翻转）"><a href="#陷阱二：平台-UV-差异（纹理翻转）" class="headerlink" title="陷阱二：平台 UV 差异（纹理翻转）"></a>陷阱二：平台 UV 差异（纹理翻转）</h2><h3 id="OpenGL-vs-DirectX-UV-原点"><a href="#OpenGL-vs-DirectX-UV-原点" class="headerlink" title="OpenGL vs DirectX UV 原点"></a>OpenGL vs DirectX UV 原点</h3><table>
+<thead>
+<tr>
+<th>平台</th>
+<th>UV 原点</th>
+<th>纹理 Y 轴方向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OpenGL &#x2F; OpenGL ES</td>
+<td>左下角</td>
+<td>向上</td>
+</tr>
+<tr>
+<td>DirectX &#x2F; Metal &#x2F; Vulkan</td>
+<td>左上角</td>
+<td>向下</td>
+</tr>
+</tbody></table>
+<p><strong>症状</strong>：在 Windows（DX11）上正常，在 Metal 或 Android（Vulkan）上图像垂直翻转。</p>
+<p><strong>解决方案</strong>：使用 <code>_MainTex_TexelSize.y &lt; 0</code> 检测翻转，或直接用 URP 提供的 <code>GetNormalizedScreenSpaceUV</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 屏幕空间 UV 的正确获取方式（自动处理平台差异）<br>float2 screenUV = GetNormalizedScreenSpaceUV(IN.positionHCS);<br><br>// 手动处理时（抓取纹理 GrabPass 等场景）：<br>#if UNITY_UV_STARTS_AT_TOP<br>    // DirectX/Metal：UV.y 需要翻转<br>    float2 flippedUV = float2(uv.x, 1.0 - uv.y);<br>#else<br>    float2 flippedUV = uv;<br>#endif<br></code></pre></td></tr></table></figure>
+
+<h3 id="Blit-操作的-UV-翻转"><a href="#Blit-操作的-UV-翻转" class="headerlink" title="Blit 操作的 UV 翻转"></a>Blit 操作的 UV 翻转</h3><p>使用 URP 的 <code>Blitter.BlitCameraTexture</code> 时，已自动处理平台差异。但如果使用旧版 <code>Graphics.Blit</code>，需要手动处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 后处理 Shader 中安全获取屏幕 UV<br>float2 uv = IN.uv;<br>#if !UNITY_UV_STARTS_AT_TOP<br>    uv.y = 1.0 - uv.y; // OpenGL 平台翻转<br>#endif<br></code></pre></td></tr></table></figure>
+
+<h2 id="陷阱三：颜色空间（最常见的颜色偏差问题）"><a href="#陷阱三：颜色空间（最常见的颜色偏差问题）" class="headerlink" title="陷阱三：颜色空间（最常见的颜色偏差问题）"></a>陷阱三：颜色空间（最常见的颜色偏差问题）</h2><h3 id="Linear-vs-Gamma-工作流"><a href="#Linear-vs-Gamma-工作流" class="headerlink" title="Linear vs Gamma 工作流"></a>Linear vs Gamma 工作流</h3><table>
+<thead>
+<tr>
+<th>设置</th>
+<th>含义</th>
+<th>推荐</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gamma 工作流</td>
+<td>贴图和渲染都在 Gamma 空间</td>
+<td>旧项目兼容</td>
+</tr>
+<tr>
+<td>Linear 工作流</td>
+<td>贴图 sRGB→Linear 解码，渲染在 Linear 空间，最终 Gamma 编码输出</td>
+<td>推荐（PBR 正确）</td>
+</tr>
+</tbody></table>
+<p>在 Linear 工作流中，<strong>标记为 sRGB 的纹理</strong>（如 Albedo）会在采样时自动做 Gamma→Linear 转换。但手动创建的 <code>RenderTexture</code> 默认不带 sRGB 标记。</p>
+<p><strong>症状</strong>：Shader 计算的颜色比预期亮或暗约 2.2 倍。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 错误：在 Linear 工作流中直接输出，没有考虑 Gamma 编码<br>// （URP 会自动处理最终输出的 Gamma 编码，不要手动 pow(color, 1/2.2)！）<br>return half4(color, 1.0); // 正确<br><br>// 错误写法（会导致颜色被 Gamma 编码两次）：<br>return half4(pow(color, 1.0/2.2), 1.0); // 不要这样做！<br></code></pre></td></tr></table></figure>
+
+<p><strong>sRGB 纹理在 Shader 中的正确处理</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 非颜色数据的纹理（法线贴图、Roughness 贴图、Mask 贴图）<br>// 在 Texture Inspector 中取消勾选 &quot;sRGB (Color Texture)&quot;<br>// 否则它们会被错误地进行 Gamma 校正，导致法线方向偏差<br><br>// 如果无法在 Import Settings 中修改，在 Shader 中手动转换：<br>half3 normalSample = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uv).rgb;<br>// 非颜色贴图不应有 sRGB 解码，如果误标记了，手动去除：<br>// normalSample = pow(normalSample, 2.2); // 不推荐，应在 Import Settings 修正<br></code></pre></td></tr></table></figure>
+
+<h3 id="常见颜色空间错误排查"><a href="#常见颜色空间错误排查" class="headerlink" title="常见颜色空间错误排查"></a>常见颜色空间错误排查</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 调试：输出颜色空间检测信息<br>half4 frag(Varyings IN) : SV_Target<br>&#123;<br>    // 输出一个已知颜色值，在 Scene View 中对比<br>    // 如果 Linear 工作流下输出 half3(0.5,0.5,0.5) 显示偏暗，说明 Gamma 工作流<br>    // 正确的 Linear 下 0.5 灰应该在屏幕上显示为约 186/255 的灰<br>    return half4(0.5, 0.5, 0.5, 1.0);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="陷阱四：精度问题（移动端常见闪烁）"><a href="#陷阱四：精度问题（移动端常见闪烁）" class="headerlink" title="陷阱四：精度问题（移动端常见闪烁）"></a>陷阱四：精度问题（移动端常见闪烁）</h2><h3 id="half-vs-float-的选择"><a href="#half-vs-float-的选择" class="headerlink" title="half vs float 的选择"></a>half vs float 的选择</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>精度</th>
+<th>性能</th>
+<th>适用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>float</code>（32位）</td>
+<td>±3.4×10³⁸，7位十进制</td>
+<td>基准</td>
+<td>位置、深度、矩阵变换</td>
+</tr>
+<tr>
+<td><code>half</code>（16位）</td>
+<td>±65504，约 3 位十进制</td>
+<td>移动端 2-4x 快</td>
+<td>颜色、法线、UV</td>
+</tr>
+<tr>
+<td><code>fixed</code>（已废弃）</td>
+<td>[-2, 2]</td>
+<td>-</td>
+<td>不要使用</td>
+</tr>
+</tbody></table>
+<p><strong>常见精度陷阱</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 错误：用 half 存储世界空间位置<br>// 大世界坐标（&gt;100）用 half 会损失精度，导致顶点抖动<br>half3 positionWS = TransformObjectToWorld(positionOS); // 不要用 half！<br><br>// 正确：位置用 float<br>float3 positionWS = TransformObjectToWorld(IN.positionOS.xyz);<br>// 颜色用 half<br>half3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).rgb;<br></code></pre></td></tr></table></figure>
+
+<p><strong>移动端高精度声明</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 在需要高精度的移动端 Shader 顶部添加<br>#pragma target 2.0          // 移动端最低目标<br><br>// 全局精度控制（Fragment Shader 顶部）<br>#ifdef SHADER_API_MOBILE<br>    #pragma fragmentoption ARB_precision_hint_fastest<br>#endif<br></code></pre></td></tr></table></figure>
+
+<h3 id="大世界坐标精度问题"><a href="#大世界坐标精度问题" class="headerlink" title="大世界坐标精度问题"></a>大世界坐标精度问题</h3><p>在大世界场景（World Space 坐标 &gt; 10000）中，<code>float</code> 精度不足导致顶点抖动（Vertex Jitter）。解决方案是使用 <strong>Camera-Relative Rendering</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// URP 2022+ 已内置 Camera-Relative Rendering<br>// Shader 中的 positionWS 实际上是相对摄像机的偏移，而非绝对世界坐标<br>// 使用 GetAbsolutePositionWS 获取真实世界坐标（需要 _WorldSpaceCameraPos）<br>float3 absoluteWS = GetAbsolutePositionWS(IN.positionWS);<br></code></pre></td></tr></table></figure>
+
+<h2 id="陷阱五：深度缓冲相关"><a href="#陷阱五：深度缓冲相关" class="headerlink" title="陷阱五：深度缓冲相关"></a>陷阱五：深度缓冲相关</h2><h3 id="Z-Fighting（深度冲突）"><a href="#Z-Fighting（深度冲突）" class="headerlink" title="Z-Fighting（深度冲突）"></a>Z-Fighting（深度冲突）</h3><p>两个平行的几何面（如贴花、地面标记）距离过近时，深度值抖动导致交替显示。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 解决方案 1：使用 Offset 命令让面稍微偏向相机<br>SubShader<br>&#123;<br>    Offset -1, -1  // 单位和因子偏移，减小深度值（移向相机）<br>    Pass &#123; ... &#125;<br>&#125;<br><br>// 解决方案 2：贴花使用 ZWrite Off + ZTest LEqual<br>ZWrite Off<br>ZTest LEqual<br></code></pre></td></tr></table></figure>
+
+<h3 id="深度测试模式选择"><a href="#深度测试模式选择" class="headerlink" title="深度测试模式选择"></a>深度测试模式选择</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 常用深度设置组合<br><br>// 不透明物体（默认）<br>ZWrite On<br>ZTest LEqual<br><br>// 透明物体（半透明）<br>ZWrite Off<br>ZTest LEqual<br>Blend SrcAlpha OneMinusSrcAlpha<br><br>// 贴花（Decal）<br>ZWrite Off<br>ZTest LEqual<br>Offset -1, -1<br><br>// UI/全屏后处理 Pass<br>ZWrite Off<br>ZTest Always<br>Cull Off<br></code></pre></td></tr></table></figure>
+
+<h3 id="UNITY-REVERSED-Z-的正确使用"><a href="#UNITY-REVERSED-Z-的正确使用" class="headerlink" title="UNITY_REVERSED_Z 的正确使用"></a><code>UNITY_REVERSED_Z</code> 的正确使用</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 手动重建世界坐标时（如 SSAO、屏幕空间反射）<br>float rawDepth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, uv).r;<br><br>// 方法一：使用 URP 提供的辅助函数（推荐）<br>float3 worldPos = ComputeWorldSpacePosition(uv, rawDepth, UNITY_MATRIX_I_VP);<br><br>// 方法二：手动处理（需要考虑 Reversed-Z）<br>#if defined(UNITY_REVERSED_Z)<br>    rawDepth = 1.0 - rawDepth;<br>#endif<br>float4 clipPos = float4(uv * 2.0 - 1.0, rawDepth * 2.0 - 1.0, 1.0);<br>float4 worldPos4 = mul(UNITY_MATRIX_I_VP, clipPos);<br>float3 worldPos = worldPos4.xyz / worldPos4.w;<br></code></pre></td></tr></table></figure>
+
+<h2 id="陷阱六：透明渲染顺序问题"><a href="#陷阱六：透明渲染顺序问题" class="headerlink" title="陷阱六：透明渲染顺序问题"></a>陷阱六：透明渲染顺序问题</h2><h3 id="渲染队列（Queue）"><a href="#渲染队列（Queue）" class="headerlink" title="渲染队列（Queue）"></a>渲染队列（Queue）</h3><p>Unity 按 Queue 值排序渲染，同一 Queue 内的透明物体按<strong>从远到近</strong>排序（CPU 排序，非 Per-pixel）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 常用 Queue 设置<br>Tags &#123; &quot;Queue&quot; = &quot;Background&quot; &#125;    // 1000，天空盒等<br>Tags &#123; &quot;Queue&quot; = &quot;Geometry&quot; &#125;      // 2000，不透明物体<br>Tags &#123; &quot;Queue&quot; = &quot;AlphaTest&quot; &#125;     // 2450，Alpha Test（Cutout）<br>Tags &#123; &quot;Queue&quot; = &quot;Transparent&quot; &#125;   // 3000，半透明物体<br>Tags &#123; &quot;Queue&quot; = &quot;Overlay&quot; &#125;       // 4000，UI、光效叠加<br><br>// 调整偏移（Decal 在地面不透明物体之后，半透明之前）<br>Tags &#123; &quot;Queue&quot; = &quot;Geometry+10&quot; &#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="Alpha-Test-vs-Alpha-Blend"><a href="#Alpha-Test-vs-Alpha-Blend" class="headerlink" title="Alpha Test vs Alpha Blend"></a>Alpha Test vs Alpha Blend</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// Alpha Test（Cutout）：不透明，可以写深度，支持阴影<br>// 在 Properties 中暴露 Cutoff 参数<br>CBUFFER_START(UnityPerMaterial)<br>    float _AlphaCutoff;<br>CBUFFER_END<br><br>half4 frag(Varyings IN) : SV_Target<br>&#123;<br>    half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);<br>    // clip 在 alpha &lt; cutoff 时丢弃片元（不渲染该像素）<br>    clip(col.a - _AlphaCutoff);<br>    return col;<br>&#125;<br><br>// Alpha Blend（半透明）：透明，不写深度，需要从后往前排序<br>// SubShader 设置：<br>// Blend SrcAlpha OneMinusSrcAlpha<br>// ZWrite Off<br></code></pre></td></tr></table></figure>
+
+<h3 id="双面半透明问题"><a href="#双面半透明问题" class="headerlink" title="双面半透明问题"></a>双面半透明问题</h3><p>半透明材质双面渲染需要<strong>两个 Pass</strong>（先渲背面，再渲正面），否则会出现自穿透问题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">SubShader<br>&#123;<br>    Tags &#123; &quot;RenderType&quot;=&quot;Transparent&quot; &quot;Queue&quot;=&quot;Transparent&quot; &#125;<br><br>    // Pass 1：只渲染背面（Cull Front）<br>    Pass<br>    &#123;<br>        Cull Front<br>        ZWrite Off<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        // ... 相同的 HLSL 代码 ...<br>    &#125;<br><br>    // Pass 2：只渲染正面（Cull Back，默认）<br>    Pass<br>    &#123;<br>        Cull Back<br>        ZWrite Off<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        // ... 相同的 HLSL 代码 ...<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="陷阱七：SRP-Batcher-兼容性"><a href="#陷阱七：SRP-Batcher-兼容性" class="headerlink" title="陷阱七：SRP Batcher 兼容性"></a>陷阱七：SRP Batcher 兼容性</h2><p>URP 的 SRP Batcher 可以大幅减少 DrawCall，但要求每个 Shader 的<strong>每个 Pass 中 <code>CBUFFER_START(UnityPerMaterial)</code> 块包含所有 <code>_</code> 前缀的 Properties</strong>。</p>
+<p><strong>常见错误</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 错误：Properties 中声明了 _MyFloat，但 CBUFFER 中遗漏<br>Properties &#123; _MainTex(&quot;Tex&quot;, 2D) = &quot;white&quot; &#123;&#125; _MyFloat(&quot;Float&quot;, Float) = 1.0 &#125;<br><br>CBUFFER_START(UnityPerMaterial)<br>    float4 _MainTex_ST;<br>    // 遗漏了 _MyFloat！→ SRP Batcher 降级为非批次，DrawCall 增加<br>CBUFFER_END<br><br>// 正确<br>CBUFFER_START(UnityPerMaterial)<br>    float4 _MainTex_ST;<br>    float  _MyFloat; // 必须包含所有 Properties 中的变量<br>CBUFFER_END<br></code></pre></td></tr></table></figure>
+
+<p>检查 SRP Batcher 兼容性：选中 Shader 文件，Inspector 中查看 SRP Batcher 状态；或者在 Frame Debugger 中查看批次合并情况。</p>
+<h2 id="陷阱八：关键字与变体爆炸"><a href="#陷阱八：关键字与变体爆炸" class="headerlink" title="陷阱八：关键字与变体爆炸"></a>陷阱八：关键字与变体爆炸</h2><p>大量 <code>#pragma multi_compile</code> 会导致 Shader 变体数量指数增长，增大包体大小和加载时间。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 不当使用（每个 multi_compile 让变体数×2）<br>#pragma multi_compile _ FEATURE_A<br>#pragma multi_compile _ FEATURE_B<br>#pragma multi_compile _ FEATURE_C<br>// 结果：2³ = 8 个变体<br><br>// 推荐：用 shader_feature 代替（只编译项目实际用到的变体）<br>#pragma shader_feature _ FEATURE_A<br>#pragma shader_feature _ FEATURE_B<br>// shader_feature 未使用的变体不会被打包<br></code></pre></td></tr></table></figure>
+
+<h2 id="调试工具"><a href="#调试工具" class="headerlink" title="调试工具"></a>调试工具</h2><h3 id="Frame-Debugger（帧调试器）"><a href="#Frame-Debugger（帧调试器）" class="headerlink" title="Frame Debugger（帧调试器）"></a>Frame Debugger（帧调试器）</h3><p>Window → Analysis → Frame Debugger，可以：</p>
+<ul>
+<li>逐 DrawCall 检查每一步渲染结果</li>
+<li>查看每个 Pass 的 Shader 变体、材质属性、渲染状态（ZWrite、Blend 等）</li>
+<li>识别 SRP Batcher 批次合并失败的原因</li>
+</ul>
+<h3 id="URP-Rendering-Debugger（URP-2022-）"><a href="#URP-Rendering-Debugger（URP-2022-）" class="headerlink" title="URP Rendering Debugger（URP 2022+）"></a>URP Rendering Debugger（URP 2022+）</h3><p>Window → Analysis → Rendering Debugger（或运行时按 Ctrl+Backspace），可以：</p>
+<ul>
+<li>单独查看 Albedo、法线、深度、Roughness、Metallic 等 G-Buffer</li>
+<li>可视化 Shadow Map、Light Map、Reflection Probe</li>
+<li>过度绘制（Overdraw）可视化——找到透明物体性能瓶颈</li>
+</ul>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 代码切换调试模式（运行时调试用）</span><br><span class="hljs-keyword">using</span> UnityEngine.Rendering.Universal;<br><span class="hljs-keyword">var</span> debugger = DebugManager.instance;<br>debugger.enableRuntimeUI = <span class="hljs-literal">true</span>;<br></code></pre></td></tr></table></figure>
+
+<h3 id="RenderDoc-集成"><a href="#RenderDoc-集成" class="headerlink" title="RenderDoc 集成"></a>RenderDoc 集成</h3><p>对于需要深入分析的问题（着色器像素级调试、纹理格式验证），使用 RenderDoc：</p>
+<ol>
+<li>在 RenderDoc 中启动 Unity Editor（不是直接运行 Unity）</li>
+<li>或者在 Unity 中通过 Window → Analysis → RenderDoc 捕获帧</li>
+<li>在 RenderDoc 的 Texture Viewer 中验证 RT 格式是否符合预期</li>
+<li>在 Shader Viewer 中查看实际执行的 HLSL 反汇编</li>
+</ol>
+<h2 id="常见错误快速对照表"><a href="#常见错误快速对照表" class="headerlink" title="常见错误快速对照表"></a>常见错误快速对照表</h2><table>
+<thead>
+<tr>
+<th>症状</th>
+<th>可能原因</th>
+<th>检查点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>颜色偏亮约 2.2 倍</td>
+<td>颜色空间混用</td>
+<td>检查 sRGB Texture 标记、工作流设置</td>
+</tr>
+<tr>
+<td>移动端法线贴图方向相反</td>
+<td>Y 轴翻转</td>
+<td>法线贴图 Import → Flip Green Channel</td>
+</tr>
+<tr>
+<td>深度排序错乱</td>
+<td>Queue 设置或 ZWrite</td>
+<td>检查 Queue 值和 ZWrite Off&#x2F;On</td>
+</tr>
+<tr>
+<td>大场景顶点抖动</td>
+<td>float 精度不足</td>
+<td>启用 Camera-Relative Rendering</td>
+</tr>
+<tr>
+<td>某些平台纹理翻转</td>
+<td>UV 原点差异</td>
+<td>使用 <code>UNITY_UV_STARTS_AT_TOP</code> 宏</td>
+</tr>
+<tr>
+<td>阴影不显示</td>
+<td>缺少 ShadowCaster Pass</td>
+<td>添加 <code>UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;</code></td>
+</tr>
+<tr>
+<td>SRP Batcher 不生效</td>
+<td>CBUFFER 不完整</td>
+<td>确保 <code>CBUFFER_START(UnityPerMaterial)</code> 包含所有 Properties</td>
+</tr>
+<tr>
+<td>透明物体互相穿插</td>
+<td>渲染顺序问题</td>
+<td>使用 <code>ZTest Always</code> 或分离 Pass</td>
+</tr>
+<tr>
+<td>移动端画面闪烁</td>
+<td>half 精度不足</td>
+<td>位置&#x2F;矩阵改用 float</td>
+</tr>
+<tr>
+<td>编译失败（无错误信息）</td>
+<td>Shader 变体溢出</td>
+<td>减少 multi_compile 数量</td>
+</tr>
+</tbody></table>
+<h2 id="代码修复对比示例"><a href="#代码修复对比示例" class="headerlink" title="代码修复对比示例"></a>代码修复对比示例</h2><h3 id="修复：深度读取（Reversed-Z-问题）"><a href="#修复：深度读取（Reversed-Z-问题）" class="headerlink" title="修复：深度读取（Reversed-Z 问题）"></a>修复：深度读取（Reversed-Z 问题）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 错误：未考虑 Reversed-Z，在 DX11 上深度值全部接近 1（远处）<br>float depth = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_CameraDepthTexture, uv).r;<br>float linearDepth = Linear01Depth(depth, _ZBufferParams);<br>// 在 Metal/DX11 上：linearDepth 在近处为 0，远处为 1（反了！）<br><br>// 正确：使用 URP 的 LinearEyeDepth 自动处理<br>float depth = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_CameraDepthTexture, uv).r;<br>float eyeDepth = LinearEyeDepth(depth, _ZBufferParams); // 单位：米，从摄像机到片元的距离<br></code></pre></td></tr></table></figure>
+
+<h3 id="修复：颜色空间（Linear-工作流中的程序颜色）"><a href="#修复：颜色空间（Linear-工作流中的程序颜色）" class="headerlink" title="修复：颜色空间（Linear 工作流中的程序颜色）"></a>修复：颜色空间（Linear 工作流中的程序颜色）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 错误：直接使用美术给的 Gamma 空间颜色值做光照计算<br>float3 ambientColor = float3(0.5, 0.3, 0.1); // 这个值在 Gamma 空间！<br><br>// 正确：在 Linear 工作流中，程序颜色需要转换<br>// 方法 1：直接在 Inspector 中用 Color 属性（Unity 自动处理 sRGB 转换）<br>// 方法 2：手动 Gamma→Linear<br>float3 ambientColor = pow(float3(0.5, 0.3, 0.1), 2.2);<br><br>// 最佳实践：将颜色暴露为 Properties，让 Unity 的 Color Picker 自动处理<br>CBUFFER_START(UnityPerMaterial)<br>    half4 _AmbientColor; // 在 Inspector 中设置，自动正确的颜色空间<br>CBUFFER_END<br></code></pre></td></tr></table></figure>
+
+<p>系统掌握这些陷阱，能让你在面对平台差异问题时快速定位根因，而不是漫无目的地调参数。调试 Shader 的核心方法论永远是：<strong>输出中间值为颜色，逐步缩小问题范围</strong>——Frame Debugger 和 Rendering Debugger 是你最好的朋友。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E6%80%A7%E8%83%BD%E4%B8%8E%E8%B0%83%E8%AF%95/" class="category-chain-item">性能与调试</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E8%B0%83%E8%AF%95/" class="print-no-link">#调试</a>
+      
+        <a href="/tags/%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF/" class="print-no-link">#常见错误</a>
+      
+        <a href="/tags/%E5%B9%B3%E5%8F%B0%E5%85%BC%E5%AE%B9%E6%80%A7/" class="print-no-link">#平台兼容性</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南</div>
+      <div>https://alex-rachel.github.io/2026/04/01/35-webgl-pitfalls/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/36-sound-synthesis/" title="Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/34-simulation-physics/" title="Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群">
+                        <span class="hidden-mobile">Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '571be40e6174596177e17abed53b5a8c'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

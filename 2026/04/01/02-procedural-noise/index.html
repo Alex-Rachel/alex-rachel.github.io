@@ -1,0 +1,957 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="为什么 Unity 开发者需要掌握噪声 Shader？Unity 提供了两个常见的噪声方案：CPU 端的 Mathf.PerlinNoise() 和 VFX Graph 中的内置噪声节点。但在以下场景中，手写 HLSL 噪声 Shader 是不可替代的：  URP 特效 Shader：粒子火焰、烟雾、传送门涟漪——这些效果需要在 Fragment Shader 中实时运算噪声驱动 UV 扰动 程序">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（二）：URP 程序化噪声 — FBM 火焰特效与程序化材质">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/02-procedural-noise/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="为什么 Unity 开发者需要掌握噪声 Shader？Unity 提供了两个常见的噪声方案：CPU 端的 Mathf.PerlinNoise() 和 VFX Graph 中的内置噪声节点。但在以下场景中，手写 HLSL 噪声 Shader 是不可替代的：  URP 特效 Shader：粒子火焰、烟雾、传送门涟漪——这些效果需要在 Fragment Shader 中实时运算噪声驱动 UV 扰动 程序">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T01:10:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.718Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="程序化噪声">
+<meta property="article:tag" content="FBM">
+<meta property="article:tag" content="特效Shader">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（二）：URP 程序化噪声 — FBM 火焰特效与程序化材质 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（二）：URP 程序化噪声 — FBM 火焰特效与程序化材质"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 09:10" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.1k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          68 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（二）：URP 程序化噪声 — FBM 火焰特效与程序化材质</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="为什么-Unity-开发者需要掌握噪声-Shader？"><a href="#为什么-Unity-开发者需要掌握噪声-Shader？" class="headerlink" title="为什么 Unity 开发者需要掌握噪声 Shader？"></a>为什么 Unity 开发者需要掌握噪声 Shader？</h2><p>Unity 提供了两个常见的噪声方案：CPU 端的 <code>Mathf.PerlinNoise()</code> 和 VFX Graph 中的内置噪声节点。但在以下场景中，手写 HLSL 噪声 Shader 是不可替代的：</p>
+<ol>
+<li><strong>URP 特效 Shader</strong>：粒子火焰、烟雾、传送门涟漪——这些效果需要在 Fragment Shader 中实时运算噪声驱动 UV 扰动</li>
+<li><strong>程序化地形材质</strong>：根据高度和坡度自动混合草地&#x2F;岩石&#x2F;雪地纹理，噪声控制混合边界</li>
+<li><strong>程序化天空盒</strong>：不依赖贴图的动态云层、星空材质</li>
+</ol>
+<p><strong>CPU 噪声 vs GPU 噪声的选择标准：</strong></p>
+<ul>
+<li><code>Mathf.PerlinNoise()</code>：适合每帧只调用几次（地形生成、程序化布局）</li>
+<li>采样噪声贴图（<code>SAMPLE_TEXTURE2D</code>）：适合需要快速 GPU 读取但不需要数学精确性的场景</li>
+<li>手写 HLSL 噪声：适合需要无限平铺、参数化控制、无额外贴图内存的特效 Shader</li>
+</ul>
+<p><strong>性能对比（移动端 Mali-G57 测试数据）：</strong></p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>每片元开销</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>采样噪声贴图</td>
+<td>~0.8ns</td>
+<td>高性能要求场景</td>
+</tr>
+<tr>
+<td>Value Noise（4 层 FBM）</td>
+<td>~2.1ns</td>
+<td>PC&#x2F;主机特效</td>
+</tr>
+<tr>
+<td>Simplex Noise（4 层）</td>
+<td>~3.5ns</td>
+<td>不推荐移动端</td>
+</tr>
+</tbody></table>
+<h2 id="Hash-函数：HLSL-版本"><a href="#Hash-函数：HLSL-版本" class="headerlink" title="Hash 函数：HLSL 版本"></a>Hash 函数：HLSL 版本</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 无 sin 版本的 Hash（跨平台精度稳定）<br>float hash12(float2 p)<br>&#123;<br>    float3 p3 = frac(float3(p.xyx) * 0.1031);<br>    p3 += dot(p3, p3.yzx + 33.33);<br>    return frac((p3.x + p3.y) * p3.z);<br>&#125;<br><br>// 返回 float2 的 hash（用于梯度噪声）<br>float2 hash22(float2 p)<br>&#123;<br>    float3 p3 = frac(float3(p.xyx) * float3(0.1031, 0.1030, 0.0973));<br>    p3 += dot(p3, p3.yzx + 33.33);<br>    return frac((p3.xx + p3.yz) * p3.zy);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Value-Noise-与-FBM（HLSL-实现）"><a href="#Value-Noise-与-FBM（HLSL-实现）" class="headerlink" title="Value Noise 与 FBM（HLSL 实现）"></a>Value Noise 与 FBM（HLSL 实现）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// Value Noise：格点插值（Hermite 平滑）<br>float valueNoise(float2 x)<br>&#123;<br>    float2 p = floor(x);<br>    float2 f = frac(x);<br>    // Hermite 平滑 S 曲线（C1 连续）<br>    f = f * f * (3.0 - 2.0 * f);<br><br>    float a = hash12(p + float2(0.0, 0.0));<br>    float b = hash12(p + float2(1.0, 0.0));<br>    float c = hash12(p + float2(0.0, 1.0));<br>    float d = hash12(p + float2(1.0, 1.0));<br>    // 双线性插值<br>    return lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);<br>&#125;<br><br>// FBM（分形布朗运动）<br>// 旋转矩阵消除轴对齐伪影<br>static const float2x2 fbmRot = float2x2(1.6, 1.2, -1.2, 1.6);<br><br>float fbm(float2 p, int octaves)<br>&#123;<br>    float value = 0.0;<br>    float amplitude = 0.5;<br>    for (int i = 0; i &lt; octaves; i++)<br>    &#123;<br>        value += amplitude * (-1.0 + 2.0 * valueNoise(p));<br>        // 旋转 + 缩放（注意 HLSL 的 mul 矩阵乘法顺序）<br>        p = mul(fbmRot, p);<br>        amplitude *= 0.5;<br>    &#125;<br>    return value;<br>&#125;<br><br>// Ridged FBM（产生尖锐山脊，适合闪电、岩石纹理）<br>float fbmRidged(float2 p, int octaves)<br>&#123;<br>    float value = 0.0;<br>    float amplitude = 0.5;<br>    for (int i = 0; i &lt; octaves; i++)<br>    &#123;<br>        // abs() 将平滑波谷变为尖锐山脊<br>        value += amplitude * abs(-1.0 + 2.0 * valueNoise(p));<br>        p = mul(fbmRot, p);<br>        amplitude *= 0.5;<br>    &#125;<br>    return value;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例：URP-火焰粒子特效-Shader"><a href="#完整示例：URP-火焰粒子特效-Shader" class="headerlink" title="完整示例：URP 火焰粒子特效 Shader"></a>完整示例：URP 火焰粒子特效 Shader</h2><p>这个 Shader 适用于粒子系统的材质，实现 FBM 驱动的 UV 扰动火焰效果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/FireEffect&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        // 火焰基础颜色（从底部到顶部的渐变）<br>        _ColorBottom (&quot;Flame Color Bottom&quot;, Color) = (1.0, 0.3, 0.0, 1.0)<br>        _ColorMiddle (&quot;Flame Color Middle&quot;, Color) = (1.0, 0.8, 0.1, 1.0)<br>        _ColorTop    (&quot;Flame Color Top&quot;,    Color) = (0.8, 0.9, 1.0, 0.0)<br>        // FBM 参数<br>        _NoiseScale  (&quot;Noise Scale&quot;,  Range(1.0, 10.0)) = 3.0<br>        _NoiseSpeed  (&quot;Noise Speed&quot;,  Range(0.0, 5.0))  = 1.5<br>        _NoiseStrength (&quot;Distortion Strength&quot;, Range(0.0, 1.0)) = 0.3<br>        // 火焰形状（底部宽，顶部收窄）<br>        _ShapeSharpness (&quot;Shape Sharpness&quot;, Range(1.0, 8.0)) = 3.0<br>        // 粒子软裁剪（配合 URP Depth Texture）<br>        _SoftParticleRange (&quot;Soft Particle Range&quot;, Range(0.1, 5.0)) = 1.0<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;Queue&quot; = &quot;Transparent&quot;<br>            &quot;RenderType&quot; = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>            &quot;IgnoreProjector&quot; = &quot;True&quot;<br>        &#125;<br><br>        Blend SrcAlpha One        // 加法混合（适合火焰发光）<br>        ZWrite Off<br>        Cull Off<br><br>        Pass<br>        &#123;<br>            Name &quot;FireForward&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            // 粒子软裁剪需要深度纹理<br>            #pragma multi_compile _ SOFTPARTICLES_ON<br>            #pragma multi_compile_fog<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl&quot;<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _ColorBottom;<br>                float4 _ColorMiddle;<br>                float4 _ColorTop;<br>                float  _NoiseScale;<br>                float  _NoiseSpeed;<br>                float  _NoiseStrength;<br>                float  _ShapeSharpness;<br>                float  _SoftParticleRange;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float2 uv         : TEXCOORD0;<br>                float4 color      : COLOR;       // 粒子系统颜色/透明度<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>                float4 color       : COLOR;<br>                // 软粒子需要屏幕坐标<br>                float4 screenPos   : TEXCOORD1;<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            // ======== 噪声函数 ========<br><br>            float hash12(float2 p)<br>            &#123;<br>                float3 p3 = frac(float3(p.xyx) * 0.1031);<br>                p3 += dot(p3, p3.yzx + 33.33);<br>                return frac((p3.x + p3.y) * p3.z);<br>            &#125;<br><br>            float valueNoise(float2 x)<br>            &#123;<br>                float2 p = floor(x);<br>                float2 f = frac(x);<br>                f = f * f * (3.0 - 2.0 * f);<br>                float a = hash12(p + float2(0, 0));<br>                float b = hash12(p + float2(1, 0));<br>                float c = hash12(p + float2(0, 1));<br>                float d = hash12(p + float2(1, 1));<br>                return lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);<br>            &#125;<br><br>            static const float2x2 fbmRot = float2x2(1.6, 1.2, -1.2, 1.6);<br><br>            // 2D FBM（4 层，适合移动端性能）<br>            float fbm4(float2 p)<br>            &#123;<br>                float v = 0.0, a = 0.5;<br>                [unroll] // 固定循环次数时展开<br>                for (int i = 0; i &lt; 4; i++)<br>                &#123;<br>                    v += a * valueNoise(p);<br>                    p = mul(fbmRot, p);<br>                    a *= 0.5;<br>                &#125;<br>                return v;<br>            &#125;<br><br>            // ======== 颜色梯度（三色渐变） ========<br>            float3 flameGradient(float t, float3 bot, float3 mid, float3 top)<br>            &#123;<br>                // t: 0 = 底部，1 = 顶部<br>                float3 lower = lerp(bot, mid, saturate(t * 2.0));<br>                float3 upper = lerp(mid, top, saturate(t * 2.0 - 1.0));<br>                return lerp(lower, upper, step(0.5, t));<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = IN.uv;<br>                OUT.color = IN.color;<br>                // 计算屏幕坐标（软粒子使用）<br>                OUT.screenPos = ComputeScreenPos(OUT.positionHCS);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br>                float time = _Time.y * _NoiseSpeed; // Unity 内置时间变量<br><br>                // === 第一步：UV 扰动（FBM 域扭曲）===<br>                // 使用两层 FBM 进行 UV 扰动，模拟火焰的湍流<br>                float2 distortUV = uv * _NoiseScale + float2(0.0, -time); // 向上流动<br>                float distortX = fbm4(distortUV + float2(1.7, 9.2)) - 0.5;<br>                float distortY = fbm4(distortUV + float2(8.3, 2.8)) - 0.5;<br>                float2 distortedUV = uv + float2(distortX, distortY) * _NoiseStrength;<br><br>                // === 第二步：火焰形状遮罩 ===<br>                // 从底部（宽）到顶部（窄）的形状，用 UV.y 控制宽度<br>                float distFromCenter = abs(distortedUV.x - 0.5) * 2.0; // [0,1]<br>                float shapeWidth = 1.0 - pow(uv.y, 1.0 / _ShapeSharpness);<br>                float shapeMask = saturate(1.0 - distFromCenter / max(shapeWidth, 0.001));<br><br>                // === 第三步：FBM 密度场 ===<br>                // 主火焰密度（沿 Y 轴向上流动的 FBM）<br>                float density = fbm4(distortedUV * _NoiseScale + float2(0.0, -time * 1.2));<br>                density = saturate(density * 2.0 - 0.3); // 增加对比度，消除低密度底噪<br><br>                // === 第四步：顶部衰减 ===<br>                // 越靠近顶部越透明（fire tip）<br>                float topFade = 1.0 - smoothstep(0.5, 1.0, uv.y);<br>                float finalAlpha = density * shapeMask * topFade;<br><br>                // === 第五步：颜色计算 ===<br>                // 用 uv.y 和密度混合三色梯度<br>                float colorT = uv.y + (1.0 - density) * 0.3;<br>                float3 flameColor = flameGradient(<br>                    colorT,<br>                    _ColorBottom.rgb,<br>                    _ColorMiddle.rgb,<br>                    _ColorTop.rgb<br>                );<br><br>                // === 第六步：软粒子（可选） ===<br>                #if defined(SOFTPARTICLES_ON)<br>                    // 比较粒子深度与场景深度，避免粒子切割地面<br>                    float sceneDepth = LinearEyeDepth(<br>                        SampleSceneDepth(IN.screenPos.xy / IN.screenPos.w),<br>                        _ZBufferParams<br>                    );<br>                    float particleDepth = IN.screenPos.w;<br>                    float softFactor = saturate((sceneDepth - particleDepth) / _SoftParticleRange);<br>                    finalAlpha *= softFactor;<br>                #endif<br><br>                // 粒子系统传入的颜色/透明度（用于粒子生命周期控制）<br>                finalAlpha *= IN.color.a;<br>                flameColor *= IN.color.rgb;<br><br>                return half4(flameColor, finalAlpha);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="VFX-Graph-vs-手写-Shader：选择依据"><a href="#VFX-Graph-vs-手写-Shader：选择依据" class="headerlink" title="VFX Graph vs 手写 Shader：选择依据"></a>VFX Graph vs 手写 Shader：选择依据</h2><p>Unity VFX Graph 也内置了噪声节点（Perlin、Voronoi、Cellular），适合以下场景：</p>
+<ul>
+<li><strong>粒子行为控制</strong>：噪声驱动粒子的速度、大小、颜色（CPU&#x2F;GPU 计算粒子属性）</li>
+<li><strong>快速原型</strong>：可视化节点连接，无需写代码</li>
+</ul>
+<p>手写 Shader 更适合：</p>
+<ul>
+<li><strong>Fragment Shader 内部的 UV 扰动</strong>：像上面的火焰 Shader，每个片元都需要独立的噪声计算</li>
+<li><strong>需要精确的 FBM 参数控制</strong>：层数、频率倍增、旋转矩阵等</li>
+<li><strong>需要噪声用于形状 SDF 的有机边缘扰动</strong>：<code>d += fbm(p * 5.0) * 0.05</code></li>
+</ul>
+<h2 id="ShaderGraph-实现思路"><a href="#ShaderGraph-实现思路" class="headerlink" title="ShaderGraph 实现思路"></a>ShaderGraph 实现思路</h2><p>在 ShaderGraph 中实现同样的火焰效果：</p>
+<ol>
+<li><strong>时间驱动 UV</strong>：<code>Time</code> 节点 × <code>_NoiseSpeed</code> → <code>Add</code> 到 UV 的 Y 分量（向上流动）</li>
+<li><strong>UV 扰动</strong>：两个 <code>Simple Noise</code> 节点（不同偏移）→ <code>Subtract(0.5)</code> → 加到原始 UV</li>
+<li><strong>形状遮罩</strong>：<code>UV</code> 的 X 分量 → <code>Distance to 0.5</code> → 用 Y 分量控制宽度阈值 → <code>Smoothstep</code></li>
+<li><strong>密度</strong>：扰动后的 UV → <code>Simple Noise</code> → <code>Remap</code> 调整对比度</li>
+<li><strong>颜色梯度</strong>：<code>Gradient</code> 节点（三色预设）→ 用 <code>UV.y + density偏移</code> 采样</li>
+<li><strong>Alpha 输出</strong>：密度 × 形状遮罩 × 顶部衰减（<code>1 - Smoothstep</code>）</li>
+</ol>
+<p>注意：ShaderGraph 的 <code>Simple Noise</code> 是 Value Noise，<code>Gradient Noise</code> 是 Perlin Noise，性能相近。</p>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><p><strong>移动端（OpenGL ES 3.0）优化策略：</strong></p>
+<ul>
+<li>FBM 层数降到 2-3 层（性能最关键的调整）</li>
+<li>用 <code>half</code> 替代 <code>float</code>：<code>half2 distortUV</code>、<code>half density</code> 等</li>
+<li>禁用软粒子功能（<code>#pragma shader_feature SOFTPARTICLES_ON</code>）</li>
+<li>把 <code>fbmRot</code> 矩阵乘法改为简单的 <code>p *= 2.0</code>（移除旋转，略有伪影但更快）</li>
+</ul>
+<p><strong>PC（DX11）扩展功能：</strong></p>
+<ul>
+<li>FBM 6-8 层，加入 Ridged FBM 做火焰边缘焦灼效果</li>
+<li>添加域扭曲（Double domain warping）产生更真实的湍流</li>
+<li>对屏幕空间阴影采样，让火焰参与场景光照</li>
+</ul>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><ol>
+<li><p>**HLSL 没有 <code>fract()</code>**：必须用 <code>frac()</code>；没有 <code>mod()</code>：用 <code>fmod()</code>（注意负数行为不同）</p>
+</li>
+<li><p><strong><code>float2x2</code> 乘法顺序</strong>：HLSL 中 <code>mul(matrix, vector)</code> 是行向量×矩阵，如果移植 GLSL 的 <code>mat * vec</code> 需要转置或改写为 <code>mul(vector, matrix)</code></p>
+</li>
+<li><p><strong>粒子软裁剪需要 URP Depth Prepass</strong>：确保 URP Asset 的 <code>Depth Texture</code> 选项已开启，否则 <code>SampleSceneDepth</code> 会采样到全白纹理</p>
+</li>
+<li><p>**<code>_Time.y</code> vs <code>Time.time</code>**：Shader 中用 <code>_Time.y</code>（Unity 内置 ShaderLab 变量，等价于 <code>Time.time</code>），不要尝试把 C# 的 <code>Time.time</code> 传入——<code>_Time.y</code> 已经自动注入到所有 Shader</p>
+</li>
+<li><p><strong>Gamma&#x2F;Linear 工作流</strong>：如果项目使用 Linear 色彩空间（推荐），<code>_ColorBottom</code> 等颜色属性会被 Unity 自动从 sRGB 转换为线性空间传入 Shader，颜色计算正确；如果项目是 Gamma 空间，手动调整颜色会有偏差</p>
+</li>
+</ol>
+<p>下一篇文章将深入讲解 Unity 矩阵变换体系，掌握 <code>UNITY_MATRIX_M/V/P</code> 的含义，以及如何写正确的顶点动画 Shader。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E7%A8%8B%E5%BA%8F%E5%8C%96%E4%B8%8E%E5%99%AA%E5%A3%B0/" class="category-chain-item">程序化与噪声</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E5%99%AA%E5%A3%B0/" class="print-no-link">#程序化噪声</a>
+      
+        <a href="/tags/FBM/" class="print-no-link">#FBM</a>
+      
+        <a href="/tags/%E7%89%B9%E6%95%88Shader/" class="print-no-link">#特效Shader</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（二）：URP 程序化噪声 — FBM 火焰特效与程序化材质</div>
+      <div>https://alex-rachel.github.io/2026/04/01/02-procedural-noise/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/03-matrix-transform/" title="Unity Shader 系列（三）：URP 矩阵变换体系 — 坐标空间与顶点动画">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三）：URP 矩阵变换体系 — 坐标空间与顶点动画</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/01-sdf-2d-basics/" title="Unity Shader 系列（一）：URP 中的 2D SDF — 圆角 UI、血条与技能遮罩">
+                        <span class="hidden-mobile">Unity Shader 系列（一）：URP 中的 2D SDF — 圆角 UI、血条与技能遮罩</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '46b0911e81ba2183148d98d9a95a8b15'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

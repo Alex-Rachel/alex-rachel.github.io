@@ -1,0 +1,997 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="Shader Craft - 我的 GLSL Shader 学习笔记 🎨最近在整理一个 GLSL Shader 的学习技能库，涵盖了 36 种核心技术。这些内容主要面向 Unity HDRP&#x2F;URP 环境，虽然示例代码是 GLSL 风格，但核心概念和数学原理是相通的，稍作适配即可在 Unity 中使用。 仓库地址🔗 Alex-Rachel&#x2F;skills - shader-d">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Shader Craft - 我的 GLSL Shader 学习笔记">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/02/shader-dev-intro/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="Shader Craft - 我的 GLSL Shader 学习笔记 🎨最近在整理一个 GLSL Shader 的学习技能库，涵盖了 36 种核心技术。这些内容主要面向 Unity HDRP&#x2F;URP 环境，虽然示例代码是 GLSL 风格，但核心概念和数学原理是相通的，稍作适配即可在 Unity 中使用。 仓库地址🔗 Alex-Rachel&#x2F;skills - shader-d">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-02T08:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.724Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="Unity">
+<meta property="article:tag" content="Shader">
+<meta property="article:tag" content="GLSL">
+<meta property="article:tag" content="学习笔记">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Shader Craft - 我的 GLSL Shader 学习笔记 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Shader Craft - 我的 GLSL Shader 学习笔记"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-02 16:30" pubdate>
+          2026年4月2日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.7k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          23 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Shader Craft - 我的 GLSL Shader 学习笔记</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="Shader-Craft-我的-GLSL-Shader-学习笔记-🎨"><a href="#Shader-Craft-我的-GLSL-Shader-学习笔记-🎨" class="headerlink" title="Shader Craft - 我的 GLSL Shader 学习笔记 🎨"></a>Shader Craft - 我的 GLSL Shader 学习笔记 🎨</h1><p>最近在整理一个 GLSL Shader 的学习技能库，涵盖了 36 种核心技术。这些内容主要面向 <strong>Unity HDRP&#x2F;URP</strong> 环境，虽然示例代码是 GLSL 风格，但核心概念和数学原理是相通的，稍作适配即可在 Unity 中使用。</p>
+<h2 id="仓库地址"><a href="#仓库地址" class="headerlink" title="仓库地址"></a>仓库地址</h2><p>🔗 <a target="_blank" rel="noopener" href="https://github.com/Alex-Rachel/skills/tree/main/skills/shader-dev">Alex-Rachel&#x2F;skills - shader-dev</a></p>
+<h2 id="为什么学-GLSL-Shader"><a href="#为什么学-GLSL-Shader" class="headerlink" title="为什么学 GLSL Shader"></a>为什么学 GLSL Shader</h2><p>学习 GLSL Shader 对于 Unity Shader 开发非常有帮助：</p>
+<ol>
+<li><strong>概念相通</strong> - Unity 的 ShaderLab 背后的 HLSL&#x2F;CG 语法与 GLSL 非常相似</li>
+<li><strong>实时预览</strong> - ShaderToy 可以快速验证想法，调试方便</li>
+<li><strong>资料丰富</strong> - GLSL 社区有大量优秀的 shader 案例可以学习</li>
+<li><strong>数学基础</strong> - 射线追踪、SDF、光照模型等核心概念在任何 Shader 环境都适用</li>
+</ol>
+<h2 id="技术分类笔记"><a href="#技术分类笔记" class="headerlink" title="技术分类笔记"></a>技术分类笔记</h2><h3 id="🏗️-几何与距离函数-SDF"><a href="#🏗️-几何与距离函数-SDF" class="headerlink" title="🏗️ 几何与距离函数 (SDF)"></a>🏗️ 几何与距离函数 (SDF)</h3><p><strong>SDF (Signed Distance Functions)</strong> 是非常重要的概念：</p>
+<ul>
+<li><strong>sdf-2d</strong> - 2D 距离函数，理解圆形、矩形等基本形状的数学定义</li>
+<li><strong>sdf-3d</strong> - 3D 距离函数，是 Ray Marching 的基础</li>
+<li><strong>csg-boolean-operations</strong> - 用数学方式实现模型的并集、差集、交集</li>
+<li><strong>domain-repetition</strong> - 无限重复，用于创建规律的物体排列</li>
+<li><strong>domain-warping</strong> - 用噪声扭曲形状，创建有机的效果</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Unity 应用</strong>：在 Unity 中可以用 SDF 做体积渲染、海龟汤（Turtle）图形等</p>
+</blockquote>
+<h3 id="🔦-光线追踪与光照"><a href="#🔦-光线追踪与光照" class="headerlink" title="🔦 光线追踪与光照"></a>🔦 光线追踪与光照</h3><p><strong>Ray Marching</strong> 是用数学方式”画”出 3D 场景的核心算法：</p>
+<ul>
+<li><strong>ray-marching</strong> - 球追踪，理解光线如何在场景中前进</li>
+<li><strong>analytic-ray-tracing</strong> - 解析方式计算光线与几何体的精确相交</li>
+<li><strong>lighting-model</strong> - 必学！Phong、Blinn-Phong、PBR (Cook-Torrance) 光照模型</li>
+<li><strong>shadow-techniques</strong> - 硬阴影、软阴影（半影）的实现</li>
+<li><strong>ambient-occlusion</strong> - 环境光遮蔽，让物体接触处更自然</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Unity 应用</strong>：在 Unity Shader 中实现自定义光照、PBR 材质、地形阴影等</p>
+</blockquote>
+<h3 id="🌊-模拟与物理"><a href="#🌊-模拟与物理" class="headerlink" title="🌊 模拟与物理"></a>🌊 模拟与物理</h3><ul>
+<li><strong>fluid-simulation</strong> - Navier-Stokes 流体模拟的核心原理</li>
+<li><strong>simulation-physics</strong> - GPU 并行计算在物理模拟中的应用</li>
+<li><strong>particle-system</strong> - 粒子系统的数学模型（火、雨、爆炸效果）</li>
+<li><strong>cellular-automata</strong> - 细胞自动机，生命游戏、反应扩散系统</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Unity 应用</strong>：自定义粒子系统、特效 Shader、GPU Instancing</p>
+</blockquote>
+<h3 id="🌍-自然现象"><a href="#🌍-自然现象" class="headerlink" title="🌍 自然现象"></a>🌍 自然现象</h3><ul>
+<li><strong>water-ocean</strong> - Gerstner 波、FFT 海洋模拟</li>
+<li><strong>terrain-rendering</strong> - FBM 地形生成，理解噪声在程序化地形中的应用</li>
+<li><strong>atmospheric-scattering</strong> - Rayleigh&#x2F;Mie 散射，天空颜色、大气效果</li>
+<li><strong>volumetric-rendering</strong> - 体积渲染，云、雾、火焰</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Unity 应用</strong>：实现水体 Shader、程序化地形、天空盒</p>
+</blockquote>
+<h3 id="🎲-程序化生成"><a href="#🎲-程序化生成" class="headerlink" title="🎲 程序化生成"></a>🎲 程序化生成</h3><p><strong>程序化生成</strong>是创建无限内容的关键：</p>
+<ul>
+<li><strong>procedural-noise</strong> - Value Noise、Perlin、Simplex、Worley、FBM，图形学最核心的数学工具</li>
+<li><strong>procedural-2d-pattern</strong> - 砖块、六边形、伊斯兰花纹等规律图案</li>
+<li><strong>voronoi-cellular-noise</strong> - Voronoi 图，用于裂纹、细胞、宝石等效果</li>
+<li><strong>fractal-rendering</strong> - 分形，Mandelbrot、Julia、Mandelbulb</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Unity 应用</strong>：程序化纹理、地形侵蚀效果、装饰性图案</p>
+</blockquote>
+<h3 id="✨-后处理与效果"><a href="#✨-后处理与效果" class="headerlink" title="✨ 后处理与效果"></a>✨ 后处理与效果</h3><ul>
+<li><strong>post-processing</strong> - Bloom、泛光、色调映射、色差等后处理效果</li>
+<li><strong>color-palette</strong> - 调色技巧，余弦调色板、HSL 色彩空间</li>
+<li><strong>anti-aliasing</strong> - 抗锯齿，SSAA、FXAA、TAA 等方法</li>
+</ul>
+<h2 id="学习路径建议"><a href="#学习路径建议" class="headerlink" title="学习路径建议"></a>学习路径建议</h2><h3 id="入门路线"><a href="#入门路线" class="headerlink" title="入门路线"></a>入门路线</h3><ol>
+<li><strong>第一步</strong>：理解 SDF 和 2D 形状 - sdf-2d</li>
+<li><strong>第二步</strong>：学习 Ray Marching - ray-marching + sdf-3d</li>
+<li><strong>第三步</strong>：掌握光照模型 - lighting-model + shadow-techniques</li>
+<li><strong>第四步</strong>：学习噪声 - procedural-noise（这是最核心的）</li>
+<li><strong>第五步</strong>：进阶主题 - fluid-simulation、terrain-rendering 等</li>
+</ol>
+<h3 id="Unity-适配要点"><a href="#Unity-适配要点" class="headerlink" title="Unity 适配要点"></a>Unity 适配要点</h3><p>GLSL 代码迁移到 Unity 时主要注意：</p>
+<table>
+<thead>
+<tr>
+<th>GLSL</th>
+<th>Unity (HLSL)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>varying</code></td>
+<td><code>in</code> &#x2F; <code>out</code></td>
+</tr>
+<tr>
+<td><code>texture2D()</code></td>
+<td><code>tex2D()</code></td>
+</tr>
+<tr>
+<td><code>gl_FragCoord.xy</code></td>
+<td><code>i.uv</code> 或屏幕坐标</td>
+</tr>
+<tr>
+<td><code>#version 300 es</code></td>
+<td>不需要，Unity 自动处理</td>
+</tr>
+</tbody></table>
+<p>Unity 中使用 CG&#x2F;HLSL 编写，语法与 GLSL 相似度很高。</p>
+<h2 id="典型案例解析"><a href="#典型案例解析" class="headerlink" title="典型案例解析"></a>典型案例解析</h2><h3 id="照片级-3D-场景"><a href="#照片级-3D-场景" class="headerlink" title="照片级 3D 场景"></a>照片级 3D 场景</h3><figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs scss">几何建模(sdf-<span class="hljs-number">3</span>d) + 射线追踪(ray-marching) <br>→ 法线计算(normal-estimation) <br>→ 光照(lighting-model) + 阴影(shadow-techniques) <br>→ 环境光遮蔽(ambient-occlusion) <br>→ 大气效果(atmospheric-scattering)<br></code></pre></td></tr></table></figure>
+
+<h3 id="程序化地形"><a href="#程序化地形" class="headerlink" title="程序化地形"></a>程序化地形</h3><figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs scss">FBM噪声(terrain-rendering) <br>→ 地形纹理(texture-mapping-advanced) <br>→ 天空大气(atmospheric-scattering) <br>→ 水面效果(water-ocean)<br></code></pre></td></tr></table></figure>
+
+<h2 id="性能注意事项"><a href="#性能注意事项" class="headerlink" title="性能注意事项"></a>性能注意事项</h2><p>在实际项目中需要注意性能：</p>
+<ul>
+<li>Ray Marching 主循环：≤ 128 步</li>
+<li>FBM 噪声：≤ 6 层（过多的层数影响性能）</li>
+<li>体积采样：≤ 32 步</li>
+</ul>
+<h2 id="调试技巧"><a href="#调试技巧" class="headerlink" title="调试技巧"></a>调试技巧</h2><table>
+<thead>
+<tr>
+<th>调试内容</th>
+<th>方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>法线是否正确</td>
+<td><code>col = normal * 0.5 + 0.5</code> 看平滑程度</td>
+</tr>
+<tr>
+<td>步进次数</td>
+<td>用颜色显示，越红说明步进越多</td>
+</tr>
+<tr>
+<td>SDF 距离场</td>
+<td>用条纹显示，观察是否均匀</td>
+</tr>
+</tbody></table>
+<h2 id="资源推荐"><a href="#资源推荐" class="headerlink" title="资源推荐"></a>资源推荐</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.shadertoy.com/">ShaderToy</a> - 最好的 shader 学习平台</li>
+<li><a target="_blank" rel="noopener" href="https://iquilezles.org/">Inigo Quilez’s Blog</a> - SDF 之父，文章极具价值</li>
+<li><a target="_blank" rel="noopener" href="https://thebookofshaders.com/">The Book of Shaders</a> - 程序化图形入门经典</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>学习 GLSL Shader 是一个非常有趣的过程，核心在于：</p>
+<ol>
+<li><strong>理解数学</strong> - 向量、矩阵、噪声等数学工具</li>
+<li><strong>多看多练</strong> - ShaderToy 是最好的练习场</li>
+<li><strong>循序渐进</strong> - 从简单的 2D 形状开始，逐步深入</li>
+</ol>
+<p>希望这个技能库能帮助到同样想学习 Shader 的朋友们！</p>
+<hr>
+<p><em>仓库地址: <a target="_blank" rel="noopener" href="https://github.com/Alex-Rachel/skills">https://github.com/Alex-Rachel/skills</a></em></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E5%85%A5%E9%97%A8%E5%AF%BC%E8%AF%BB/" class="category-chain-item">入门导读</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Unity/" class="print-no-link">#Unity</a>
+      
+        <a href="/tags/Shader/" class="print-no-link">#Shader</a>
+      
+        <a href="/tags/GLSL/" class="print-no-link">#GLSL</a>
+      
+        <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="print-no-link">#学习笔记</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Shader Craft - 我的 GLSL Shader 学习笔记</div>
+      <div>https://alex-rachel.github.io/2026/04/02/shader-dev-intro/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月2日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/03/tengine-ai-workflow/" title="TEngine 6.2.0 AI 工作流：用 OpenSpec、tengine-dev 与 Unity-MCP 把 AI 纳入生产流程">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">TEngine 6.2.0 AI 工作流：用 OpenSpec、tengine-dev 与 Unity-MCP 把 AI 纳入生产流程</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/02/hello-world/" title="第一篇博客">
+                        <span class="hidden-mobile">第一篇博客</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '099fd698b870b1b971a03b64eb0d3900'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

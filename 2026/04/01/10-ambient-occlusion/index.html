@@ -1,0 +1,994 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="什么是 AO，为什么游戏中不可缺少？环境光遮蔽（Ambient Occlusion，AO）模拟的是一种物理现象：在凹陷、缝隙、角落等处，来自四面八方的间接环境光被周围几何体遮挡，导致这些区域比开放区域更暗。 游戏中的 AO 有三种主要来源：  实时 SSAO（Screen Space Ambient Occlusion）：每帧实时计算，响应动态场景变化 烘焙 AO（Baked AO in Ligh">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（十）：URP AO 技术全景 — SSAO、烘焙 AO 与洞穴材质实战">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/10-ambient-occlusion/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="什么是 AO，为什么游戏中不可缺少？环境光遮蔽（Ambient Occlusion，AO）模拟的是一种物理现象：在凹陷、缝隙、角落等处，来自四面八方的间接环境光被周围几何体遮挡，导致这些区域比开放区域更暗。 游戏中的 AO 有三种主要来源：  实时 SSAO（Screen Space Ambient Occlusion）：每帧实时计算，响应动态场景变化 烘焙 AO（Baked AO in Ligh">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T02:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.720Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="AO">
+<meta property="article:tag" content="SSAO">
+<meta property="article:tag" content="环境光遮蔽">
+<meta property="article:tag" content="光照烘焙">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（十）：URP AO 技术全景 — SSAO、烘焙 AO 与洞穴材质实战 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（十）：URP AO 技术全景 — SSAO、烘焙 AO 与洞穴材质实战"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 10:30" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          94 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（十）：URP AO 技术全景 — SSAO、烘焙 AO 与洞穴材质实战</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="什么是-AO，为什么游戏中不可缺少？"><a href="#什么是-AO，为什么游戏中不可缺少？" class="headerlink" title="什么是 AO，为什么游戏中不可缺少？"></a>什么是 AO，为什么游戏中不可缺少？</h2><p>环境光遮蔽（Ambient Occlusion，AO）模拟的是一种物理现象：在凹陷、缝隙、角落等处，来自四面八方的间接环境光被周围几何体遮挡，导致这些区域比开放区域更暗。</p>
+<p>游戏中的 AO 有三种主要来源：</p>
+<ol>
+<li><strong>实时 SSAO</strong>（Screen Space Ambient Occlusion）：每帧实时计算，响应动态场景变化</li>
+<li><strong>烘焙 AO</strong>（Baked AO in Lightmap）：预计算到 Lightmap 贴图中，移动端友好</li>
+<li><strong>贴图 AO</strong>（AO Map）：美术手动制作，存储在材质贴图的特定通道</li>
+</ol>
+<p><strong>实际游戏应用：</strong></p>
+<ol>
+<li><strong>《黑神话：悟空》等 AAA 游戏</strong>：SSAO + GTAO 叠加，洞穴内部、岩石缝隙有强烈 AO 暗化</li>
+<li><strong>开放世界室外场景</strong>：烘焙 AO 处理静态植被根部、建筑墙角的接触阴影</li>
+<li><strong>室内场景（密室逃脱、恐怖游戏）</strong>：高强度 SSAO 增强角落的阴暗感</li>
+</ol>
+<h2 id="URP-SSAO-Renderer-Feature"><a href="#URP-SSAO-Renderer-Feature" class="headerlink" title="URP SSAO Renderer Feature"></a>URP SSAO Renderer Feature</h2><p>URP 内置了 SSAO，通过 Renderer Feature 方式添加：</p>
+<p><strong>添加步骤：</strong></p>
+<ol>
+<li>选择 URP Asset 引用的 Renderer（通常是 <code>UniversalRenderer</code>）</li>
+<li>Inspector → <code>Add Renderer Feature</code> → <code>Screen Space Ambient Occlusion</code></li>
+<li>配置参数：</li>
+</ol>
+<figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs oxygene">SSAO 关键配置参数：<br>- <span class="hljs-keyword">Method</span>: SSAO（传统屏幕空间）或 HDAO（更精确，开销更大）<br>- Intensity: AO 强度（<span class="hljs-number">0</span>~<span class="hljs-number">2</span>，通常 <span class="hljs-number">0.5</span>~<span class="hljs-number">1.0</span>）<br>- Radius: 采样半径（世界空间单位，通常 <span class="hljs-number">0.1</span>~<span class="hljs-number">0.5</span>m）<br>- Falloff Distance: 超过此距离 AO 强度渐减（减少远处噪声）<br>- Source: Depth（仅深度）或 Depth Normals（深度+法线，精确但需要 DepthNormals Pass）<br>- Quality (Sample Count): Low/Medium/High（采样数：<span class="hljs-number">4</span>/<span class="hljs-number">8</span>/<span class="hljs-number">16</span>次）<br>- Downsample: 开启后在半分辨率下计算（性能提升约 <span class="hljs-number">50</span>%，质量略降）<br></code></pre></td></tr></table></figure>
+
+<p><strong>URP SSAO 的渲染时机：</strong><br>SSAO 在 <code>AfterRenderingOpaques</code> 之后计算，结果存储在 <code>_ScreenSpaceOcclusionTexture</code>，在后续的 ForwardLit Pass 中自动采样。</p>
+<h2 id="在-Shader-中读取-SSAO"><a href="#在-Shader-中读取-SSAO" class="headerlink" title="在 Shader 中读取 SSAO"></a>在 Shader 中读取 SSAO</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 使用 URP 内置函数读取 SSAO（自动处理特性开关）<br>// 在 Fragment Shader 中：<br><br>// 方式一：使用 AmbientOcclusionFactor 结构（推荐）<br>#include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>// 在 Fragment Shader 中，InputData 初始化后调用：<br>AmbientOcclusionFactor aoFactor = CreateDistanceBasedAO(IN.positionWS, normalWS, normalizedScreenSpaceUV);<br>// aoFactor.indirectAmbientOcclusion: 间接光 AO（0=完全遮蔽, 1=完全开放）<br>// aoFactor.directAmbientOcclusion: 直接光 AO（通常不单独使用）<br><br>// 将 AO 应用到光照（混合器接口）<br>MixRealtimeAndBakedGI(mainLight, normalWS, bakedGI, aoFactor);<br><br>// 方式二：手动采样 SSAO 纹理（精细控制）<br>#if defined(_SCREEN_SPACE_OCCLUSION)<br>    // 仅当启用了 SSAO Feature 时有效<br>    float ssao = SampleAmbientOcclusion(normalizedScreenSpaceUV);<br>    // 使用方式：乘以间接光/环境光<br>    half3 ambient = SampleSH(normalWS) * albedo * ssao;<br>#else<br>    half3 ambient = SampleSH(normalWS) * albedo;<br>#endif<br></code></pre></td></tr></table></figure>
+
+<h2 id="烘焙-AO：Lightmap-UV-与正确工作流"><a href="#烘焙-AO：Lightmap-UV-与正确工作流" class="headerlink" title="烘焙 AO：Lightmap UV 与正确工作流"></a>烘焙 AO：Lightmap UV 与正确工作流</h2><p>烘焙 AO 存储在 Lightmap 中，依赖 Unity 的光照烘焙系统（Bake Mode &#x3D; Baked 或 Mixed）。</p>
+<p><strong>Lightmap UV 设置：</strong></p>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm">模型 <span class="hljs-keyword">Inspector </span>→ Generate Lightmap UVs（开启）<br>或者：在 DCC 工具中手动制作第二套 UV（TEXCOORD1）<br></code></pre></td></tr></table></figure>
+
+<p><strong>在 Shader 中读取烘焙 GI（包含烘焙 AO）：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 顶点着色器中传递 Lightmap UV<br>OUTPUT_LIGHTMAP_UV(IN.uv2, unity_LightmapST, OUT.lightmapUV);<br>OUTPUT_SH(normalWS, OUT.vertexSH); // 球谐函数（无 Lightmap 时的低开销替代）<br><br>// 片元着色器中采样烘焙 GI<br>// SAMPLE_GI 宏根据是否有 Lightmap 自动选择采样方式<br>half3 bakedGI = SAMPLE_GI(IN.lightmapUV, IN.vertexSH, normalWS);<br>// bakedGI 包含烘焙的间接光照，其中已包含烘焙 AO 的影响<br></code></pre></td></tr></table></figure>
+
+<p><strong>贴图 AO 的使用：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 从材质 AO 贴图读取（通常存储在 RGB 贴图的 G 通道）<br>float bakedAO = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;<br>// 强度插值<br>float finalAO = lerp(1.0, bakedAO, _OcclusionStrength);<br>// 应用到环境光<br>half3 ambient = bakedGI * albedo * finalAO;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实时-AO-vs-烘焙-AO：选择策略"><a href="#实时-AO-vs-烘焙-AO：选择策略" class="headerlink" title="实时 AO vs 烘焙 AO：选择策略"></a>实时 AO vs 烘焙 AO：选择策略</h2><table>
+<thead>
+<tr>
+<th>场景类型</th>
+<th>推荐方案</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>移动端（低端硬件）</td>
+<td>仅贴图 AO</td>
+<td>无性能开销</td>
+</tr>
+<tr>
+<td>移动端（中端+）</td>
+<td>烘焙 AO</td>
+<td>无实时开销，质量好</td>
+</tr>
+<tr>
+<td>PC&#x2F;主机静态场景</td>
+<td>烘焙 AO + SSAO</td>
+<td>静态精度高，动态物体有 SSAO</td>
+</tr>
+<tr>
+<td>PC&#x2F;主机动态场景</td>
+<td>SSAO + 贴图 AO</td>
+<td>动态物体需要实时 AO</td>
+</tr>
+<tr>
+<td>室内密闭场景</td>
+<td>烘焙 AO（高采样）</td>
+<td>离线烘焙质量远超实时 SSAO</td>
+</tr>
+<tr>
+<td>开放世界</td>
+<td>SSAO（低质量）+ 烘焙 AO</td>
+<td>视野范围大，SSAO 高质量开销过大</td>
+</tr>
+</tbody></table>
+<h2 id="完整示例：URP-洞穴-室内场景材质-Shader"><a href="#完整示例：URP-洞穴-室内场景材质-Shader" class="headerlink" title="完整示例：URP 洞穴&#x2F;室内场景材质 Shader"></a>完整示例：URP 洞穴&#x2F;室内场景材质 Shader</h2><p>SSAO + 烘焙 AO 双层叠加，适合表现洞穴、地牢等阴暗密闭场景：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/CaveMaterial&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _BaseColor      (&quot;Base Color&quot;,    Color) = (0.5, 0.45, 0.4, 1)<br>        _BaseMap        (&quot;Albedo Map&quot;,    2D)    = &quot;white&quot; &#123;&#125;<br>        _BumpMap        (&quot;Normal Map&quot;,    2D)    = &quot;bump&quot; &#123;&#125;<br>        _BumpScale      (&quot;Normal Scale&quot;,  Range(0,2)) = 1.0<br>        _OcclusionMap   (&quot;AO Map (G Ch)&quot;,  2D)   = &quot;white&quot; &#123;&#125;<br>        _OcclusionStrength (&quot;AO Strength&quot;, Range(0,1)) = 0.8<br>        // 额外 AO 增强（洞穴暗部）<br>        _AOBoost        (&quot;AO Boost&quot;,      Range(1,3)) = 1.5<br>        _Metallic       (&quot;Metallic&quot;,      Range(0,1)) = 0.0<br>        _Smoothness     (&quot;Smoothness&quot;,    Range(0,1)) = 0.15<br>        // 苔藓/潮湿效果（洞穴材质特有）<br>        _WetnessMask    (&quot;Wetness Mask (R)&quot;, 2D) = &quot;black&quot; &#123;&#125;<br>        _WetnessStrength (&quot;Wetness Strength&quot;, Range(0,1)) = 0.5<br>        _WetnessSmooth  (&quot;Wetness Smoothness&quot;,Range(0,1)) = 0.8<br>        _WetnessColor   (&quot;Wetness Color&quot;, Color) = (0.2, 0.35, 0.15, 1)<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;CaveForward&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _ADDITIONAL_LIGHTS<br>            #pragma multi_compile _ _SHADOWS_SOFT<br>            // SSAO 关键字（URP 自动注入，在此声明以便 Shader 处理）<br>            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION<br>            // Lightmap（烘焙 AO 需要）<br>            #pragma multi_compile _ LIGHTMAP_ON<br>            #pragma multi_compile _ DIRLIGHTMAP_COMBINED<br>            #pragma multi_compile_fog<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl&quot;<br><br>            TEXTURE2D(_BaseMap);     SAMPLER(sampler_BaseMap);<br>            TEXTURE2D(_BumpMap);     SAMPLER(sampler_BumpMap);<br>            TEXTURE2D(_OcclusionMap);SAMPLER(sampler_OcclusionMap);<br>            TEXTURE2D(_WetnessMask); SAMPLER(sampler_WetnessMask);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BaseMap_ST;<br>                float4 _BumpMap_ST;<br>                float4 _OcclusionMap_ST;<br>                float4 _WetnessMask_ST;<br>                float4 _BaseColor;<br>                float4 _WetnessColor;<br>                float  _BumpScale;<br>                float  _OcclusionStrength;<br>                float  _AOBoost;<br>                float  _Metallic;<br>                float  _Smoothness;<br>                float  _WetnessStrength;<br>                float  _WetnessSmooth;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float4 tangentOS  : TANGENT;<br>                float2 uv         : TEXCOORD0;<br>                float2 uv2        : TEXCOORD1;  // Lightmap UV<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS  : SV_POSITION;<br>                float2 uv           : TEXCOORD0;<br>                DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 1); // 烘焙 GI<br>                float3 positionWS   : TEXCOORD2;<br>                float3 normalWS     : TEXCOORD3;<br>                float3 tangentWS    : TEXCOORD4;<br>                float3 bitangentWS  : TEXCOORD5;<br>                float4 shadowCoord  : TEXCOORD6;<br>                float  fogFactor    : TEXCOORD7;<br>                float4 screenPos    : TEXCOORD8;  // SSAO 采样需要屏幕坐标<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br><br>                VertexPositionInputs posInputs    = GetVertexPositionInputs(IN.positionOS.xyz);<br>                VertexNormalInputs   normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);<br><br>                OUT.positionHCS  = posInputs.positionCS;<br>                OUT.positionWS   = posInputs.positionWS;<br>                OUT.normalWS     = normalInputs.normalWS;<br>                OUT.tangentWS    = normalInputs.tangentWS;<br>                OUT.bitangentWS  = normalInputs.bitangentWS;<br>                OUT.uv           = TRANSFORM_TEX(IN.uv, _BaseMap);<br>                OUT.shadowCoord  = GetShadowCoord(posInputs);<br>                OUT.fogFactor    = ComputeFogFactor(posInputs.positionCS.z);<br>                OUT.screenPos    = ComputeScreenPos(posInputs.positionCS);<br><br>                // 烘焙 GI（包含 Lightmap UV 或 SH 球谐）<br>                OUTPUT_LIGHTMAP_UV(IN.uv2, unity_LightmapST, OUT.lightmapUV);<br>                OUTPUT_SH(normalInputs.normalWS, OUT.vertexSH);<br><br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br><br>                // ===== 1. 基础贴图 =====<br>                half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;<br><br>                // ===== 2. 法线 =====<br>                float4 normalPacked = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv);<br>                float3 normalTS = UnpackNormalScale(normalPacked, _BumpScale);<br>                float3x3 TBN = float3x3(normalize(IN.tangentWS), normalize(IN.bitangentWS), normalize(IN.normalWS));<br>                float3 normalWS = normalize(TransformTangentToWorld(normalTS, TBN));<br><br>                // ===== 3. 潮湿效果（洞穴积水区域）=====<br>                float wetness = SAMPLE_TEXTURE2D(_WetnessMask, sampler_WetnessMask, uv).r * _WetnessStrength;<br>                // 潮湿使材质颜色向苔藓绿偏移，并增加光滑度（水膜效果）<br>                albedo.rgb = lerp(albedo.rgb, albedo.rgb * _WetnessColor.rgb, wetness * 0.5);<br>                float smoothness = lerp(_Smoothness, _WetnessSmooth, wetness);<br><br>                // ===== 4. 贴图 AO =====<br>                float texAO = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;<br>                float combinedAO = lerp(1.0, texAO, _OcclusionStrength);<br><br>                // ===== 5. SSAO（屏幕空间 AO）=====<br>                float2 screenUV = IN.screenPos.xy / IN.screenPos.w;<br>                #if defined(_SCREEN_SPACE_OCCLUSION)<br>                    // SampleAmbientOcclusion：采样 URP 生成的 SSAO 纹理<br>                    float ssao = SampleAmbientOcclusion(screenUV);<br>                    // 叠加两种 AO（相乘增强暗部，洞穴场景适用）<br>                    combinedAO = combinedAO * lerp(1.0, ssao, 0.7);<br>                #endif<br><br>                // AO 增强（洞穴的 AO 应该更强烈）<br>                combinedAO = pow(combinedAO, _AOBoost);<br><br>                // ===== 6. 烘焙 GI =====<br>                half3 bakedGI = SAMPLE_GI(IN.lightmapUV, IN.vertexSH, normalWS);<br>                // 对烘焙 GI 应用贴图 AO（纠正 Lightmap 精度不足的问题）<br>                bakedGI *= combinedAO;<br><br>                // ===== 7. PBR 光照计算 =====<br>                SurfaceData surfaceData;<br>                surfaceData.albedo          = albedo.rgb;<br>                surfaceData.alpha           = albedo.a;<br>                surfaceData.metallic        = _Metallic;<br>                surfaceData.smoothness      = smoothness;<br>                surfaceData.normalTS        = normalTS;<br>                surfaceData.occlusion       = combinedAO; // 传递叠加后的 AO<br>                surfaceData.emission        = 0;<br>                surfaceData.specular        = 0;<br>                surfaceData.clearCoatMask   = 0;<br>                surfaceData.clearCoatSmoothness = 0;<br><br>                InputData inputData;<br>                inputData.positionWS                = IN.positionWS;<br>                inputData.normalWS                  = normalWS;<br>                inputData.viewDirectionWS           = normalize(GetCameraPositionWS() - IN.positionWS);<br>                inputData.shadowCoord               = IN.shadowCoord;<br>                inputData.fogCoord                  = IN.fogFactor;<br>                inputData.vertexLighting            = 0;<br>                inputData.bakedGI                   = bakedGI;  // 使用 AO 调整后的 GI<br>                inputData.normalizedScreenSpaceUV   = screenUV;<br>                inputData.shadowMask                = SAMPLE_SHADOWMASK(IN.lightmapUV);<br><br>                // URP 标准 PBR（UniversalFragmentPBR 内部读取 _ScreenSpaceOcclusionTexture）<br>                half4 color = UniversalFragmentPBR(inputData, surfaceData);<br>                color.rgb = MixFog(color.rgb, IN.fogFactor);<br><br>                return color;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>        UsePass &quot;Universal Render Pipeline/Lit/DepthOnly&quot;<br>        UsePass &quot;Universal Render Pipeline/Lit/DepthNormals&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Bent-Normal-AO-与-GTAO-简介"><a href="#Bent-Normal-AO-与-GTAO-简介" class="headerlink" title="Bent Normal AO 与 GTAO 简介"></a>Bent Normal AO 与 GTAO 简介</h2><p><strong>Bent Normal AO：</strong><br>普通 AO 只是一个标量（0~1），告诉我们遮蔽程度。Bent Normal 是一个方向向量，表示”法线半球中最少被遮蔽的平均方向”。用 Bent Normal 代替 Surface Normal 采样环境光贴图（IBL），可以获得更准确的间接光照遮蔽效果。</p>
+<p>Unity Enlighten（旧版烘焙）可以烘焙 Bent Normal；HDRP 支持 Bent Normal AO，URP 目前不原生支持，需要自定义实现。</p>
+<p><strong>GTAO（Ground Truth Ambient Occlusion）：</strong><br>URP 2022 LTS 开始提供 GTAO 作为 SSAO 的替代方案（通过 <code>Screen Space Ambient Occlusion</code> Renderer Feature 的 <code>Method</code> 选项）。GTAO 相比传统 SSAO：</p>
+<ul>
+<li>更少的 halo 伪影（SSAO 在薄物体边缘常见的光晕）</li>
+<li>更精确的能量守恒</li>
+<li>对移动端更友好（虽然采样数相同，但噪声更少）</li>
+</ul>
+<h2 id="ShaderGraph-中的-AO"><a href="#ShaderGraph-中的-AO" class="headerlink" title="ShaderGraph 中的 AO"></a>ShaderGraph 中的 AO</h2><p>ShaderGraph 中访问 AO 的节点：</p>
+<ol>
+<li><code>Ambient Occlusion</code> 节点：自动读取 SSAO（如果启用）或返回 1</li>
+<li><code>Sample Texture 2D</code> → 接 Occlusion Map → <code>Lerp(1, ao, strength)</code> → 贴图 AO</li>
+<li>将上述结果乘以 <code>Ambient</code> 输出或接入 <code>Occlusion</code> 端口（在 <code>PBR Master</code> 节点）</li>
+</ol>
+<h2 id="移动端-AO-最佳实践"><a href="#移动端-AO-最佳实践" class="headerlink" title="移动端 AO 最佳实践"></a>移动端 AO 最佳实践</h2><p><strong>推荐方案（按性能排序）：</strong></p>
+<ol>
+<li><strong>仅贴图 AO</strong>（最快）：将美术制作的 AO 贴图存入材质的 G 通道，直接乘以间接光</li>
+<li><strong>烘焙 AO（Lightmap）</strong>：预计算阶段消耗，运行时只是一次纹理采样</li>
+<li><strong>SSAO 低质量（4 次采样，半分辨率）</strong>：约 0.5-1ms，可在中端移动端使用</li>
+<li><strong>SSAO 中等质量（8 次采样，全分辨率）</strong>：约 1.5-2ms，仅 PC&#x2F;主机推荐</li>
+</ol>
+<p><strong>移动端完全禁用 SSAO 时：</strong><br>确保 Shader 中的 <code>#pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION</code> 声明正确，URP 会在 SSAO Feature 不存在时不定义 <code>_SCREEN_SPACE_OCCLUSION</code>，Shader 中的 SSAO 采样代码自动跳过（零开销）。</p>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><ol>
+<li><p><strong>SSAO 在 HDR 场景下过暗</strong>：SSAO 在线性空间计算，当场景有强烈 HDR 光照时，AO 叠加可能导致环境光区域过黑。调低 <code>Intensity</code> 并配合 <code>Falloff Distance</code> 限制 SSAO 影响范围。</p>
+</li>
+<li><p><strong>烘焙 AO 在动态物体上无效</strong>：Lightmap AO 只对静态物体有效（需要勾选 <code>Static</code> 标志）。动态角色&#x2F;物件需要用 SSAO 或贴图 AO。</p>
+</li>
+<li><p><strong>DepthNormals Pass 缺失导致 SSAO 质量下降</strong>：URP SSAO 的 <code>Source</code> 设置为 <code>Depth Normals</code> 时，需要 <code>DepthNormals</code> Pass。如果自定义 Shader 没有 <code>DepthNormals</code> Pass，该物体的 SSAO 法线数据缺失，会产生 halo 伪影。<code>UsePass &quot;Universal Render Pipeline/Lit/DepthNormals&quot;</code> 是最简单的解决方案。</p>
+</li>
+<li><p><strong>Lightmap UV 缝隙处出现 AO 泄漏</strong>：Lightmap UV 的相邻 UV 岛之间需要足够的间距（建议 ≥ 2 Lightmap 像素），否则烘焙时光照&#x2F;遮蔽信息会从一个 UV 岛泄漏到另一个。在 Unity Lightmap Settings 中增加 <code>Lightmap Padding</code>。</p>
+</li>
+<li><p><strong><code>SampleAmbientOcclusion</code> 在编辑器 Scene View 中始终返回 1</strong>：SSAO 在 Scene View 中默认不激活（只在 Game View 中工作）。如果想在 Scene View 中也看到 SSAO，在 Scene View 的 Camera 组件上确认启用了后处理（<code>Post Processing</code> 勾选）。</p>
+</li>
+</ol>
+<h2 id="系列总结"><a href="#系列总结" class="headerlink" title="系列总结"></a>系列总结</h2><p>经过这十篇文章，我们已经建立了完整的 Unity URP Shader 知识体系：</p>
+<ol>
+<li><strong>2D SDF UI Shader</strong> → 圆角矩形、血条、技能 CD 遮罩</li>
+<li><strong>程序化噪声</strong> → FBM 火焰特效、域扭曲、程序化材质</li>
+<li><strong>矩阵变换体系</strong> → 坐标空间链、顶点动画草地</li>
+<li><strong>纹理采样</strong> → TEXTURE2D&#x2F;SAMPLER、水面双层法线</li>
+<li><strong>颜色管理</strong> → Linear&#x2F;Gamma 工作流、后处理赛博朋克效果</li>
+<li><strong>3D SDF 应用</strong> → URP 体积雾、软粒子深度融合</li>
+<li><strong>法线体系</strong> → TBN 矩阵、UnpackNormal、陡峭视差贴图</li>
+<li><strong>URP 光照系统</strong> → BRDFData、卡通渲染、各向异性布料</li>
+<li><strong>URP 阴影</strong> → CSM、PCF 软阴影、植被顶点动画 + 正确阴影</li>
+<li><strong>URP AO</strong> → SSAO Renderer Feature、烘焙 AO、洞穴双层 AO 材质</li>
+</ol>
+<p>这十个技术模块覆盖了 Unity 游戏开发中 Shader 编程的核心领域。从 UI 特效到 3D 材质，从程序化特效到物理正确的 PBR 光照，每个模块都包含可直接运行于 Unity 项目的完整 Shader 代码。接下来可以深入研究 URP 的更多进阶特性：自定义渲染流程（Scriptable Render Pass）、GPU Skinning、计算着色器（Compute Shader）等。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%85%89%E7%85%A7%E4%B8%8E%E9%98%B4%E5%BD%B1/" class="category-chain-item">光照与阴影</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/AO/" class="print-no-link">#AO</a>
+      
+        <a href="/tags/SSAO/" class="print-no-link">#SSAO</a>
+      
+        <a href="/tags/%E7%8E%AF%E5%A2%83%E5%85%89%E9%81%AE%E8%94%BD/" class="print-no-link">#环境光遮蔽</a>
+      
+        <a href="/tags/%E5%85%89%E7%85%A7%E7%83%98%E7%84%99/" class="print-no-link">#光照烘焙</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（十）：URP AO 技术全景 — SSAO、烘焙 AO 与洞穴材质实战</div>
+      <div>https://alex-rachel.github.io/2026/04/01/10-ambient-occlusion/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/11-analytic-ray-tracing/" title="Unity Shader 系列（十一）：解析几何求交：水晶球与激光束特效">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（十一）：解析几何求交：水晶球与激光束特效</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/09-shadow-techniques/" title="Unity Shader 系列（九）：URP 阴影系统完整指南 — CSM、PCF 软阴影与植被 Shader">
+                        <span class="hidden-mobile">Unity Shader 系列（九）：URP 阴影系统完整指南 — CSM、PCF 软阴影与植被 Shader</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '979fd388dd7d23086f986545fdf0fa5a'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,1003 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="URP 的后处理系统经历了从 Post Processing Stack v2 到原生 Volume 框架的重大重构。本文从 Volume 框架的使用，到自定义 Renderer Feature 的完整 C# 代码，再到移动端性能优化策略，全面覆盖 Unity URP 后处理开发的核心知识。 URP Volume 框架：内置后处理效果URP 的后处理通过 Volume 系统管理。Volume 是场">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（二十八）：URP 后处理完整指南">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/28-post-processing/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="URP 的后处理系统经历了从 Post Processing Stack v2 到原生 Volume 框架的重大重构。本文从 Volume 框架的使用，到自定义 Renderer Feature 的完整 C# 代码，再到移动端性能优化策略，全面覆盖 Unity URP 后处理开发的核心知识。 URP Volume 框架：内置后处理效果URP 的后处理通过 Volume 系统管理。Volume 是场">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T05:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.723Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="后处理">
+<meta property="article:tag" content="Renderer Feature">
+<meta property="article:tag" content="Volume框架">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（二十八）：URP 后处理完整指南 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（二十八）：URP 后处理完整指南"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 13:30" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          10k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          84 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（二十八）：URP 后处理完整指南</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>URP 的后处理系统经历了从 Post Processing Stack v2 到原生 Volume 框架的重大重构。本文从 Volume 框架的使用，到自定义 Renderer Feature 的完整 C# 代码，再到移动端性能优化策略，全面覆盖 Unity URP 后处理开发的核心知识。</p>
+<h2 id="URP-Volume-框架：内置后处理效果"><a href="#URP-Volume-框架：内置后处理效果" class="headerlink" title="URP Volume 框架：内置后处理效果"></a>URP Volume 框架：内置后处理效果</h2><p>URP 的后处理通过 Volume 系统管理。Volume 是场景中的触发区域，相机进入时激活对应的后处理参数。</p>
+<p><strong>配置步骤</strong>：</p>
+<ol>
+<li>在 URP Asset 中确保 <code>Post Processing</code> 已勾选</li>
+<li>在相机的 <code>Additional Camera Data</code> 组件中开启 <code>Post Processing</code></li>
+<li>在场景中创建 Volume（<code>GameObject → Volume → Global Volume</code>）</li>
+<li>在 Volume 的 Profile 中添加需要的后处理效果</li>
+</ol>
+<p><strong>内置后处理效果参考</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>效果</th>
+<th>主要参数</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bloom</td>
+<td>Threshold, Intensity, Scatter</td>
+<td>发光物体、UI 特效</td>
+</tr>
+<tr>
+<td>Color Grading</td>
+<td>LUT, Exposure, Saturation</td>
+<td>整体画面风格</td>
+</tr>
+<tr>
+<td>Chromatic Aberration</td>
+<td>Intensity</td>
+<td>损伤&#x2F;过载感觉</td>
+</tr>
+<tr>
+<td>Vignette</td>
+<td>Intensity, Smoothness</td>
+<td>焦点引导、恐怖气氛</td>
+</tr>
+<tr>
+<td>Film Grain</td>
+<td>Type, Intensity</td>
+<td>胶片风格、复古感</td>
+</tr>
+<tr>
+<td>Depth of Field</td>
+<td>Focus Distance, Aperture</td>
+<td>叙事焦点、过场动画</td>
+</tr>
+<tr>
+<td>Motion Blur</td>
+<td>Intensity</td>
+<td>高速场景、动作游戏</td>
+</tr>
+<tr>
+<td>Lens Distortion</td>
+<td>Intensity, Scale</td>
+<td>鱼眼效果、眩晕感</td>
+</tr>
+</tbody></table>
+<h2 id="自定义后处理：VolumeComponent-ScriptableRendererFeature"><a href="#自定义后处理：VolumeComponent-ScriptableRendererFeature" class="headerlink" title="自定义后处理：VolumeComponent + ScriptableRendererFeature"></a>自定义后处理：VolumeComponent + ScriptableRendererFeature</h2><p>URP 自定义后处理需要三个文件：VolumeComponent（参数定义）、ScriptableRendererFeature（渲染器集成）、Shader（实际效果）。</p>
+<h3 id="第一步：定义-VolumeComponent"><a href="#第一步：定义-VolumeComponent" class="headerlink" title="第一步：定义 VolumeComponent"></a>第一步：定义 VolumeComponent</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// CyberpunkScanlineEffect.cs</span><br><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering.Universal;<br><br>[<span class="hljs-meta">System.Serializable, VolumeComponentMenuForRenderPipeline(</span><br><span class="hljs-meta">    <span class="hljs-string">&quot;Custom/Cyberpunk Scanline&quot;</span>, typeof(UniversalRenderPipeline))</span>]<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">CyberpunkScanlineEffect</span> : <span class="hljs-title">VolumeComponent</span>, <span class="hljs-title">IPostProcessComponent</span><br>&#123;<br>    <span class="hljs-comment">// 所有参数都要用 ClampedFloatParameter 等 Parameter 包装类</span><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;扫描线&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> ClampedFloatParameter scanlineIntensity = <span class="hljs-keyword">new</span> ClampedFloatParameter(<span class="hljs-number">0.3f</span>, <span class="hljs-number">0f</span>, <span class="hljs-number">1f</span>);<br>    <span class="hljs-keyword">public</span> ClampedFloatParameter scanlineFrequency = <span class="hljs-keyword">new</span> ClampedFloatParameter(<span class="hljs-number">300f</span>, <span class="hljs-number">50f</span>, <span class="hljs-number">1000f</span>);<br>    <span class="hljs-keyword">public</span> ClampedFloatParameter scanlineSpeed = <span class="hljs-keyword">new</span> ClampedFloatParameter(<span class="hljs-number">1f</span>, <span class="hljs-number">0f</span>, <span class="hljs-number">5f</span>);<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;色彩偏移（赛博朋克色调）&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> ClampedFloatParameter colorShiftIntensity = <span class="hljs-keyword">new</span> ClampedFloatParameter(<span class="hljs-number">0.5f</span>, <span class="hljs-number">0f</span>, <span class="hljs-number">1f</span>);<br>    <span class="hljs-keyword">public</span> ColorParameter tintColor = <span class="hljs-keyword">new</span> ColorParameter(<span class="hljs-keyword">new</span> Color(<span class="hljs-number">0f</span>, <span class="hljs-number">0.8f</span>, <span class="hljs-number">1f</span>, <span class="hljs-number">1f</span>), <span class="hljs-literal">false</span>, <span class="hljs-literal">false</span>, <span class="hljs-literal">true</span>);<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;色差（Chromatic Aberration）&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> ClampedFloatParameter aberrationStrength = <span class="hljs-keyword">new</span> ClampedFloatParameter(<span class="hljs-number">0.005f</span>, <span class="hljs-number">0f</span>, <span class="hljs-number">0.02f</span>);<br>    <span class="hljs-keyword">public</span> ClampedIntParameter aberrationSamples = <span class="hljs-keyword">new</span> ClampedIntParameter(<span class="hljs-number">6</span>, <span class="hljs-number">2</span>, <span class="hljs-number">16</span>);<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;噪点&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> ClampedFloatParameter noiseIntensity = <span class="hljs-keyword">new</span> ClampedFloatParameter(<span class="hljs-number">0.02f</span>, <span class="hljs-number">0f</span>, <span class="hljs-number">0.1f</span>);<br><br>    <span class="hljs-comment">// 是否激活（Volume 混合需要）</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-built_in">bool</span> <span class="hljs-title">IsActive</span>()</span> =&gt; scanlineIntensity.<span class="hljs-keyword">value</span> &gt; <span class="hljs-number">0f</span> || colorShiftIntensity.<span class="hljs-keyword">value</span> &gt; <span class="hljs-number">0f</span>;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-built_in">bool</span> <span class="hljs-title">IsTileCompatible</span>()</span> =&gt; <span class="hljs-literal">false</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="第二步：实现-ScriptableRendererFeature"><a href="#第二步：实现-ScriptableRendererFeature" class="headerlink" title="第二步：实现 ScriptableRendererFeature"></a>第二步：实现 ScriptableRendererFeature</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// CyberpunkScanlineFeature.cs</span><br><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering.Universal;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">CyberpunkScanlineFeature</span> : <span class="hljs-title">ScriptableRendererFeature</span><br>&#123;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> Shader _shader;<br>    <span class="hljs-keyword">private</span> Material _material;<br>    <span class="hljs-keyword">private</span> CyberpunkScanlinePass _pass;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Create</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (_shader == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br>        _material = CoreUtils.CreateEngineMaterial(_shader);<br>        _pass = <span class="hljs-keyword">new</span> CyberpunkScanlinePass(_material);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">AddRenderPasses</span>(<span class="hljs-params">ScriptableRenderer renderer, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// 编辑器预览时也执行</span><br>        <span class="hljs-keyword">if</span> (renderingData.cameraData.cameraType == CameraType.Preview) <span class="hljs-keyword">return</span>;<br><br>        <span class="hljs-comment">// 从 Volume 栈获取当前参数</span><br>        <span class="hljs-keyword">var</span> stack = VolumeManager.instance.stack;<br>        <span class="hljs-keyword">var</span> effect = stack.GetComponent&lt;CyberpunkScanlineEffect&gt;();<br>        <span class="hljs-keyword">if</span> (effect == <span class="hljs-literal">null</span> || !effect.IsActive()) <span class="hljs-keyword">return</span>;<br><br>        _pass.Setup(effect);<br>        renderer.EnqueuePass(_pass);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Dispose</span>(<span class="hljs-params"><span class="hljs-built_in">bool</span> disposing</span>)</span><br>    &#123;<br>        CoreUtils.Destroy(_material);<br>    &#125;<br><br>    <span class="hljs-keyword">class</span> <span class="hljs-title">CyberpunkScanlinePass</span> : <span class="hljs-title">ScriptableRenderPass</span><br>    &#123;<br>        <span class="hljs-keyword">private</span> Material _material;<br>        <span class="hljs-keyword">private</span> CyberpunkScanlineEffect _effect;<br>        <span class="hljs-keyword">private</span> RTHandle _tempRT;<br><br>        <span class="hljs-comment">// Shader 属性 ID（预取比 string 查找快）</span><br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ScanlineIntensityID = Shader.PropertyToID(<span class="hljs-string">&quot;_ScanlineIntensity&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ScanlineFrequencyID = Shader.PropertyToID(<span class="hljs-string">&quot;_ScanlineFrequency&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ScanlineSpeedID = Shader.PropertyToID(<span class="hljs-string">&quot;_ScanlineSpeed&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ColorShiftID = Shader.PropertyToID(<span class="hljs-string">&quot;_ColorShiftIntensity&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> TintColorID = Shader.PropertyToID(<span class="hljs-string">&quot;_TintColor&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> AberrationStrengthID = Shader.PropertyToID(<span class="hljs-string">&quot;_AberrationStrength&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> AberrationSamplesID = Shader.PropertyToID(<span class="hljs-string">&quot;_AberrationSamples&quot;</span>);<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> NoiseIntensityID = Shader.PropertyToID(<span class="hljs-string">&quot;_NoiseIntensity&quot;</span>);<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">CyberpunkScanlinePass</span>(<span class="hljs-params">Material material</span>)</span><br>        &#123;<br>            _material = material;<br>            renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;<br>        &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Setup</span>(<span class="hljs-params">CyberpunkScanlineEffect effect</span>)</span> &#123; _effect = effect; &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnCameraSetup</span>(<span class="hljs-params">CommandBuffer cmd, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>        &#123;<br>            RenderTextureDescriptor desc = renderingData.cameraData.cameraTargetDescriptor;<br>            desc.depthBufferBits = <span class="hljs-number">0</span>;<br>            RenderingUtils.ReAllocateIfNeeded(<span class="hljs-keyword">ref</span> _tempRT, desc, name: <span class="hljs-string">&quot;_CyberpunkTempRT&quot;</span>);<br>        &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Execute</span>(<span class="hljs-params">ScriptableRenderContext context, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>        &#123;<br>            <span class="hljs-keyword">if</span> (_material == <span class="hljs-literal">null</span> || _effect == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br><br>            <span class="hljs-comment">// 将当前 Volume 参数传入 Shader</span><br>            _material.SetFloat(ScanlineIntensityID, _effect.scanlineIntensity.<span class="hljs-keyword">value</span>);<br>            _material.SetFloat(ScanlineFrequencyID, _effect.scanlineFrequency.<span class="hljs-keyword">value</span>);<br>            _material.SetFloat(ScanlineSpeedID, _effect.scanlineSpeed.<span class="hljs-keyword">value</span>);<br>            _material.SetFloat(ColorShiftID, _effect.colorShiftIntensity.<span class="hljs-keyword">value</span>);<br>            _material.SetColor(TintColorID, _effect.tintColor.<span class="hljs-keyword">value</span>);<br>            _material.SetFloat(AberrationStrengthID, _effect.aberrationStrength.<span class="hljs-keyword">value</span>);<br>            _material.SetInt(AberrationSamplesID, _effect.aberrationSamples.<span class="hljs-keyword">value</span>);<br>            _material.SetFloat(NoiseIntensityID, _effect.noiseIntensity.<span class="hljs-keyword">value</span>);<br><br>            CommandBuffer cmd = CommandBufferPool.Get(<span class="hljs-string">&quot;Cyberpunk Scanline&quot;</span>);<br>            <span class="hljs-keyword">var</span> cameraTarget = renderingData.cameraData.renderer.cameraColorTargetHandle;<br><br>            <span class="hljs-comment">// 后处理标准流程：源 → 临时 → 源（双 Blit 防止读写同一 RT）</span><br>            Blitter.BlitCameraTexture(cmd, cameraTarget, _tempRT);<br>            Blitter.BlitCameraTexture(cmd, _tempRT, cameraTarget, _material, <span class="hljs-number">0</span>);<br><br>            context.ExecuteCommandBuffer(cmd);<br>            CommandBufferPool.Release(cmd);<br>        &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnCameraCleanup</span>(<span class="hljs-params">CommandBuffer cmd</span>)</span> &#123; &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="第三步：后处理-Shader"><a href="#第三步：后处理-Shader" class="headerlink" title="第三步：后处理 Shader"></a>第三步：后处理 Shader</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// CyberpunkScanline.shader<br>Shader &quot;Hidden/URP/CyberpunkScanline&quot;<br>&#123;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot; &#125;<br>        ZWrite Off Cull Off ZTest Always<br><br>        Pass<br>        &#123;<br>            HLSLPROGRAM<br>            #pragma vertex Vert<br>            #pragma fragment frag<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl&quot;<br><br>            TEXTURE2D_X(_BlitTexture); SAMPLER(sampler_BlitTexture);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float _ScanlineIntensity;<br>                float _ScanlineFrequency;<br>                float _ScanlineSpeed;<br>                float _ColorShiftIntensity;<br>                float4 _TintColor;<br>                float _AberrationStrength;<br>                int _AberrationSamples;<br>                float _NoiseIntensity;<br>            CBUFFER_END<br><br>            // 简单噪点哈希<br>            float Hash(float2 uv)<br>            &#123;<br>                return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.texcoord;<br><br>                // ===== 色差（径向 RGB 分离）=====<br>                float2 center = uv - 0.5;<br>                float3 color = 0.0;<br>                float totalWeight = 0.0;<br>                for (int i = 0; i &lt; _AberrationSamples; i++)<br>                &#123;<br>                    float t = (float)i / (float)(_AberrationSamples - 1);<br>                    float scale = 1.0 + (t - 0.5) * _AberrationStrength;<br>                    float2 aberrUV = 0.5 + center * scale;<br><br>                    // 每次采样 RGB 的不同通道（红向外，蓝向内）<br>                    float rScale = 1.0 + t * _AberrationStrength;<br>                    float bScale = 1.0 - t * _AberrationStrength;<br>                    color.r += SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture,<br>                                    0.5 + center * rScale).r;<br>                    color.g += SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture,<br>                                    aberrUV).g;<br>                    color.b += SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture,<br>                                    0.5 + center * bScale).b;<br>                    totalWeight += 1.0;<br>                &#125;<br>                color /= totalWeight;<br><br>                // ===== 扫描线 =====<br>                // 高频扫描线（水平条纹）<br>                float scanlineY = uv.y * _ScanlineFrequency - _Time.y * _ScanlineSpeed;<br>                float scanline = pow(abs(sin(scanlineY * 3.14159)), 3.0);<br>                scanline = lerp(1.0 - _ScanlineIntensity, 1.0, scanline);<br>                color *= scanline;<br><br>                // ===== 赛博朋克色调偏移 =====<br>                // 将颜色向赛博朋克风格偏移（青色/品红高光）<br>                float luminance = dot(color, float3(0.299, 0.587, 0.114));<br>                float3 tinted = lerp(color, color * _TintColor.rgb * 1.5, _ColorShiftIntensity * 0.4);<br>                color = lerp(color, tinted, _ColorShiftIntensity);<br><br>                // 暗部加青色，高光加品红（典型赛博朋克分色调）<br>                float3 shadowTint = float3(0.0, 0.2, 0.4) * _ColorShiftIntensity;<br>                float3 highlightTint = float3(0.4, 0.0, 0.3) * _ColorShiftIntensity;<br>                color += lerp(shadowTint, highlightTint, luminance) * 0.3;<br><br>                // ===== 动态噪点 =====<br>                float noise = Hash(uv * 1000.0 + frac(_Time.y)) - 0.5;<br>                color += noise * _NoiseIntensity;<br><br>                return half4(saturate(color), 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="URP-内置后处理详细配置"><a href="#URP-内置后处理详细配置" class="headerlink" title="URP 内置后处理详细配置"></a>URP 内置后处理详细配置</h2><h3 id="Bloom-配置要点"><a href="#Bloom-配置要点" class="headerlink" title="Bloom 配置要点"></a>Bloom 配置要点</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">Threshold</span>：<span class="hljs-number">0</span>.<span class="hljs-number">9</span>（只让超亮区域产生光晕，避免全图模糊）<br><span class="hljs-attribute">Intensity</span>：<span class="hljs-number">0</span>.<span class="hljs-number">5</span>~<span class="hljs-number">1</span>.<span class="hljs-number">0</span>（过高会导致画面过曝）<br><span class="hljs-attribute">Scatter</span>：<span class="hljs-number">0</span>.<span class="hljs-number">5</span>~<span class="hljs-number">0</span>.<span class="hljs-number">7</span>（控制光晕扩散范围）<br><span class="hljs-attribute">High</span> Quality Filtering：移动端关闭（节省性能）<br></code></pre></td></tr></table></figure>
+
+<p><strong>踩坑</strong>：URP Bloom 在 HDR 关闭时效果很差，务必在 Camera 的 <code>Additional Camera Data</code> 中开启 HDR。</p>
+<h3 id="Color-Grading-配置要点"><a href="#Color-Grading-配置要点" class="headerlink" title="Color Grading 配置要点"></a>Color Grading 配置要点</h3><p>URP 支持两种工作流：</p>
+<ul>
+<li><strong>HDR 模式</strong>（推荐）：在线性 HDR 空间调色，质量最高</li>
+<li><strong>LDR 模式</strong>：在 LDR 空间调色，性能更好但质量有限</li>
+</ul>
+<p>LUT（Look Up Table）是最高效的颜色风格化方案，只需一次纹理查找即可应用复杂的颜色变换：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// C# 脚本动态切换 LUT（根据区域/时间变化）</span><br><span class="hljs-keyword">var</span> colorGrading = volume.profile.TryGet&lt;ColorAdjustments&gt;(<span class="hljs-keyword">out</span> <span class="hljs-keyword">var</span> colorAdj);<br><span class="hljs-keyword">if</span> (colorAdj != <span class="hljs-literal">null</span>)<br>&#123;<br>    colorAdj.colorFilter.<span class="hljs-keyword">value</span> = dayNightBlend &gt; <span class="hljs-number">0.5</span> ? nightColor : dayColor;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="移动端后处理性能优化"><a href="#移动端后处理性能优化" class="headerlink" title="移动端后处理性能优化"></a>移动端后处理性能优化</h2><p>移动端 GPU 的带宽限制和 Tile-based 架构对后处理性能影响极大：</p>
+<p><strong>禁用&#x2F;降级建议</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>效果</th>
+<th>移动端建议</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Depth of Field</td>
+<td>关闭或用 Gaussian 模式</td>
+<td>Bokeh 模式开销极大</td>
+</tr>
+<tr>
+<td>Motion Blur</td>
+<td>关闭</td>
+<td>需要额外 Pass</td>
+</tr>
+<tr>
+<td>Screen Space Ambient Occlusion</td>
+<td>关闭</td>
+<td>多 Pass 带宽消耗</td>
+</tr>
+<tr>
+<td>Bloom</td>
+<td>开启但降低质量</td>
+<td>禁用 High Quality Filtering</td>
+</tr>
+<tr>
+<td>Color Grading</td>
+<td>使用 LUT（低开销）</td>
+<td>避免复杂曲线调整</td>
+</tr>
+<tr>
+<td>Film Grain</td>
+<td>关闭</td>
+<td>带宽浪费</td>
+</tr>
+</tbody></table>
+<p><strong>URP 移动端后处理最佳实践</strong>：</p>
+<ul>
+<li>将多个轻量后处理合并到单个 Pass（减少全屏 Blit 次数）</li>
+<li>使用 <code>RenderPassEvent.AfterRenderingPostProcessing</code> 合批</li>
+<li>避免在后处理 Shader 中使用依赖型纹理读取（Dependent Texture Read）</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 错误：依赖型读取（UV 基于另一个纹理采样结果）<br>float2 offset = tex2D(_OffsetTex, uv).rg; // 第一次采样<br>float3 color = tex2D(_MainTex, uv + offset); // 第二次采样依赖第一次结果<br><br>// 正确：所有 UV 偏移在 Vertex Shader 预计算，Fragment 直接使用<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整的-C-自定义效果注册流程"><a href="#完整的-C-自定义效果注册流程" class="headerlink" title="完整的 C# 自定义效果注册流程"></a>完整的 C# 自定义效果注册流程</h2><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 在 URP Asset 中注册自定义 Renderer Feature 的步骤：</span><br><span class="hljs-comment">// 1. 创建 CyberpunkScanlineFeature.cs</span><br><span class="hljs-comment">// 2. 在 Project 面板中选择 URP Renderer Asset（ForwardRenderer）</span><br><span class="hljs-comment">// 3. Inspector → Renderer Features → Add Renderer Feature → 选择 CyberpunkScanlineFeature</span><br><span class="hljs-comment">// 4. 在 Scene 中创建 Volume（Global）</span><br><span class="hljs-comment">// 5. 在 Volume 的 Profile 中添加 CyberpunkScanlineEffect</span><br><span class="hljs-comment">// 6. 调整参数即可在 Game View 中看到效果</span><br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-后处理实现"><a href="#ShaderGraph-后处理实现" class="headerlink" title="ShaderGraph 后处理实现"></a>ShaderGraph 后处理实现</h2><p>ShaderGraph 2022+ 支持全屏效果（Fullscreen Shader Graph），可以直接在 Graph 中实现后处理，无需手写 Blit Shader：</p>
+<ol>
+<li>右键 Project → <code>Create → Shader Graph → URP → Fullscreen Shader Graph</code></li>
+<li>添加 <code>URP Sample Buffer</code> 节点（类型选 <code>BlitSource</code>）获取当前屏幕颜色</li>
+<li>添加 <code>Screen Position</code> 节点获取 UV</li>
+<li>在 Graph 中实现后处理逻辑</li>
+<li>在 Renderer Feature 中将此 Shader Graph 编译的材质指定给 <code>Blitter</code></li>
+</ol>
+<p>后处理是提升游戏画质感的最高效手段之一。一个好的 Volume 参数配置加上 1-2 个自定义效果，可以让普通场景瞬间拥有商业游戏的视觉质感。关键是要理解每种效果的性能开销，在移动端上做出正确的取舍。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%90%8E%E5%A4%84%E7%90%86%E4%B8%8E%E7%9B%B8%E6%9C%BA/" class="category-chain-item">后处理与相机</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E5%90%8E%E5%A4%84%E7%90%86/" class="print-no-link">#后处理</a>
+      
+        <a href="/tags/Renderer-Feature/" class="print-no-link">#Renderer Feature</a>
+      
+        <a href="/tags/Volume%E6%A1%86%E6%9E%B6/" class="print-no-link">#Volume框架</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（二十八）：URP 后处理完整指南</div>
+      <div>https://alex-rachel.github.io/2026/04/01/28-post-processing/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/29-anti-aliasing/" title="Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/27-voronoi-cellular-noise/" title="Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用">
+                        <span class="hidden-mobile">Unity Shader 系列（二十七）：Voronoi 在游戏视效中的应用</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'ba0571f51ccdefe5045cd169f6d493b0'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

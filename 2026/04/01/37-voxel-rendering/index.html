@@ -1,0 +1,928 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="Unity 体素游戏的技术全景Minecraft 风格的体素游戏在 Unity 中实现需要解决三个核心工程问题：数据组织（如何高效存储亿级体素）、网格生成（如何将体素数据转换为可渲染的三角面）、渲染（如何高效渲染大量体素面）。本篇从零到一覆盖整个技术栈：Chunk 系统设计、Greedy Meshing 算法、纹理集 UV 计算、顶点 AO，以及完整的 URP 体素 Shader。 Chunk 系">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/37-voxel-rendering/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="Unity 体素游戏的技术全景Minecraft 风格的体素游戏在 Unity 中实现需要解决三个核心工程问题：数据组织（如何高效存储亿级体素）、网格生成（如何将体素数据转换为可渲染的三角面）、渲染（如何高效渲染大量体素面）。本篇从零到一覆盖整个技术栈：Chunk 系统设计、Greedy Meshing 算法、纹理集 UV 计算、顶点 AO，以及完整的 URP 体素 Shader。 Chunk 系">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.724Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="体素渲染">
+<meta property="article:tag" content="Minecraft">
+<meta property="article:tag" content="Chunk系统">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 15:00" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          15k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          127 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="Unity-体素游戏的技术全景"><a href="#Unity-体素游戏的技术全景" class="headerlink" title="Unity 体素游戏的技术全景"></a>Unity 体素游戏的技术全景</h2><p>Minecraft 风格的体素游戏在 Unity 中实现需要解决三个核心工程问题：<strong>数据组织</strong>（如何高效存储亿级体素）、<strong>网格生成</strong>（如何将体素数据转换为可渲染的三角面）、<strong>渲染</strong>（如何高效渲染大量体素面）。本篇从零到一覆盖整个技术栈：Chunk 系统设计、Greedy Meshing 算法、纹理集 UV 计算、顶点 AO，以及完整的 URP 体素 Shader。</p>
+<h2 id="Chunk-系统架构"><a href="#Chunk-系统架构" class="headerlink" title="Chunk 系统架构"></a>Chunk 系统架构</h2><p>体素世界不能一次性加载全部数据——即使是 256×256×256 的小地图也需要 16MB 内存。标准做法是将世界分割为固定大小的 <strong>Chunk</strong>（区块），只加载玩家周围的区块。</p>
+<h3 id="Chunk-数据结构"><a href="#Chunk-数据结构" class="headerlink" title="Chunk 数据结构"></a>Chunk 数据结构</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> System.Collections.Generic;<br><br><span class="hljs-comment">// 单个方块类型</span><br><span class="hljs-keyword">public</span> <span class="hljs-built_in">enum</span> BlockType : <span class="hljs-built_in">byte</span><br>&#123;<br>    Air   = <span class="hljs-number">0</span>,<br>    Grass = <span class="hljs-number">1</span>,<br>    Dirt  = <span class="hljs-number">2</span>,<br>    Stone = <span class="hljs-number">3</span>,<br>    Sand  = <span class="hljs-number">4</span>,<br>    Water = <span class="hljs-number">5</span>,<br>&#125;<br><br><span class="hljs-comment">// 体素世界常量</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">VoxelConfig</span><br>&#123;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">const</span> <span class="hljs-built_in">int</span> CHUNK_SIZE   = <span class="hljs-number">16</span>;  <span class="hljs-comment">// X/Z 方向大小</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">const</span> <span class="hljs-built_in">int</span> CHUNK_HEIGHT = <span class="hljs-number">256</span>; <span class="hljs-comment">// Y 方向高度</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">const</span> <span class="hljs-built_in">int</span> RENDER_DISTANCE = <span class="hljs-number">8</span>; <span class="hljs-comment">// 渲染距离（Chunk 数）</span><br><br>    <span class="hljs-comment">// 六个面的方向</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> Vector3Int[] FaceDirections = &#123;<br>        Vector3Int.up,    Vector3Int.down,<br>        Vector3Int.left,  Vector3Int.right,<br>        Vector3Int.forward, Vector3Int.back<br>    &#125;;<br>&#125;<br><br><span class="hljs-comment">// 单个 Chunk 的数据类</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">ChunkData</span><br>&#123;<br>    <span class="hljs-keyword">public</span> Vector2Int ChunkCoord; <span class="hljs-comment">// Chunk 的世界坐标（以 Chunk 为单位）</span><br>    <span class="hljs-keyword">private</span> BlockType[] blocks;   <span class="hljs-comment">// 扁平化的三维数组</span><br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ChunkData</span>(<span class="hljs-params">Vector2Int coord</span>)</span><br>    &#123;<br>        ChunkCoord = coord;<br>        blocks = <span class="hljs-keyword">new</span> BlockType[VoxelConfig.CHUNK_SIZE<br>                             * VoxelConfig.CHUNK_HEIGHT<br>                             * VoxelConfig.CHUNK_SIZE];<br>    &#125;<br><br>    <span class="hljs-comment">// 三维坐标 → 一维索引</span><br>    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> <span class="hljs-title">GetIndex</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> x, <span class="hljs-built_in">int</span> y, <span class="hljs-built_in">int</span> z</span>)</span><br>    &#123;<br>        <span class="hljs-keyword">return</span> x + VoxelConfig.CHUNK_SIZE * (y + VoxelConfig.CHUNK_HEIGHT * z);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> BlockType <span class="hljs-title">GetBlock</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> x, <span class="hljs-built_in">int</span> y, <span class="hljs-built_in">int</span> z</span>)</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (x &lt; <span class="hljs-number">0</span> || x &gt;= VoxelConfig.CHUNK_SIZE ||<br>            y &lt; <span class="hljs-number">0</span> || y &gt;= VoxelConfig.CHUNK_HEIGHT ||<br>            z &lt; <span class="hljs-number">0</span> || z &gt;= VoxelConfig.CHUNK_SIZE)<br>            <span class="hljs-keyword">return</span> BlockType.Air;<br>        <span class="hljs-keyword">return</span> blocks[GetIndex(x, y, z)];<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">SetBlock</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> x, <span class="hljs-built_in">int</span> y, <span class="hljs-built_in">int</span> z, BlockType type</span>)</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (x &lt; <span class="hljs-number">0</span> || x &gt;= VoxelConfig.CHUNK_SIZE ||<br>            y &lt; <span class="hljs-number">0</span> || y &gt;= VoxelConfig.CHUNK_HEIGHT ||<br>            z &lt; <span class="hljs-number">0</span> || z &gt;= VoxelConfig.CHUNK_SIZE)<br>            <span class="hljs-keyword">return</span>;<br>        blocks[GetIndex(x, y, z)] = type;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-built_in">bool</span> <span class="hljs-title">IsAir</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> x, <span class="hljs-built_in">int</span> y, <span class="hljs-built_in">int</span> z</span>)</span><br>    &#123;<br>        <span class="hljs-keyword">return</span> GetBlock(x, y, z) == BlockType.Air;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Greedy-Meshing：减少三角面数"><a href="#Greedy-Meshing：减少三角面数" class="headerlink" title="Greedy Meshing：减少三角面数"></a>Greedy Meshing：减少三角面数</h2><p>朴素的体素渲染为每个可见面生成两个三角形。一个 16×16×16 的 Chunk 最多可见面约 16384 个，但 Greedy Meshing 可以将相邻相同材质的面合并为一个大矩形，大幅减少三角面数（实测减少 60~80%）。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">GreedyMeshBuilder</span><br>&#123;<br>    <span class="hljs-comment">// 面方向枚举（0=+Y, 1=-Y, 2=+X, 3=-X, 4=+Z, 5=-Z）</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">struct</span> FaceInfo<br>    &#123;<br>        <span class="hljs-keyword">public</span> BlockType blockType;<br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">bool</span>      merged; <span class="hljs-comment">// 是否已被合并</span><br>    &#125;<br><br>    <span class="hljs-comment">// 对一个方向的切片进行贪心合并</span><br>    <span class="hljs-comment">// axis: 0=X, 1=Y, 2=Z 方向的切片</span><br>    <span class="hljs-comment">// positive: true=正方向面, false=负方向面</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">GenerateSliceMesh</span>(<span class="hljs-params"></span></span><br><span class="hljs-params"><span class="hljs-function">        ChunkData chunk,</span></span><br><span class="hljs-params"><span class="hljs-function">        <span class="hljs-built_in">int</span>       sliceCoord,  // 切片在 axis 方向的坐标</span></span><br><span class="hljs-params"><span class="hljs-function">        <span class="hljs-built_in">int</span>       axis,</span></span><br><span class="hljs-params"><span class="hljs-function">        <span class="hljs-built_in">bool</span>      positive,</span></span><br><span class="hljs-params"><span class="hljs-function">        List&lt;Vector3&gt; vertices,</span></span><br><span class="hljs-params"><span class="hljs-function">        List&lt;<span class="hljs-built_in">int</span>&gt;     triangles,</span></span><br><span class="hljs-params"><span class="hljs-function">        List&lt;Vector2&gt; uvs,</span></span><br><span class="hljs-params"><span class="hljs-function">        List&lt;Color32&gt; colors</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// 获取切片尺寸（axis=1 是 Y 轴，切片是 XZ 平面）</span><br>        <span class="hljs-built_in">int</span> uSize = axis == <span class="hljs-number">0</span> ? VoxelConfig.CHUNK_HEIGHT : VoxelConfig.CHUNK_SIZE;<br>        <span class="hljs-built_in">int</span> vSize = axis == <span class="hljs-number">2</span> ? VoxelConfig.CHUNK_HEIGHT : VoxelConfig.CHUNK_SIZE;<br><br>        <span class="hljs-keyword">var</span> faceGrid = <span class="hljs-keyword">new</span> FaceInfo[uSize, vSize];<br><br>        <span class="hljs-comment">// 填充面网格：哪些位置需要生成这个方向的面</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> u = <span class="hljs-number">0</span>; u &lt; uSize; u++)<br>        &#123;<br>            <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> v = <span class="hljs-number">0</span>; v &lt; vSize; v++)<br>            &#123;<br>                <span class="hljs-comment">// 根据 axis 转换为 xyz 坐标</span><br>                <span class="hljs-built_in">int</span> x = axis == <span class="hljs-number">0</span> ? sliceCoord : (axis == <span class="hljs-number">2</span> ? v : u);<br>                <span class="hljs-built_in">int</span> y = axis == <span class="hljs-number">1</span> ? sliceCoord : (axis == <span class="hljs-number">2</span> ? sliceCoord : v);<br>                <span class="hljs-built_in">int</span> z = axis == <span class="hljs-number">2</span> ? sliceCoord : (axis == <span class="hljs-number">0</span> ? v : u);<br><br>                BlockType current = chunk.GetBlock(x, y, z);<br>                <span class="hljs-built_in">int</span> nx = x + (axis == <span class="hljs-number">0</span> ? (positive ? <span class="hljs-number">1</span> : <span class="hljs-number">-1</span>) : <span class="hljs-number">0</span>);<br>                <span class="hljs-built_in">int</span> ny = y + (axis == <span class="hljs-number">1</span> ? (positive ? <span class="hljs-number">1</span> : <span class="hljs-number">-1</span>) : <span class="hljs-number">0</span>);<br>                <span class="hljs-built_in">int</span> nz = z + (axis == <span class="hljs-number">2</span> ? (positive ? <span class="hljs-number">1</span> : <span class="hljs-number">-1</span>) : <span class="hljs-number">0</span>);<br>                BlockType neighbor = chunk.GetBlock(nx, ny, nz);<br><br>                <span class="hljs-comment">// 面可见：当前格子不为空，且邻居为空</span><br>                <span class="hljs-keyword">if</span> (current != BlockType.Air &amp;&amp; neighbor == BlockType.Air)<br>                    faceGrid[u, v] = <span class="hljs-keyword">new</span> FaceInfo &#123; blockType = current, merged = <span class="hljs-literal">false</span> &#125;;<br>                <span class="hljs-keyword">else</span><br>                    faceGrid[u, v] = <span class="hljs-keyword">new</span> FaceInfo &#123; blockType = BlockType.Air, merged = <span class="hljs-literal">true</span> &#125;;<br>            &#125;<br>        &#125;<br><br>        <span class="hljs-comment">// Greedy Meshing：贪心合并</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> u = <span class="hljs-number">0</span>; u &lt; uSize; u++)<br>        &#123;<br>            <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> v = <span class="hljs-number">0</span>; v &lt; vSize; v++)<br>            &#123;<br>                <span class="hljs-keyword">if</span> (faceGrid[u, v].merged) <span class="hljs-keyword">continue</span>;<br>                BlockType type = faceGrid[u, v].blockType;<br><br>                <span class="hljs-comment">// 沿 V 方向扩展</span><br>                <span class="hljs-built_in">int</span> vEnd = v + <span class="hljs-number">1</span>;<br>                <span class="hljs-keyword">while</span> (vEnd &lt; vSize &amp;&amp; !faceGrid[u, vEnd].merged &amp;&amp; faceGrid[u, vEnd].blockType == type)<br>                    vEnd++;<br><br>                <span class="hljs-comment">// 沿 U 方向扩展（检查整行是否都满足条件）</span><br>                <span class="hljs-built_in">int</span> uEnd = u + <span class="hljs-number">1</span>;<br>                <span class="hljs-keyword">while</span> (uEnd &lt; uSize)<br>                &#123;<br>                    <span class="hljs-built_in">bool</span> canExpand = <span class="hljs-literal">true</span>;<br>                    <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> vi = v; vi &lt; vEnd; vi++)<br>                    &#123;<br>                        <span class="hljs-keyword">if</span> (faceGrid[uEnd, vi].merged || faceGrid[uEnd, vi].blockType != type)<br>                        &#123;<br>                            canExpand = <span class="hljs-literal">false</span>;<br>                            <span class="hljs-keyword">break</span>;<br>                        &#125;<br>                    &#125;<br>                    <span class="hljs-keyword">if</span> (!canExpand) <span class="hljs-keyword">break</span>;<br>                    uEnd++;<br>                &#125;<br><br>                <span class="hljs-comment">// 标记已合并的区域</span><br>                <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> ui = u; ui &lt; uEnd; ui++)<br>                    <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> vi = v; vi &lt; vEnd; vi++)<br>                        faceGrid[ui, vi].merged = <span class="hljs-literal">true</span>;<br><br>                <span class="hljs-comment">// 添加合并后的大矩形面</span><br>                AddFace(vertices, triangles, uvs, colors,<br>                        u, v, uEnd - u, vEnd - v,<br>                        sliceCoord, axis, positive, type);<br>            &#125;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">AddFace</span>(<span class="hljs-params">List&lt;Vector3&gt; verts, List&lt;<span class="hljs-built_in">int</span>&gt; tris, List&lt;Vector2&gt; uvs, List&lt;Color32&gt; colors,</span></span><br><span class="hljs-params"><span class="hljs-function">                 <span class="hljs-built_in">int</span> u, <span class="hljs-built_in">int</span> v, <span class="hljs-built_in">int</span> uSize, <span class="hljs-built_in">int</span> vSize,</span></span><br><span class="hljs-params"><span class="hljs-function">                 <span class="hljs-built_in">int</span> sliceCoord, <span class="hljs-built_in">int</span> axis, <span class="hljs-built_in">bool</span> positive, BlockType type</span>)</span><br>    &#123;<br>        <span class="hljs-built_in">int</span> baseIdx = verts.Count;<br><br>        <span class="hljs-comment">// 构建矩形的四个顶点（根据 axis 方向转换坐标）</span><br>        Vector3[] faceVerts = <span class="hljs-keyword">new</span> Vector3[<span class="hljs-number">4</span>];<br>        Vector3[] positions = &#123;<br>            ToWorldPos(u,        v,        sliceCoord, axis, positive),<br>            ToWorldPos(u + uSize,v,        sliceCoord, axis, positive),<br>            ToWorldPos(u + uSize,v + vSize,sliceCoord, axis, positive),<br>            ToWorldPos(u,        v + vSize,sliceCoord, axis, positive),<br>        &#125;;<br><br>        verts.AddRange(positions);<br><br>        <span class="hljs-comment">// 法线方向决定三角形绕序</span><br>        <span class="hljs-keyword">if</span> (positive)<br>        &#123;<br>            tris.AddRange(<span class="hljs-keyword">new</span>[] &#123; baseIdx, baseIdx+<span class="hljs-number">1</span>, baseIdx+<span class="hljs-number">2</span>, baseIdx, baseIdx+<span class="hljs-number">2</span>, baseIdx+<span class="hljs-number">3</span> &#125;);<br>        &#125;<br>        <span class="hljs-keyword">else</span><br>        &#123;<br>            tris.AddRange(<span class="hljs-keyword">new</span>[] &#123; baseIdx, baseIdx+<span class="hljs-number">2</span>, baseIdx+<span class="hljs-number">1</span>, baseIdx, baseIdx+<span class="hljs-number">3</span>, baseIdx+<span class="hljs-number">2</span> &#125;);<br>        &#125;<br><br>        <span class="hljs-comment">// 纹理集 UV（见下节）</span><br>        <span class="hljs-keyword">var</span> atlasUV = GetAtlasUV(type, axis, positive, uSize, vSize);<br>        uvs.AddRange(atlasUV);<br><br>        <span class="hljs-comment">// 顶点 AO 颜色（见下节）</span><br>        colors.AddRange(<span class="hljs-keyword">new</span> Color32[] &#123;<br>            <span class="hljs-keyword">new</span> Color32(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>),<br>            <span class="hljs-keyword">new</span> Color32(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>),<br>            <span class="hljs-keyword">new</span> Color32(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>),<br>            <span class="hljs-keyword">new</span> Color32(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>)<br>        &#125;);<br>    &#125;<br><br>    <span class="hljs-function">Vector3 <span class="hljs-title">ToWorldPos</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> u, <span class="hljs-built_in">int</span> v, <span class="hljs-built_in">int</span> s, <span class="hljs-built_in">int</span> axis, <span class="hljs-built_in">bool</span> positive</span>)</span><br>    &#123;<br>        <span class="hljs-built_in">float</span> offset = positive ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">switch</span> (axis)<br>        &#123;<br>            <span class="hljs-keyword">case</span> <span class="hljs-number">0</span>: <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Vector3(s + offset, u, v);<br>            <span class="hljs-keyword">case</span> <span class="hljs-number">1</span>: <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Vector3(u, s + offset, v);<br>            <span class="hljs-literal">default</span>: <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Vector3(u, v, s + offset);<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function">Vector2[] <span class="hljs-title">GetAtlasUV</span>(<span class="hljs-params">BlockType type, <span class="hljs-built_in">int</span> axis, <span class="hljs-built_in">bool</span> positive, <span class="hljs-built_in">int</span> uSize, <span class="hljs-built_in">int</span> vSize</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// 见下节纹理集实现</span><br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Vector2[<span class="hljs-number">4</span>] &#123;<br>            <span class="hljs-keyword">new</span> Vector2(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>), <span class="hljs-keyword">new</span> Vector2(uSize, <span class="hljs-number">0</span>),<br>            <span class="hljs-keyword">new</span> Vector2(uSize, vSize), <span class="hljs-keyword">new</span> Vector2(<span class="hljs-number">0</span>, vSize)<br>        &#125;;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="纹理集（Texture-Atlas）与防漏色"><a href="#纹理集（Texture-Atlas）与防漏色" class="headerlink" title="纹理集（Texture Atlas）与防漏色"></a>纹理集（Texture Atlas）与防漏色</h2><p>体素游戏的所有方块纹理通常打包在一张大纹理（纹理集）上，通过 UV 坐标选择不同的子纹理。</p>
+<h3 id="防止纹理漏色（Bleeding）"><a href="#防止纹理漏色（Bleeding）" class="headerlink" title="防止纹理漏色（Bleeding）"></a>防止纹理漏色（Bleeding）</h3><p>漏色是指纹理集中相邻纹理的像素”渗入”到当前纹理边界，在 Mipmap 降采样时尤为严重。</p>
+<p><strong>解决方案</strong>：UV 坐标向内收缩半个纹素（Texel Padding）：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">TextureAtlas</span><br>&#123;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> atlasWidth;   <span class="hljs-comment">// 纹理集宽度（像素）</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> atlasHeight;  <span class="hljs-comment">// 纹理集高度</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> tileSize;     <span class="hljs-comment">// 每个方块纹理大小（如 16px）</span><br><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> TilesPerRow   =&gt; atlasWidth  / tileSize;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> TilesPerColumn=&gt; atlasHeight / tileSize;<br><br>    <span class="hljs-comment">// 获取某方块类型在纹理集中的 UV 偏移（左下角 UV）</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> Vector2 <span class="hljs-title">GetTileOffset</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> tileX, <span class="hljs-built_in">int</span> tileY</span>)</span><br>    &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Vector2(<br>            (<span class="hljs-built_in">float</span>)tileX * tileSize / atlasWidth,<br>            (<span class="hljs-built_in">float</span>)tileY * tileSize / atlasHeight<br>        );<br>    &#125;<br><br>    <span class="hljs-comment">// 获取防漏色 UV 坐标（向内缩进半个 Texel）</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> Vector2[] <span class="hljs-title">GetSafeTileUVs</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> tileX, <span class="hljs-built_in">int</span> tileY, <span class="hljs-built_in">int</span> uSize, <span class="hljs-built_in">int</span> vSize</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// 半个 Texel 的 UV 偏移（防止漏色）</span><br>        <span class="hljs-built_in">float</span> halfTexelX = <span class="hljs-number">0.5f</span> / atlasWidth;<br>        <span class="hljs-built_in">float</span> halfTexelY = <span class="hljs-number">0.5f</span> / atlasHeight;<br><br>        <span class="hljs-built_in">float</span> u0 = (<span class="hljs-built_in">float</span>)tileX * tileSize / atlasWidth  + halfTexelX;<br>        <span class="hljs-built_in">float</span> v0 = (<span class="hljs-built_in">float</span>)tileY * tileSize / atlasHeight + halfTexelY;<br>        <span class="hljs-built_in">float</span> u1 = u0 + (<span class="hljs-built_in">float</span>)tileSize / atlasWidth  - halfTexelX * <span class="hljs-number">2</span>;<br>        <span class="hljs-built_in">float</span> v1 = v0 + (<span class="hljs-built_in">float</span>)tileSize / atlasHeight - halfTexelY * <span class="hljs-number">2</span>;<br><br>        <span class="hljs-comment">// UV 按面的 uSize/vSize 重复（贪心合并的大面需要 UV 重复）</span><br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Vector2[]<br>        &#123;<br>            <span class="hljs-keyword">new</span> Vector2(u0,       v0),<br>            <span class="hljs-keyword">new</span> Vector2(u0 + (u1-u0) * uSize, v0),<br>            <span class="hljs-keyword">new</span> Vector2(u0 + (u1-u0) * uSize, v0 + (v1-v0) * vSize),<br>            <span class="hljs-keyword">new</span> Vector2(u0,       v0 + (v1-v0) * vSize)<br>        &#125;;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="顶点-AO（Vertex-Ambient-Occlusion）"><a href="#顶点-AO（Vertex-Ambient-Occlusion）" class="headerlink" title="顶点 AO（Vertex Ambient Occlusion）"></a>顶点 AO（Vertex Ambient Occlusion）</h2><p>体素 AO 不需要光线追踪，通过检查顶点周围邻居体素的遮蔽情况计算环境光遮蔽值，存储在顶点颜色中。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 计算单个顶点的 AO 值（0=完全遮蔽，1=完全开放）</span><br><span class="hljs-function"><span class="hljs-built_in">byte</span> <span class="hljs-title">CalculateVertexAO</span>(<span class="hljs-params">ChunkData chunk, Vector3Int vertexPos, <span class="hljs-built_in">int</span> axis, <span class="hljs-built_in">bool</span> positive</span>)</span><br>&#123;<br>    <span class="hljs-comment">// 顶点在面的角落，需要检查周围的 3 个邻居</span><br>    <span class="hljs-comment">// side1, side2: 相邻的两个侧面体素</span><br>    <span class="hljs-comment">// corner: 对角体素</span><br>    Vector3Int normal = <span class="hljs-keyword">new</span> Vector3Int(<br>        axis == <span class="hljs-number">0</span> ? (positive ? <span class="hljs-number">1</span> : <span class="hljs-number">-1</span>) : <span class="hljs-number">0</span>,<br>        axis == <span class="hljs-number">1</span> ? (positive ? <span class="hljs-number">1</span> : <span class="hljs-number">-1</span>) : <span class="hljs-number">0</span>,<br>        axis == <span class="hljs-number">2</span> ? (positive ? <span class="hljs-number">1</span> : <span class="hljs-number">-1</span>) : <span class="hljs-number">0</span><br>    );<br><br>    <span class="hljs-comment">// 根据顶点位置确定两个侧面方向（简化实现）</span><br>    <span class="hljs-comment">// 完整实现需要根据顶点在面的四个角分别计算</span><br><br>    <span class="hljs-comment">// AO 公式：0 个邻居遮蔽 → AO=3, 1个 → AO=2, 2个 → AO=1, side1+side2都遮蔽 → AO=0</span><br>    <span class="hljs-built_in">int</span> side1Occluded = <span class="hljs-number">0</span>; <span class="hljs-comment">// 0 or 1</span><br>    <span class="hljs-built_in">int</span> side2Occluded = <span class="hljs-number">0</span>;<br>    <span class="hljs-built_in">int</span> cornerOccluded = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-comment">// 如果两个侧面都有体素，角落方向不可见（不检查 corner）</span><br>    <span class="hljs-built_in">int</span> aoValue;<br>    <span class="hljs-keyword">if</span> (side1Occluded == <span class="hljs-number">1</span> &amp;&amp; side2Occluded == <span class="hljs-number">1</span>)<br>        aoValue = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">else</span><br>        aoValue = <span class="hljs-number">3</span> - (side1Occluded + side2Occluded + cornerOccluded);<br><br>    <span class="hljs-comment">// 归一化到 0-255（存入 Color32.r）</span><br>    <span class="hljs-keyword">return</span> (<span class="hljs-built_in">byte</span>)(aoValue * <span class="hljs-number">255</span> / <span class="hljs-number">3</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整-URP-体素地形-Shader"><a href="#完整-URP-体素地形-Shader" class="headerlink" title="完整 URP 体素地形 Shader"></a>完整 URP 体素地形 Shader</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/VoxelTerrain&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _AtlasTex       (&quot;Texture Atlas&quot;,       2D)    = &quot;white&quot; &#123;&#125;<br>        _AtlasTileSize  (&quot;Tile Size (0-1 UV)&quot;,  Float) = 0.0625  // 1/16，16×16 纹理集<br>        _FogColor       (&quot;Fog Color&quot;,           Color) = (0.6, 0.7, 0.8, 1.0)<br>        _FogStart       (&quot;Fog Start Distance&quot;,  Float) = 80<br>        _FogEnd         (&quot;Fog End Distance&quot;,    Float) = 160<br>        _AmbientColor   (&quot;Ambient Color&quot;,       Color) = (0.3, 0.35, 0.4, 1.0)<br>        _AOStrength     (&quot;AO Strength&quot;,         Range(0, 1)) = 0.7<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _SHADOWS_SOFT<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float2 uv         : TEXCOORD0;<br>                float4 color      : COLOR;     // 顶点 AO 存储在顶点颜色的 R 通道<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 positionWS  : TEXCOORD0;<br>                float3 normalWS    : TEXCOORD1;<br>                float2 uv          : TEXCOORD2;<br>                float  ao          : TEXCOORD3; // AO 值<br>                float  fogFactor   : TEXCOORD4;<br>            &#125;;<br><br>            TEXTURE2D(_AtlasTex); SAMPLER(sampler_AtlasTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _AtlasTex_ST;<br>                float  _AtlasTileSize;<br>                float4 _FogColor;<br>                float  _FogStart;<br>                float  _FogEnd;<br>                float4 _AmbientColor;<br>                float  _AOStrength;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                VertexPositionInputs posInputs = GetVertexPositionInputs(IN.positionOS.xyz);<br>                OUT.positionHCS = posInputs.positionCS;<br>                OUT.positionWS  = posInputs.positionWS;<br>                OUT.normalWS    = TransformObjectToWorldNormal(IN.normalOS);<br>                OUT.uv = IN.uv; // UV 直接来自网格生成（已包含纹理集偏移）<br><br>                // AO 从顶点颜色 R 通道读取，映射到 [AOStrength, 1] 范围<br>                OUT.ao = lerp(_AOStrength, 1.0, IN.color.r);<br><br>                // 线性雾计算（在顶点阶段计算，Fragment 阶段 Lerp）<br>                float dist = length(_WorldSpaceCameraPos - posInputs.positionWS);<br>                OUT.fogFactor = saturate((dist - _FogStart) / (_FogEnd - _FogStart));<br><br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                // ===== 纹理采样 =====<br>                half4 albedo = SAMPLE_TEXTURE2D(_AtlasTex, sampler_AtlasTex, IN.uv);<br><br>                // ===== 光照 =====<br>                float3 normalWS = normalize(IN.normalWS);<br><br>                // 获取主光源（含阴影衰减）<br>                float4 shadowCoord = TransformWorldToShadowCoord(IN.positionWS);<br>                Light mainLight = GetMainLight(shadowCoord);<br>                float NdotL = saturate(dot(normalWS, mainLight.direction));<br><br>                // 面方向光照（顶部面最亮，底部面最暗）<br>                // 体素游戏常用此技巧替代复杂光照，性能更好<br>                float faceDimming = 1.0;<br>                if (abs(normalWS.y + 1.0) &lt; 0.1) faceDimming = 0.5;  // 底部面<br>                else if (abs(normalWS.x) &gt; 0.5 || abs(normalWS.z) &gt; 0.5) faceDimming = 0.75; // 侧面<br><br>                // 漫反射：主光源 + 环境光<br>                half3 diffuse = mainLight.color * NdotL * mainLight.shadowAttenuation * faceDimming;<br>                half3 ambient = _AmbientColor.rgb;<br>                half3 lighting = diffuse + ambient;<br><br>                // ===== 应用 AO =====<br>                half3 color = albedo.rgb * lighting * IN.ao;<br><br>                // ===== 距离雾 =====<br>                color = lerp(color, _FogColor.rgb, IN.fogFactor);<br><br>                return half4(color, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // 阴影投射<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="体素破坏特效-Shader"><a href="#体素破坏特效-Shader" class="headerlink" title="体素破坏特效 Shader"></a>体素破坏特效 Shader</h2><p>方块被破坏时，碎片飞散的顶点动画 Shader：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/VoxelBreakEffect&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex        (&quot;Block Texture&quot;,   2D)    = &quot;white&quot; &#123;&#125;<br>        _LifeTime       (&quot;Life Time&quot;,       Float) = 1.0<br>        _Gravity        (&quot;Gravity&quot;,         Float) = 9.8<br>        _SpreadRadius   (&quot;Spread Radius&quot;,   Float) = 2.0<br>        _RotateSpeed    (&quot;Rotate Speed&quot;,    Float) = 5.0<br>        _ElapsedTime    (&quot;Elapsed Time&quot;,    Float) = 0.0  // C# 每帧传入<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot;     = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>            &quot;Queue&quot;          = &quot;Transparent&quot;<br>        &#125;<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        ZWrite Off<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float2 uv         : TEXCOORD0;<br>                float4 color      : COLOR; // R=碎片ID（决定飞散方向）<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>                float  alpha       : TEXCOORD1;<br>            &#125;;<br><br>            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float  _LifeTime;<br>                float  _Gravity;<br>                float  _SpreadRadius;<br>                float  _RotateSpeed;<br>                float  _ElapsedTime;<br>            CBUFFER_END<br><br>            // 伪随机数（基于碎片 ID）<br>            float3 RandomDir(float id)<br>            &#123;<br>                float a = id * 137.508;<br>                float b = id * 98.76543;<br>                return normalize(float3(sin(a) * cos(b), abs(sin(b)) + 0.3, cos(a) * cos(b)));<br>            &#125;<br><br>            float3x3 RotationMatrix(float3 axis, float angle)<br>            &#123;<br>                float s = sin(angle), c = cos(angle);<br>                float oc = 1.0 - c;<br>                return float3x3(<br>                    oc * axis.x * axis.x + c,<br>                    oc * axis.x * axis.y - axis.z * s,<br>                    oc * axis.z * axis.x + axis.y * s,<br>                    oc * axis.x * axis.y + axis.z * s,<br>                    oc * axis.y * axis.y + c,<br>                    oc * axis.y * axis.z - axis.x * s,<br>                    oc * axis.z * axis.x - axis.y * s,<br>                    oc * axis.y * axis.z + axis.x * s,<br>                    oc * axis.z * axis.z + c<br>                );<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                float t    = _ElapsedTime;<br>                float life = t / _LifeTime;  // [0, 1]<br><br>                // 碎片 ID（从顶点颜色读取，每个碎片的顶点有相同 ID）<br>                float id = IN.color.r * 255.0;<br><br>                // 飞散方向（随机）<br>                float3 flyDir  = RandomDir(id);<br>                float3 flyPos  = flyDir * _SpreadRadius * t;<br><br>                // 重力（向下加速）<br>                flyPos.y -= 0.5 * _Gravity * t * t;<br><br>                // 旋转（碎片在飞行中旋转）<br>                float3 rotAxis = normalize(float3(sin(id), cos(id * 2.3), sin(id * 1.7)));<br>                float  rotAngle = t * _RotateSpeed * (frac(id * 0.618) - 0.5) * 2.0;<br>                float3x3 rotMat = RotationMatrix(rotAxis, rotAngle);<br><br>                // 应用位移和旋转<br>                float3 posOS = mul(rotMat, IN.positionOS.xyz) + flyPos;<br>                OUT.positionHCS = TransformObjectToHClip(posOS);<br>                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);<br><br>                // Alpha 随时间淡出<br>                OUT.alpha = 1.0 - smoothstep(0.5, 1.0, life);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);<br>                col.a *= IN.alpha;<br>                return col;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="GPU-Instancing-与间接渲染优化"><a href="#GPU-Instancing-与间接渲染优化" class="headerlink" title="GPU Instancing 与间接渲染优化"></a>GPU Instancing 与间接渲染优化</h2><p>体素渲染的主要性能瓶颈是大量 Chunk 的 DrawCall。使用 GPU Instancing 和 <code>DrawMeshInstancedIndirect</code> 可以大幅降低 CPU 开销：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// Chunk 管理器中批量渲染所有 Chunk</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">ChunkRenderer</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    <span class="hljs-keyword">public</span> Mesh   chunkMesh;     <span class="hljs-comment">// 统一的区块 Mesh（或程序化生成）</span><br>    <span class="hljs-keyword">public</span> Material chunkMaterial;<br>    <span class="hljs-keyword">private</span> List&lt;Matrix4x4&gt; chunkTransforms = <span class="hljs-keyword">new</span> List&lt;Matrix4x4&gt;();<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 收集所有可见 Chunk 的变换矩阵</span><br>        chunkTransforms.Clear();<br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> chunk <span class="hljs-keyword">in</span> LoadedChunks)<br>        &#123;<br>            <span class="hljs-keyword">if</span> (IsChunkVisible(chunk))<br>                chunkTransforms.Add(chunk.transform.localToWorldMatrix);<br>        &#125;<br><br>        <span class="hljs-comment">// 每次最多 1023 个实例（Unity GPU Instancing 限制）</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; chunkTransforms.Count; i += <span class="hljs-number">1023</span>)<br>        &#123;<br>            <span class="hljs-built_in">int</span> count = Mathf.Min(<span class="hljs-number">1023</span>, chunkTransforms.Count - i);<br>            <span class="hljs-keyword">var</span> batch = chunkTransforms.GetRange(i, count).ToArray();<br>            Graphics.DrawMeshInstanced(chunkMesh, <span class="hljs-number">0</span>, chunkMaterial, batch);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="游戏应用场景"><a href="#游戏应用场景" class="headerlink" title="游戏应用场景"></a>游戏应用场景</h2><table>
+<thead>
+<tr>
+<th>技术</th>
+<th>具体游戏应用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Greedy Meshing</td>
+<td>沙盒建造游戏的高效地形渲染</td>
+</tr>
+<tr>
+<td>纹理集 + AO</td>
+<td>Minecraft 风格视觉效果</td>
+</tr>
+<tr>
+<td>Chunk 流式加载</td>
+<td>无缝大世界，内存控制在 500MB 以内</td>
+</tr>
+<tr>
+<td>GPU Instancing</td>
+<td>批量渲染 100+ Chunk，DrawCall &lt; 10</td>
+</tr>
+<tr>
+<td>破坏特效 Shader</td>
+<td>方块破坏&#x2F;爆炸视觉反馈</td>
+</tr>
+<tr>
+<td>水面透明 Shader</td>
+<td>体素水体（半透明 + 折射）</td>
+</tr>
+</tbody></table>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><ul>
+<li><strong>Chunk 大小的选择</strong>：16×16 是最常见的选择，平衡了网格生成时间（约 0.5ms&#x2F;Chunk）和 DrawCall 数量。32×32 减少 DrawCall 但网格重建更慢</li>
+<li><strong>Greedy Meshing 适用场景</strong>：均匀材质大面积（草地、石墙）效果显著；凌乱的自然地形（洞穴、矿脉）效果有限</li>
+<li><strong>AO 的性能影响</strong>：顶点 AO 计算在网格生成时完成（离线），运行时零额外开销，推荐始终启用</li>
+<li><strong>Mipmap 与纹理集漏色</strong>：建议在纹理集 Texture Import 中启用 Mipmap，但 Filter Mode 选 <code>Trilinear</code>，不要选 <code>Bilinear</code>。同时纹理集中每个方块纹理之间至少留 2px 间距</li>
+</ul>
+<p>Unity 中的体素渲染是一个既考验数学（AO、Greedy Meshing）又考验工程（Chunk 系统、内存管理）的综合课题，但每一个技术点都有清晰的优化路径——从最简单的朴素实现出发，逐步引入优化，最终可以在 Unity 中构建出媲美商业体素游戏的流畅体验。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E8%BF%9B%E9%98%B6%E6%8A%80%E6%9C%AF/" class="category-chain-item">进阶技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E4%BD%93%E7%B4%A0%E6%B8%B2%E6%9F%93/" class="print-no-link">#体素渲染</a>
+      
+        <a href="/tags/Minecraft/" class="print-no-link">#Minecraft</a>
+      
+        <a href="/tags/Chunk%E7%B3%BB%E7%BB%9F/" class="print-no-link">#Chunk系统</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader</div>
+      <div>https://alex-rachel.github.io/2026/04/01/37-voxel-rendering/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/02/hello-world/" title="第一篇博客">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">第一篇博客</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/36-sound-synthesis/" title="Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术">
+                        <span class="hidden-mobile">Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '05c8a303b1c5832d6e209a492d2a2f48'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
