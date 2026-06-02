@@ -1,0 +1,909 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="让声音驱动视觉音乐游戏、节奏同步的场景特效、音频可视化界面——这类效果的核心是让 Shader 感知到声音。Unity 提供了 AudioSource.GetSpectrumData 和 GetOutputData 两个 API，可以每帧从音频流中提取频谱数据，再通过 Shader 的 Texture1D 或 uniform 数组将数据传入 GPU。 本篇覆盖完整的技术链路：音频数据提取 → 传入">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/36-sound-synthesis/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="让声音驱动视觉音乐游戏、节奏同步的场景特效、音频可视化界面——这类效果的核心是让 Shader 感知到声音。Unity 提供了 AudioSource.GetSpectrumData 和 GetOutputData 两个 API，可以每帧从音频流中提取频谱数据，再通过 Shader 的 Texture1D 或 uniform 数组将数据传入 GPU。 本篇覆盖完整的技术链路：音频数据提取 → 传入">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T06:50:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.724Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="音频可视化">
+<meta property="article:tag" content="音频驱动Shader">
+<meta property="article:tag" content="节拍同步">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 14:50" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          14k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          120 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="让声音驱动视觉"><a href="#让声音驱动视觉" class="headerlink" title="让声音驱动视觉"></a>让声音驱动视觉</h2><p>音乐游戏、节奏同步的场景特效、音频可视化界面——这类效果的核心是让 <strong>Shader 感知到声音</strong>。Unity 提供了 <code>AudioSource.GetSpectrumData</code> 和 <code>GetOutputData</code> 两个 API，可以每帧从音频流中提取频谱数据，再通过 Shader 的 <code>Texture1D</code> 或 uniform 数组将数据传入 GPU。</p>
+<p>本篇覆盖完整的技术链路：音频数据提取 → 传入 Shader → 频谱可视化 → 节拍检测 → 场景灯光同步，每个环节都有完整可用的代码。</p>
+<h2 id="音频数据提取：GetSpectrumData-与-GetOutputData"><a href="#音频数据提取：GetSpectrumData-与-GetOutputData" class="headerlink" title="音频数据提取：GetSpectrumData 与 GetOutputData"></a>音频数据提取：GetSpectrumData 与 GetOutputData</h2><h3 id="两个-API-的区别"><a href="#两个-API-的区别" class="headerlink" title="两个 API 的区别"></a>两个 API 的区别</h3><table>
+<thead>
+<tr>
+<th>API</th>
+<th>返回数据</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GetSpectrumData</code></td>
+<td>频域数据（FFT 后的频率分量）</td>
+<td>频谱柱状图、EQ 可视化</td>
+</tr>
+<tr>
+<td><code>GetOutputData</code></td>
+<td>时域数据（原始波形采样值）</td>
+<td>波形显示、振幅检测</td>
+</tr>
+</tbody></table>
+<h3 id="频谱数据采集脚本"><a href="#频谱数据采集脚本" class="headerlink" title="频谱数据采集脚本"></a>频谱数据采集脚本</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">AudioSpectrumProvider</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;音频源&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> AudioSource audioSource;<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;频谱配置&quot;</span>)</span>]<br>    [<span class="hljs-meta">Range(64, 8192)</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> spectrumSamples = <span class="hljs-number">512</span>;   <span class="hljs-comment">// 必须是 2 的幂次</span><br>    <span class="hljs-keyword">public</span> FFTWindow fftWindow = FFTWindow.BlackmanHarris; <span class="hljs-comment">// 窗函数影响频谱精度</span><br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;输出配置&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> spectrumBands = <span class="hljs-number">64</span>;      <span class="hljs-comment">// 传给 Shader 的频段数量</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> smoothingSpeed = <span class="hljs-number">10f</span>;  <span class="hljs-comment">// 频谱平滑速度（峰值保持）</span><br><br>    <span class="hljs-comment">// 频谱数据缓冲（float 数组）</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span>[] spectrumData;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span>[] bandData;      <span class="hljs-comment">// 降采样后的频段数据</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span>[] smoothedBands; <span class="hljs-comment">// 平滑后的频段数据</span><br><br>    <span class="hljs-comment">// 用于传给 Shader 的 Texture1D（一维纹理）</span><br>    <span class="hljs-keyword">private</span> Texture2D spectrumTexture;<br><br>    <span class="hljs-comment">// 静态属性，方便 Shader 脚本访问</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> AudioSpectrumProvider Instance &#123; <span class="hljs-keyword">get</span>; <span class="hljs-keyword">private</span> <span class="hljs-keyword">set</span>; &#125;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span>[] SmoothedBands =&gt; smoothedBands;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Awake</span>()</span><br>    &#123;<br>        Instance = <span class="hljs-keyword">this</span>;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        spectrumData   = <span class="hljs-keyword">new</span> <span class="hljs-built_in">float</span>[spectrumSamples];<br>        bandData       = <span class="hljs-keyword">new</span> <span class="hljs-built_in">float</span>[spectrumBands];<br>        smoothedBands  = <span class="hljs-keyword">new</span> <span class="hljs-built_in">float</span>[spectrumBands];<br><br>        <span class="hljs-comment">// 创建 1×spectrumBands 的一维纹理（模拟 Texture1D）</span><br>        <span class="hljs-comment">// Unity 不支持真正的 Texture1D，用 2D 纹理的第一行代替</span><br>        spectrumTexture = <span class="hljs-keyword">new</span> Texture2D(spectrumBands, <span class="hljs-number">1</span>, TextureFormat.RFloat, <span class="hljs-literal">false</span>);<br>        spectrumTexture.filterMode = FilterMode.Bilinear;<br>        spectrumTexture.wrapMode   = TextureWrapMode.Clamp;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (audioSource == <span class="hljs-literal">null</span> || !audioSource.isPlaying) <span class="hljs-keyword">return</span>;<br><br>        <span class="hljs-comment">// 提取原始频谱数据（每帧调用，性能开销小）</span><br>        audioSource.GetSpectrumData(spectrumData, <span class="hljs-number">0</span>, fftWindow);<br><br>        <span class="hljs-comment">// 将 spectrumSamples 个采样降采样到 spectrumBands 个频段</span><br>        <span class="hljs-comment">// 使用对数分布（低频段更细，高频段更粗，符合人耳听觉特性）</span><br>        UpdateBands();<br><br>        <span class="hljs-comment">// 平滑处理（峰值快速上升，缓慢下降）</span><br>        SmoothBands();<br><br>        <span class="hljs-comment">// 更新 Texture（将数组写入 GPU 纹理）</span><br>        UpdateSpectrumTexture();<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">UpdateBands</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 对数频段分割：低频 20Hz 到高频 20kHz</span><br>        <span class="hljs-built_in">float</span> logMin = Mathf.Log10(<span class="hljs-number">20f</span>);<br>        <span class="hljs-built_in">float</span> logMax = Mathf.Log10(<span class="hljs-number">20000f</span>);<br>        <span class="hljs-built_in">float</span> sampleRate = AudioSettings.outputSampleRate;<br><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> band = <span class="hljs-number">0</span>; band &lt; spectrumBands; band++)<br>        &#123;<br>            <span class="hljs-built_in">float</span> freqMin = Mathf.Pow(<span class="hljs-number">10</span>, Mathf.Lerp(logMin, logMax, (<span class="hljs-built_in">float</span>)band / spectrumBands));<br>            <span class="hljs-built_in">float</span> freqMax = Mathf.Pow(<span class="hljs-number">10</span>, Mathf.Lerp(logMin, logMax, (<span class="hljs-built_in">float</span>)(band + <span class="hljs-number">1</span>) / spectrumBands));<br><br>            <span class="hljs-built_in">int</span> idxMin = Mathf.Clamp((<span class="hljs-built_in">int</span>)(freqMin / sampleRate * spectrumSamples * <span class="hljs-number">2</span>), <span class="hljs-number">0</span>, spectrumSamples - <span class="hljs-number">1</span>);<br>            <span class="hljs-built_in">int</span> idxMax = Mathf.Clamp((<span class="hljs-built_in">int</span>)(freqMax / sampleRate * spectrumSamples * <span class="hljs-number">2</span>), <span class="hljs-number">0</span>, spectrumSamples - <span class="hljs-number">1</span>);<br><br>            <span class="hljs-built_in">float</span> sum = <span class="hljs-number">0f</span>;<br>            <span class="hljs-built_in">int</span> count = Mathf.Max(<span class="hljs-number">1</span>, idxMax - idxMin);<br>            <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = idxMin; i &lt; idxMax; i++)<br>                sum += spectrumData[i];<br><br>            bandData[band] = sum / count;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">SmoothBands</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; spectrumBands; i++)<br>        &#123;<br>            <span class="hljs-keyword">if</span> (bandData[i] &gt; smoothedBands[i])<br>                <span class="hljs-comment">// 快速跟随上升</span><br>                smoothedBands[i] = Mathf.Lerp(smoothedBands[i], bandData[i], smoothingSpeed * Time.deltaTime);<br>            <span class="hljs-keyword">else</span><br>                <span class="hljs-comment">// 缓慢衰减（峰值保持效果）</span><br>                smoothedBands[i] = Mathf.Lerp(smoothedBands[i], bandData[i], smoothingSpeed * <span class="hljs-number">0.3f</span> * Time.deltaTime);<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">UpdateSpectrumTexture</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 写入纹理像素（R 通道存储频谱强度）</span><br>        <span class="hljs-keyword">var</span> pixels = <span class="hljs-keyword">new</span> Color[spectrumBands];<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; spectrumBands; i++)<br>        &#123;<br>            <span class="hljs-comment">// 对数幅度映射（dB 尺度更符合人耳感知）</span><br>            <span class="hljs-built_in">float</span> db = Mathf.Log10(Mathf.Max(smoothedBands[i], <span class="hljs-number">1e-6</span>f)) * <span class="hljs-number">20f</span>;<br>            <span class="hljs-built_in">float</span> normalized = Mathf.InverseLerp(<span class="hljs-number">-60f</span>, <span class="hljs-number">0f</span>, db); <span class="hljs-comment">// -60dB 到 0dB 映射到 [0,1]</span><br>            pixels[i] = <span class="hljs-keyword">new</span> Color(normalized, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1f</span>);<br>        &#125;<br>        spectrumTexture.SetPixels(pixels);<br>        spectrumTexture.Apply(<span class="hljs-literal">false</span>); <span class="hljs-comment">// false = 不重新生成 Mipmap（性能优化）</span><br><br>        <span class="hljs-comment">// 全局传给所有 Shader</span><br>        Shader.SetGlobalTexture(<span class="hljs-string">&quot;_SpectrumTex&quot;</span>, spectrumTexture);<br>        Shader.SetGlobalFloat(<span class="hljs-string">&quot;_AudioTime&quot;</span>, Time.time);<br>    &#125;<br><br>    <span class="hljs-comment">// 获取特定频段的能量（用于节拍检测）</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> <span class="hljs-title">GetBandEnergy</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> startBand, <span class="hljs-built_in">int</span> endBand</span>)</span><br>    &#123;<br>        <span class="hljs-built_in">float</span> sum = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = startBand; i &lt; Mathf.Min(endBand, spectrumBands); i++)<br>            sum += smoothedBands[i];<br>        <span class="hljs-keyword">return</span> sum / Mathf.Max(<span class="hljs-number">1</span>, endBand - startBand);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (spectrumTexture != <span class="hljs-literal">null</span>) Destroy(spectrumTexture);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="节拍检测：驱动场景效果"><a href="#节拍检测：驱动场景效果" class="headerlink" title="节拍检测：驱动场景效果"></a>节拍检测：驱动场景效果</h2><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">BeatDetector</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;节拍检测参数&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> AudioSpectrumProvider spectrumProvider;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span>   bassStartBand   = <span class="hljs-number">0</span>;   <span class="hljs-comment">// 低频（贝斯/底鼓）频段起始</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span>   bassEndBand     = <span class="hljs-number">4</span>;   <span class="hljs-comment">// 低频频段结束</span><br>    [<span class="hljs-meta">Range(1.1f, 3f)</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> beatThreshold   = <span class="hljs-number">1.5f</span>; <span class="hljs-comment">// 能量超过平均值多少倍判定为节拍</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> beatCooldown    = <span class="hljs-number">0.2f</span>; <span class="hljs-comment">// 节拍检测最小间隔（秒），防止误触发</span><br><br>    <span class="hljs-comment">// 历史能量（用于计算平均值）</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span>[] energyHistory;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> historySize = <span class="hljs-number">43</span>; <span class="hljs-comment">// 约 1 秒的历史（60fps → 43 帧）</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> historyIndex = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> lastBeatTime = <span class="hljs-number">-999f</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> beatIntensity = <span class="hljs-number">0f</span>;   <span class="hljs-comment">// 当前节拍强度 [0,1]，会快速衰减</span><br><br>    <span class="hljs-comment">// 事件：节拍触发时通知订阅者</span><br>    <span class="hljs-keyword">public</span> System.Action&lt;<span class="hljs-built_in">float</span>&gt; OnBeat;<br><br>    <span class="hljs-comment">// 全局访问</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> BeatDetector Instance &#123; <span class="hljs-keyword">get</span>; <span class="hljs-keyword">private</span> <span class="hljs-keyword">set</span>; &#125;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> BeatIntensity =&gt; beatIntensity;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Awake</span>()</span> &#123; Instance = <span class="hljs-keyword">this</span>; &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        energyHistory = <span class="hljs-keyword">new</span> <span class="hljs-built_in">float</span>[historySize];<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (spectrumProvider == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br><br>        <span class="hljs-comment">// 计算当前低频能量</span><br>        <span class="hljs-built_in">float</span> currentEnergy = spectrumProvider.GetBandEnergy(bassStartBand, bassEndBand);<br><br>        <span class="hljs-comment">// 记录历史</span><br>        energyHistory[historyIndex] = currentEnergy;<br>        historyIndex = (historyIndex + <span class="hljs-number">1</span>) % historySize;<br><br>        <span class="hljs-comment">// 计算历史平均</span><br>        <span class="hljs-built_in">float</span> avgEnergy = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> e <span class="hljs-keyword">in</span> energyHistory) avgEnergy += e;<br>        avgEnergy /= historySize;<br><br>        <span class="hljs-comment">// 节拍判定：能量超过阈值 × 平均值，且冷却时间已过</span><br>        <span class="hljs-built_in">bool</span> isBeat = currentEnergy &gt; beatThreshold * avgEnergy<br>                   &amp;&amp; Time.time - lastBeatTime &gt; beatCooldown<br>                   &amp;&amp; avgEnergy &gt; <span class="hljs-number">0.001f</span>; <span class="hljs-comment">// 防止静音时触发</span><br><br>        <span class="hljs-keyword">if</span> (isBeat)<br>        &#123;<br>            lastBeatTime  = Time.time;<br>            beatIntensity = <span class="hljs-number">1.0f</span>;<br>            <span class="hljs-comment">// 触发节拍强度（越强的节拍，强度越高）</span><br>            <span class="hljs-built_in">float</span> normalizedIntensity = Mathf.Clamp01(currentEnergy / (avgEnergy * beatThreshold));<br>            OnBeat?.Invoke(normalizedIntensity);<br>        &#125;<br><br>        <span class="hljs-comment">// 节拍强度快速衰减</span><br>        beatIntensity = Mathf.Max(<span class="hljs-number">0</span>, beatIntensity - Time.deltaTime * <span class="hljs-number">8f</span>);<br><br>        <span class="hljs-comment">// 传给 Shader</span><br>        Shader.SetGlobalFloat(<span class="hljs-string">&quot;_BeatIntensity&quot;</span>, beatIntensity);<br>        Shader.SetGlobalFloat(<span class="hljs-string">&quot;_TimeSinceLastBeat&quot;</span>, Time.time - lastBeatTime);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例一：频谱柱状图可视化-Shader"><a href="#实战示例一：频谱柱状图可视化-Shader" class="headerlink" title="实战示例一：频谱柱状图可视化 Shader"></a>实战示例一：频谱柱状图可视化 Shader</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/SpectrumVisualizer&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _SpectrumTex    (&quot;Spectrum Texture&quot;,    2D)     = &quot;black&quot; &#123;&#125;<br>        _BarColor       (&quot;Bar Color&quot;,           Color)  = (0.2, 0.8, 1.0, 1.0)<br>        _PeakColor      (&quot;Peak Color&quot;,          Color)  = (1.0, 0.3, 0.1, 1.0)<br>        _BackgroundColor(&quot;Background Color&quot;,    Color)  = (0.05, 0.05, 0.1, 1.0)<br>        _BarCount       (&quot;Bar Count&quot;,           Float)  = 64<br>        _GlowStrength   (&quot;Glow Strength&quot;,       Range(0, 3)) = 1.0<br>        _PeakThreshold  (&quot;Peak Threshold&quot;,      Range(0.6, 1)) = 0.85<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            struct Attributes &#123; float4 positionOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings   &#123; float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            TEXTURE2D(_SpectrumTex); SAMPLER(sampler_SpectrumTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BarColor;<br>                float4 _PeakColor;<br>                float4 _BackgroundColor;<br>                float  _BarCount;<br>                float  _GlowStrength;<br>                float  _PeakThreshold;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br><br>                // 确定当前像素属于哪个频段<br>                float barIndex   = floor(uv.x * _BarCount);<br>                float barLocalX  = frac(uv.x * _BarCount); // [0,1] 在单个条内<br><br>                // 采样该频段的频谱强度<br>                float bandU    = (barIndex + 0.5) / _BarCount;<br>                float spectrum = SAMPLE_TEXTURE2D(_SpectrumTex, sampler_SpectrumTex, float2(bandU, 0.5)).r;<br><br>                // 条的宽度（中间 80% 是颜色，两侧 10% 是间隙）<br>                float barGap    = 0.1;<br>                float inBar     = step(barGap, barLocalX) * step(barLocalX, 1.0 - barGap);<br><br>                // 柱状图高度判断：当前 Y 是否在频谱强度以下<br>                float belowBar  = step(uv.y, spectrum);<br>                float inBarArea = inBar * belowBar;<br><br>                // 峰值高亮：接近当前高度顶部的部分用 PeakColor<br>                float nearPeak  = smoothstep(spectrum - 0.05, spectrum, uv.y)<br>                                * smoothstep(spectrum + 0.01, spectrum, uv.y)<br>                                * inBar<br>                                * step(_PeakThreshold, spectrum);<br><br>                // 颜色计算<br>                // 高度渐变：底部偏蓝，顶部偏红<br>                float heightRatio = uv.y / max(spectrum, 0.001);<br>                half3 barColor = lerp(_BarColor.rgb, _PeakColor.rgb, heightRatio * heightRatio);<br><br>                // 发光效果（条的侧边发光）<br>                float glowDist  = abs(barLocalX - 0.5) * 2.0; // 0=中心, 1=边缘<br>                float glow      = exp(-glowDist * 5.0) * spectrum * _GlowStrength;<br><br>                // 合成<br>                half3 finalColor = _BackgroundColor.rgb;<br>                finalColor = lerp(finalColor, barColor, inBarArea);<br>                finalColor = lerp(finalColor, _PeakColor.rgb, nearPeak);<br>                finalColor += barColor * glow * inBar; // 叠加发光<br><br>                // 动态脉冲：随 _BeatIntensity 全局闪烁<br>                float beatIntensity = _GlobalBeatIntensity; // 由 C# 设置<br>                finalColor += barColor * beatIntensity * 0.3 * inBarArea;<br><br>                return half4(finalColor, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例二：节拍同步场景灯光-Shader"><a href="#实战示例二：节拍同步场景灯光-Shader" class="headerlink" title="实战示例二：节拍同步场景灯光 Shader"></a>实战示例二：节拍同步场景灯光 Shader</h2><p>将节拍信号驱动材质的自发光强度，实现音乐响应的环境光效。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/BeatSyncEmissive&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex        (&quot;Albedo&quot;,              2D)    = &quot;white&quot; &#123;&#125;<br>        _BaseColor      (&quot;Base Color&quot;,          Color) = (0.1, 0.1, 0.2, 1.0)<br>        _EmissiveColor  (&quot;Emissive Color&quot;,      Color) = (0.3, 0.6, 1.0, 1.0)<br>        _BaseEmissive   (&quot;Base Emissive&quot;,       Range(0, 1)) = 0.1<br>        _BeatBoost      (&quot;Beat Boost&quot;,          Range(0, 5)) = 2.0<br>        _PulseSpeed     (&quot;Pulse Decay Speed&quot;,   Range(1, 20)) = 8.0<br>        _ColorShift     (&quot;Color Shift on Beat&quot;, Range(0, 1)) = 0.5<br>        _BeatEmissiveColor(&quot;Beat Flash Color&quot;,  Color) = (1.0, 0.4, 0.1, 1.0)<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS<br>            #pragma multi_compile _ _SHADOWS_SOFT<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 positionWS  : TEXCOORD0;<br>                float3 normalWS    : TEXCOORD1;<br>                float2 uv          : TEXCOORD2;<br>            &#125;;<br><br>            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float4 _BaseColor;<br>                float4 _EmissiveColor;<br>                float4 _BeatEmissiveColor;<br>                float  _BaseEmissive;<br>                float  _BeatBoost;<br>                float  _PulseSpeed;<br>                float  _ColorShift;<br>            CBUFFER_END<br><br>            // 由 C# BeatDetector 全局设置（不在 CBUFFER 中，避免 SRP Batcher 冲突）<br>            float _BeatIntensity;        // 全局 Shader 变量<br>            float _TimeSinceLastBeat;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                VertexPositionInputs posInputs = GetVertexPositionInputs(IN.positionOS.xyz);<br>                OUT.positionHCS = posInputs.positionCS;<br>                OUT.positionWS  = posInputs.positionWS;<br>                OUT.normalWS    = TransformObjectToWorldNormal(IN.normalOS);<br>                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                half4 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv) * _BaseColor;<br><br>                // ===== 节拍驱动自发光 =====<br>                // _BeatIntensity 从 C# BeatDetector 每帧传入<br>                float beat = _BeatIntensity;<br><br>                // 基础自发光 + 节拍时的爆发<br>                float emissiveMult = _BaseEmissive + beat * _BeatBoost;<br><br>                // 节拍颜色混合（节拍时颜色偏暖）<br>                half3 emissiveColor = lerp(_EmissiveColor.rgb, _BeatEmissiveColor.rgb, beat * _ColorShift);<br>                half3 emissive = emissiveColor * emissiveMult;<br><br>                // ===== 频谱 UV 扫描效果（可选）=====<br>                // 让材质表面随频谱高亮扫描<br>                float spectrumSweep = _TimeSinceLastBeat &lt; 0.5 ?<br>                    smoothstep(0.5, 0.0, _TimeSinceLastBeat - IN.positionWS.x * 0.1) : 0.0;<br>                emissive += emissiveColor * spectrumSweep * 0.5;<br><br>                // ===== URP 标准光照 =====<br>                InputData inputData = (InputData)0;<br>                inputData.positionWS = IN.positionWS;<br>                inputData.normalWS   = normalize(IN.normalWS);<br>                inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(IN.positionWS);<br>                inputData.shadowCoord = TransformWorldToShadowCoord(IN.positionWS);<br><br>                SurfaceData surfaceData = (SurfaceData)0;<br>                surfaceData.albedo    = albedo.rgb;<br>                surfaceData.emission  = emissive;<br>                surfaceData.smoothness = 0.6;<br>                surfaceData.alpha     = 1.0;<br><br>                return UniversalFragmentPBR(inputData, surfaceData);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="节拍材质控制器-C-脚本"><a href="#节拍材质控制器-C-脚本" class="headerlink" title="节拍材质控制器 C# 脚本"></a>节拍材质控制器 C# 脚本</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br><span class="hljs-comment">// 将 BeatDetector 事件连接到具体材质/灯光效果</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">BeatMaterialController</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;目标&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> Renderer[] targetRenderers;   <span class="hljs-comment">// 应用节拍效果的物体</span><br>    <span class="hljs-keyword">public</span> Light[]    targetLights;      <span class="hljs-comment">// 场景灯光</span><br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;灯光参数&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> baseLightIntensity  = <span class="hljs-number">1.0f</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> beatLightBoost      = <span class="hljs-number">3.0f</span>;<br>    <span class="hljs-keyword">public</span> Gradient beatColorGradient; <span class="hljs-comment">// 节拍颜色序列</span><br><br>    <span class="hljs-keyword">private</span> BeatDetector beatDetector;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> beatCounter = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        beatDetector = BeatDetector.Instance;<br>        <span class="hljs-keyword">if</span> (beatDetector != <span class="hljs-literal">null</span>)<br>            beatDetector.OnBeat += HandleBeat;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">HandleBeat</span>(<span class="hljs-params"><span class="hljs-built_in">float</span> intensity</span>)</span><br>    &#123;<br>        beatCounter++;<br>        <span class="hljs-comment">// 每次节拍：灯光颜色按渐变序列推进</span><br>        Color beatColor = beatColorGradient.Evaluate(Mathf.PingPong(beatCounter * <span class="hljs-number">0.1f</span>, <span class="hljs-number">1.0f</span>));<br><br>        <span class="hljs-comment">// 瞬间提升灯光亮度（后续在 Update 中衰减）</span><br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> light <span class="hljs-keyword">in</span> targetLights)<br>        &#123;<br>            light.intensity = baseLightIntensity + beatLightBoost * intensity;<br>            light.color = Color.Lerp(light.color, beatColor, <span class="hljs-number">0.7f</span>);<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (beatDetector == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br><br>        <span class="hljs-comment">// 灯光强度跟随 BeatIntensity 衰减</span><br>        <span class="hljs-built_in">float</span> targetIntensity = baseLightIntensity + beatDetector.BeatIntensity * beatLightBoost;<br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> light <span class="hljs-keyword">in</span> targetLights)<br>            light.intensity = Mathf.Lerp(light.intensity, targetIntensity, Time.deltaTime * <span class="hljs-number">15f</span>);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (beatDetector != <span class="hljs-literal">null</span>)<br>            beatDetector.OnBeat -= HandleBeat;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="圆形频谱可视化-Shader"><a href="#圆形频谱可视化-Shader" class="headerlink" title="圆形频谱可视化 Shader"></a>圆形频谱可视化 Shader</h2><p>将频谱显示为圆形（常见于音乐播放器 UI）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 在 fragment shader 中，基于极坐标采样频谱<br>half4 frag(Varyings IN) : SV_Target<br>&#123;<br>    float2 uv = IN.uv - 0.5; // 以中心为原点<br>    float r = length(uv);<br>    float angle = atan2(uv.y, uv.x) / (2.0 * 3.14159) + 0.5; // [0,1]<br><br>    // 采样对应角度的频谱强度<br>    float spectrum = SAMPLE_TEXTURE2D(_SpectrumTex, sampler_SpectrumTex, float2(angle, 0.5)).r;<br><br>    // 圆形基准半径<br>    float innerRadius = 0.3;<br>    float barHeight   = spectrum * 0.2; // 频谱柱高<br><br>    // 是否在频谱柱内<br>    float inBar = step(innerRadius, r) * step(r, innerRadius + barHeight);<br><br>    // 颜色：根据频谱强度从蓝到红渐变<br>    half3 color = lerp(half3(0.1, 0.3, 1.0), half3(1.0, 0.2, 0.1), spectrum);<br><br>    // 内圆（填充）<br>    float inInner = step(r, innerRadius);<br>    half3 finalColor = lerp(half3(0.05, 0.05, 0.1), color * 0.3, inInner);<br>    finalColor = lerp(finalColor, color, inBar);<br><br>    // 圆形遮罩（只显示圆形区域）<br>    float alpha = step(r, innerRadius + 0.21);<br><br>    return half4(finalColor, alpha);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><ul>
+<li><strong><code>GetSpectrumData</code> 调用频率</strong>：每帧调用一次即可，Unity 内部使用 FFT 处理，1024 采样约 0.1ms CPU 开销</li>
+<li><strong>Texture1D 的代替方案</strong>：Unity 不支持真正的 1D 纹理，用 <code>Texture2D(N, 1)</code> 代替。N 不超过 256 时开销可忽略</li>
+<li>**<code>Shader.SetGlobalTexture</code> vs <code>material.SetTexture</code>**：频谱数据是全局共享的，用 <code>SetGlobal</code> 一次调用覆盖所有使用该 Shader 的材质，避免逐材质设置</li>
+<li><strong>节拍检测精度</strong>：43 帧历史窗口在 60fps 下约覆盖 0.7 秒，适合 BPM 60~180 的音乐。BPM 更高的音乐（&gt;180）需要缩短历史窗口</li>
+<li><strong>AudioListener vs AudioSource</strong>：<code>GetSpectrumData</code> 只能从 <code>AudioSource</code> 调用，不能从 <code>AudioListener</code> 调用。如果需要监听场景中所有声音的混音输出，使用 <code>AudioListener.GetOutputData</code></li>
+</ul>
+<p>音频与视觉的同步是游戏中最有冲击力的效果之一，几行 C# 代码 + 一个响应式 Shader，就能让整个场景跟着音乐”呼吸”——技术实现远比看起来简单。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E8%BF%9B%E9%98%B6%E6%8A%80%E6%9C%AF/" class="category-chain-item">进阶技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E9%9F%B3%E9%A2%91%E5%8F%AF%E8%A7%86%E5%8C%96/" class="print-no-link">#音频可视化</a>
+      
+        <a href="/tags/%E9%9F%B3%E9%A2%91%E9%A9%B1%E5%8A%A8Shader/" class="print-no-link">#音频驱动Shader</a>
+      
+        <a href="/tags/%E8%8A%82%E6%8B%8D%E5%90%8C%E6%AD%A5/" class="print-no-link">#节拍同步</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十六）：音频可视化与音频驱动 Shader 技术</div>
+      <div>https://alex-rachel.github.io/2026/04/01/36-sound-synthesis/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/37-voxel-rendering/" title="Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十七）：体素渲染完整实战——Chunk 系统与 URP 体素 Shader</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/35-webgl-pitfalls/" title="Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南">
+                        <span class="hidden-mobile">Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'ea9002caddbc7486ab2e8037d1065082'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

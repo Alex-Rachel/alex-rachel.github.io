@@ -1,0 +1,1515 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="这是「TEngine 工程哲学」系列的第二篇。第一篇：TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解 讨论了为什么 AI 工程需要自己的方法论，而不是照搬传统软件工程。这篇我们聚焦一个被严重低估的问题：Harness 的可视化——当你把一个 AI Agent 放进 Harness 里跑了 35 分钟，它到底做了什么？  引言：Har">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/06/02/harness-visualization/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="这是「TEngine 工程哲学」系列的第二篇。第一篇：TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解 讨论了为什么 AI 工程需要自己的方法论，而不是照搬传统软件工程。这篇我们聚焦一个被严重低估的问题：Harness 的可视化——当你把一个 AI Agent 放进 Harness 里跑了 35 分钟，它到底做了什么？  引言：Har">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-06-02T04:30:00.000Z">
+<meta property="article:modified_time" content="2026-06-02T04:46:27.751Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="AI-Agent">
+<meta property="article:tag" content="Harness">
+<meta property="article:tag" content="Visualization">
+<meta property="article:tag" content="Multi-Agent">
+<meta property="article:tag" content="Routa">
+<meta property="article:tag" content="Engineering-Philosophy">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅ - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-06-02 12:30" pubdate>
+          2026年6月2日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          23k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          188 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <blockquote>
+<p>这是「TEngine 工程哲学」系列的第二篇。<a href="/2026/04/27/tengine-sdd-harness-engineering/">第一篇：TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解</a> 讨论了为什么 AI 工程需要自己的方法论，而不是照搬传统软件工程。这篇我们聚焦一个被严重低估的问题：<strong>Harness 的可视化</strong>——当你把一个 AI Agent 放进 Harness 里跑了 35 分钟，它到底做了什么？</p>
+</blockquote>
+<h2 id="引言：Harness-的可见性危机"><a href="#引言：Harness-的可见性危机" class="headerlink" title="引言：Harness 的可见性危机"></a>引言：Harness 的可见性危机</h2><p>设想一个场景。</p>
+<p>你给 AI Agent 下了一个任务：”重构用户认证模块，把 JWT 迁移到 Paseto，确保所有测试通过。”Agent 接到任务，开始工作。终端上出现了一行行日志——安装依赖、读取文件、修改代码、运行测试……然后，35 分钟后，你看到了：</p>
+<figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs ada">✅ <span class="hljs-keyword">Task</span> completed successfully<br></code></pre></td></tr></table></figure>
+
+<p>你的第一反应是什么？</p>
+<p>如果你和我一样，你的第一反应不是”太好了”，而是”等等，你到底做了什么？”</p>
+<p>这就是 Harness 的可见性危机。Harness——作为约束、监控和验证 AI Agent 行为的执行框架——在”是否完成”这个问题上给了你答案，但在”如何完成”、”是否遵循约束”、”中间做了哪些决策”这些问题上，给你的信息近乎为零。</p>
+<p>这不仅仅是 UI 的问题。这是一个<strong>信任架构</strong>的问题。一个你看不见过程的系统，你敢把它放到生产环境吗？</p>
+<p>让我们从头说起。</p>
+<hr>
+<h2 id="第一章：为什么-Harness-必须可视化"><a href="#第一章：为什么-Harness-必须可视化" class="headerlink" title="第一章：为什么 Harness 必须可视化"></a>第一章：为什么 Harness 必须可视化</h2><p>先定义一下术语。在本文语境中，<strong>Harness</strong> 指的是围绕 AI Agent 构建的执行环境——它包括约束定义（Spec）、执行运行时（Runtime）、行为监控（Monitor）和质量门控（Gate）。你可以把它类比成传统软件中的测试 harness，但要复杂得多：因为被测试的对象不是一个确定性函数，而是一个可能做出出乎意料决策的自主 Agent。</p>
+<p>可视化为什么不是锦上添花，而是刚需？四个字：<strong>信、调、约、协</strong>。</p>
+<h3 id="1-1-信任（Trust）"><a href="#1-1-信任（Trust）" class="headerlink" title="1.1 信任（Trust）"></a>1.1 信任（Trust）</h3><p>信任是协作的基石。你和一个人共事，你需要知道他的工作方式——他倾向于先做调研还是直接动手？他的代码风格偏保守还是激进？他遇到问题会停下来沟通还是自己硬扛？</p>
+<p>对 AI Agent 也是一样。但你无法通过”一起吃午饭”来了解一个 Agent。你唯一能了解它的方式，就是<strong>观察它在 Harness 中的行为轨迹</strong>。</p>
+<p>具体来说，信任需要回答这些问题：</p>
+<ul>
+<li>Agent 在这个任务中总共做了多少次文件修改？修改了哪些文件？</li>
+<li>它有没有”偷偷”做了你没要求的事情？（比如重构时顺便改了无关模块的命名）</li>
+<li>它遇到错误时的恢复策略是什么？是回滚、重试、还是绕过？</li>
+<li>它的 token 消耗和执行时间是否在预期范围内？</li>
+</ul>
+<p>没有可视化，这些问题全靠猜。猜不是信任。</p>
+<p><strong>类比</strong>：想象你雇佣了一个远程自由职业者。他每周给你发一封邮件：”本周工作已完成。”你会满意吗？不会。你需要看到 commit history、PR 描述、设计文档。Harness 可视化就是 AI Agent 的”工作周报”——但它应该比周报更实时、更细粒度。</p>
+<h3 id="1-2-调试（Debugging）"><a href="#1-2-调试（Debugging）" class="headerlink" title="1.2 调试（Debugging）"></a>1.2 调试（Debugging）</h3><p>AI Agent 的行为是<strong>概率性</strong>的。同一个任务，跑两次可能得到不同结果。这意味着传统的”复现 bug → 修复”模式部分失效——你甚至不确定 bug 是否能复现。</p>
+<p>调试 AI Agent 需要一种全新的工作流：</p>
+<ol>
+<li><p><strong>事后回溯</strong>（Post-hoc Tracing）：Agent 做完了一件事，你需要回溯它的完整决策链。”为什么它删掉了 <code>auth_service.py</code> 里的那行代码？”——你需要在时间线上找到那个决策点，看当时的上下文是什么、Agent 的推理是什么。</p>
+</li>
+<li><p><strong>约束违反分析</strong>：Harness Spec 说”不得修改 <code>config/</code> 目录下的文件”，但 Agent 改了。为什么？是 Agent 理解错了 Spec？是 Spec 的表述有歧义？还是 Agent 在某个子任务中把约束”忘”了？</p>
+</li>
+<li><p><strong>性能归因</strong>：任务耗时 35 分钟，但同类任务上次只用了 12 分钟。时间花在哪里了？是在依赖安装上卡住了？是 Agent 做了不必要的”探索”？还是 LLM 的推理时间异常？</p>
+</li>
+</ol>
+<p>没有可视化，调试就像在黑暗中摸索。你知道出了问题，但你不知道问题出在哪里。</p>
+<h3 id="1-3-约束验证（Constraint-Verification）"><a href="#1-3-约束验证（Constraint-Verification）" class="headerlink" title="1.3 约束验证（Constraint Verification）"></a>1.3 约束验证（Constraint Verification）</h3><p>Harness 的核心功能之一是<strong>约束执行</strong>——确保 Agent 的行为在预定义的边界内。但约束验证不是二元判断（违反&#x2F;未违反），而是一个<strong>频谱</strong>：</p>
+<ul>
+<li><strong>硬约束</strong>（Hard Constraints）：绝对不能违反。”不能删除 <code>main</code> 分支。” 这种约束的可视化是红绿灯——绿色就是 OK，红色就是立刻中止。</li>
+<li><strong>软约束</strong>（Soft Constraints）：应该遵守但允许例外。”函数长度不超过 50 行。” 这种约束的可视化需要展示<strong>遵守率</strong>——是 90% 遵守还是 50% 遵守？哪些例外是合理的？</li>
+<li><strong>渐变约束</strong>（Gradient Constraints）：在连续空间上的约束。”代码复杂度不应显著增加。” 这种约束的可视化需要展示<strong>趋势</strong>——复杂度是上升了还是下降了？幅度多大？</li>
+</ul>
+<p>一个成熟的 Harness 可视化系统，应该能让你一眼看到每条约束的状态：哪些绿灯、哪些黄灯、哪些红灯，以及每个非绿灯状态的详细信息。</p>
+<h3 id="1-4-团队协作（Team-Collaboration）"><a href="#1-4-团队协作（Team-Collaboration）" class="headerlink" title="1.4 团队协作（Team Collaboration）"></a>1.4 团队协作（Team Collaboration）</h3><p>AI Agent 不是一个人的工具。在一个工程团队中：</p>
+<ul>
+<li><strong>Tech Lead</strong> 需要看到 Agent 的执行是否符合架构意图</li>
+<li><strong>Code Reviewer</strong> 需要看到 Agent 的修改范围和理由</li>
+<li><strong>DevOps</strong> 需要看到 Agent 的资源消耗和对基础设施的影响</li>
+<li><strong>QA</strong> 需要看到 Agent 是否覆盖了所有测试场景</li>
+</ul>
+<p>不同角色需要不同粒度和不同视角的可视化。这不是”做一个 dashboard”就能解决的——它需要<strong>多层可视化架构</strong>，我们会在第五章详细讨论。</p>
+<hr>
+<h2 id="第二章：Harness-的四层循环与可视化需求"><a href="#第二章：Harness-的四层循环与可视化需求" class="headerlink" title="第二章：Harness 的四层循环与可视化需求"></a>第二章：Harness 的四层循环与可视化需求</h2><p>在 TEngine 的工程哲学中，我们将 Harness 的执行模型抽象为一个四层循环（Four-Layer Loop）。每一层都有自己的可视化需求，而且需求截然不同。</p>
+<h3 id="2-1-Context-层：世界是什么样的？"><a href="#2-1-Context-层：世界是什么样的？" class="headerlink" title="2.1 Context 层：世界是什么样的？"></a>2.1 Context 层：世界是什么样的？</h3><p><strong>Context 层</strong>负责回答”当前状态是什么”——代码库的状态、任务的要求、可用的工具、历史的上下文。这是 Agent 做出决策的基础。</p>
+<p><strong>可视化需求</strong>：</p>
+<ul>
+<li><strong>上下文地图</strong>（Context Map）：Agent 在做决策时能看到多大的”世界”？它读取了哪些文件？忽略了哪些？有没有关键的上下文因为窗口限制被截断了？</li>
+<li><strong>任务分解树</strong>（Task Decomposition Tree）：一个复杂任务被分解成了哪些子任务？子任务之间的依赖关系是什么？哪些是串行的，哪些是并行的？</li>
+<li><strong>工具可用性面板</strong>（Tool Availability Panel）：Agent 当前可以调用哪些工具？哪些工具被 Harness 约束禁用了？</li>
+</ul>
+<p><strong>为什么重要</strong>：Context 层的可视化能帮你判断 Agent 是否拥有”足够的信息”来做出正确的决策。很多 Agent 的错误不是推理错误，而是<strong>上下文不足</strong>导致的——它根本没看到关键信息。如果你看不到 Agent 看到了什么，你就无法诊断这类问题。</p>
+<p><strong>具体例子</strong>：Agent 需要修改一个 API 端点，但因为上下文窗口有限，它没有看到同一个文件中另一处对该端点的引用。结果修改后导致另一处引用失效。如果在 Context 层有可视化，你能看到 Agent 的”视野范围”只覆盖了文件的 60%，你就能预判这个风险。</p>
+<h3 id="2-2-Run-层：Agent-在做什么？"><a href="#2-2-Run-层：Agent-在做什么？" class="headerlink" title="2.2 Run 层：Agent 在做什么？"></a>2.2 Run 层：Agent 在做什么？</h3><p><strong>Run 层</strong>是最接近传统”执行日志”的层。它记录 Agent 的每一个动作：读文件、写文件、调用工具、LLM 推理。</p>
+<p><strong>可视化需求</strong>：</p>
+<ul>
+<li><strong>执行时间线</strong>（Execution Timeline）：把 Agent 的行为展开在时间轴上。什么时候开始、什么时候结束、中间有哪些阶段？每个阶段耗时多少？</li>
+<li><strong>动作流</strong>（Action Flow）：Agent 的一连串动作构成了一个有向图。”读文件 A → 调用 LLM → 写文件 B → 运行测试 → 读测试输出 → 再次调用 LLM → 写文件 C”。这个图能让你看到 Agent 的工作”形状”——是线性推进，还是反复迭代，还是来回跳转？</li>
+<li><strong>实时状态</strong>（Live Status）：如果 Agent 还在运行，你现在能看到什么？当前在做什么？进度大概多少？有没有卡住？</li>
+</ul>
+<p><strong>为什么重要</strong>：Run 层的可视化是最基础的需求，但也是最容易被做错的。最常见的错误是把 Run 层的可视化等同于”把日志展示出来”——日志是给人读的文本，可视化是让模式<strong>浮现</strong>的图形。35 分钟的执行可能产生几千行日志，但可视化后可能只是一个”读-写-测试-修复”的四步循环图，让你一秒就理解了 Agent 的行为模式。</p>
+<h3 id="2-3-Observe-层：Agent-的行为是否合规？"><a href="#2-3-Observe-层：Agent-的行为是否合规？" class="headerlink" title="2.3 Observe 层：Agent 的行为是否合规？"></a>2.3 Observe 层：Agent 的行为是否合规？</h3><p><strong>Observe 层</strong>是 Harness 的核心——它监控 Agent 的行为，检查是否违反约束，记录 Evidence（证据）。</p>
+<p><strong>可视化需求</strong>：</p>
+<ul>
+<li><strong>约束状态面板</strong>（Constraint Status Panel）：所有约束的当前状态——通过、违反、警告、不可评估。</li>
+<li><strong>违规详情</strong>（Violation Details）：如果某个约束被违反了，具体是什么时候、在什么上下文中、违反的程度如何？</li>
+<li><strong>Evidence 浏览器</strong>（Evidence Browser）：Agent 在执行过程中留下了哪些”证据”？比如代码变更的 diff、测试的输出、性能指标的变化。这些 Evidence 是 Review 的基础。</li>
+<li><strong>熵变化曲线</strong>（Entropy Curve）：这是一个更高级的可视化——追踪 Agent 行为的”可预测性”。如果 Agent 突然开始做意料之外的事情（熵增加），这条曲线会上升，给你一个早期预警。</li>
+</ul>
+<p><strong>为什么重要</strong>：Observe 层将 Harness 从一个”黑盒执行器”变成一个”可审计的监督者”。没有这层可视化，你只能看到”Agent 完成了任务”——但你不知道它是否按规矩来的。这就像你雇了一个承包商翻修房子，他告诉你”搞定了”，但你不检查他有没有偷工减料、有没有用合同规定以外的材料。</p>
+<h3 id="2-4-Govern-层：系统是否健康？"><a href="#2-4-Govern-层：系统是否健康？" class="headerlink" title="2.4 Govern 层：系统是否健康？"></a>2.4 Govern 层：系统是否健康？</h3><p><strong>Govern 层</strong>是最顶层——它关注的是 Harness 系统本身的健康度、Agent 的长期表现趋势、以及跨任务的治理策略。</p>
+<p><strong>可视化需求</strong>：</p>
+<ul>
+<li><strong>治理仪表盘</strong>（Governance Dashboard）：跨多个任务的聚合视图。过去一周，Agent 完成了多少任务？成功率多少？平均耗时多少？约束违反率多少？</li>
+<li><strong>Agent 行为模式</strong>（Agent Behavioral Patterns）：Agent 是否表现出某些稳定的”性格特征”？比如它是否总是倾向于过度工程化？是否总是在某个类型的任务上失败？</li>
+<li><strong>Spec 演化追踪</strong>（Spec Evolution Tracking）：Harness Spec 本身也在演化。上个月你加了一条新约束，这条约束的实际效果如何？它是否减少了某种类型的错误？</li>
+</ul>
+<p><strong>为什么重要</strong>：Govern 层把 Harness 从一个”单次执行工具”提升到一个”持续改进系统”。没有这层可视化，你只能对每次执行做反应（出了问题就修），而无法做到预防（看到趋势就提前调整）。</p>
+<h3 id="2-5-四层之间的关系"><a href="#2-5-四层之间的关系" class="headerlink" title="2.5 四层之间的关系"></a>2.5 四层之间的关系</h3><p>这四层不是孤立的，它们构成了一个嵌套循环：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs mathematica"><span class="hljs-variable">Govern</span> ──────────────────────────────────────┐<br>  │                                            │<br>  └─► <span class="hljs-variable">Observe</span> ──────────────────────────────┐ │<br>       │                                     │ │<br>       └─► <span class="hljs-built_in">Run</span> ───────────────────────────┐ │ │<br>            │                              │ │ │<br>            └─► <span class="hljs-built_in">Context</span> ──► <span class="hljs-punctuation">(</span><span class="hljs-variable">Agent</span> <span class="hljs-variable">Acts</span><span class="hljs-punctuation">)</span> ──┘ │ │<br>                                            │ │<br>            ◄──────── <span class="hljs-variable">Evidence</span> ──────────────┘ │<br>                                            │ │<br>            ◄──────── <span class="hljs-variable">Metrics</span> ────────────────┘ │<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>Context 为 Run 提供输入</li>
+<li>Run 产生 Evidence 给 Observe</li>
+<li>Observe 聚合成 Metrics 给 Govern</li>
+<li>Govern 反过来调整 Context 和 Spec</li>
+</ul>
+<p>可视化也需要反映这种嵌套关系——你需要能在 Govern 层”下钻”到某次具体执行的 Observe 层，再下钻到某个动作的 Run 层，再看当时的 Context 层。这不是四个独立的 dashboard，而是一个<strong>可钻取的统一视图</strong>。</p>
+<hr>
+<h2 id="第三章：从-Spec-到-Harness-可视化：工具链的演化"><a href="#第三章：从-Spec-到-Harness-可视化：工具链的演化" class="headerlink" title="第三章：从 Spec 到 Harness 可视化：工具链的演化"></a>第三章：从 Spec 到 Harness 可视化：工具链的演化</h2><p>在讨论具体的可视化方案之前，让我们先拉远视角，看看我们是怎么走到这一步的。AI 工程中”约束 Agent 行为”这个需求，并不是 Harness 诞生后才有的——它有一条清晰的工具链演化路径。理解这条路径，能帮我们看清 Harness 可视化为什么是必然的下一步，而不是一时的时髦。</p>
+<h3 id="阶段一：纯手写-Spec-时代（2023-年初-—-2023-年中）"><a href="#阶段一：纯手写-Spec-时代（2023-年初-—-2023-年中）" class="headerlink" title="阶段一：纯手写 Spec 时代（2023 年初 — 2023 年中）"></a>阶段一：纯手写 Spec 时代（2023 年初 — 2023 年中）</h3><p><strong>特征</strong>：约束以自然语言写在 Prompt 里，没有结构化，没有验证。</p>
+<p>在 AI Agent 的”蛮荒时代”，我们是这样给 Agent 加约束的：把所有规则写成一大段自然语言，塞进 system prompt。比如：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs markdown">你是一个高级 Python 工程师。请遵循以下规则：<br><span class="hljs-bullet">1.</span> 所有函数必须有 docstring<br><span class="hljs-bullet">2.</span> 变量名使用 snake<span class="hljs-emphasis">_case</span><br><span class="hljs-emphasis">3. 不要使用全局变量</span><br><span class="hljs-emphasis">4. 测试覆盖率不低于 80%</span><br><span class="hljs-emphasis">5. 不要修改 config/ 目录</span><br><span class="hljs-emphasis">...（还有 20 条）</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>问题</strong>：Agent 对这些约束的遵守率完全取决于 LLM 的”心情”。研究发现，当约束超过 7-10 条时，LLM 对后面约束的遵守率会<strong>急剧下降</strong>——这不是模型能力的问题，而是注意力稀释的必然结果。你的第 15 条约束，Agent 大概率直接忽略。</p>
+<p><strong>验证方式</strong>：人工 review 代码。是的，纯手工。你让 Agent 写完代码，然后像 review 人类同事的 PR 一样逐行检查。这耗费大量时间，而且——讽刺的是——很多团队发现 review AI 代码比 review 人类代码更累，因为你对 AI 的”习惯”一无所知，你不知道哪些地方可能藏着坑。</p>
+<p><strong>类比</strong>：这就像给一个新员工发了一本 50 页的员工手册，然后让他在没有任何监督的情况下工作。你只能在他做完之后检查结果。如果员工忽略了手册的第 37 页（”所有 API 调用必须经过认证中间件”），你可能在 code review 中发现，也可能在生产事故中发现。</p>
+<h3 id="阶段二：Spec-Linter（2023-年中-—-2023-年末）"><a href="#阶段二：Spec-Linter（2023-年中-—-2023-年末）" class="headerlink" title="阶段二：Spec + Linter（2023 年中 — 2023 年末）"></a>阶段二：Spec + Linter（2023 年中 — 2023 年末）</h3><p><strong>特征</strong>：自然语言 Spec + 自动化静态检查工具。</p>
+<p>工程师们很快意识到：不能把所有约束都交给 LLM 的”自觉性”。解决方案是引入 <strong>Linter</strong>——自动化的静态检查工具，在 Agent 写完代码后立刻验证。</p>
+<p>典型的工作流变成：</p>
+<figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs sqf"><span class="hljs-built_in">Agent</span> 写代码 → Linter 检查 → 发现问题 → <span class="hljs-built_in">Agent</span> 修复 → 再次 Linter → 通过 → 人工 review<br></code></pre></td></tr></table></figure>
+
+<p>工具链：</p>
+<ul>
+<li><strong>Ruff</strong>（Python）：检查代码风格、导入规范、复杂度</li>
+<li><strong>ESLint</strong>（JavaScript）：检查代码规范</li>
+<li><strong>Semgrep</strong>：检查安全模式（如硬编码密钥、SQL 注入风险）</li>
+<li><strong>自定义规则</strong>：团队用 JSON&#x2F;YAML 定义的约束，如”不允许 <code>TODO</code> 注释”、”必须使用类型注解”</li>
+</ul>
+<p><strong>进步</strong>：Linter 把一部分约束从”靠自觉”变成了”靠机器”。Agent 可以忽略 system prompt 的第 15 条，但如果第 15 条被编码成了 Ruff 规则，那它过不了 Linter 就交不了差。</p>
+<p><strong>局限</strong>：Linter 只能检查<strong>静态模式</strong>——代码的文本特征。它无法检查运行时行为：</p>
+<ul>
+<li>“函数执行时间不超过 2 秒” → Linter 无法验证</li>
+<li>“API 响应格式符合 OpenAPI Spec” → Linter 无法验证</li>
+<li>“没有引入不必要的依赖” → Linter 只能做粗略检查</li>
+</ul>
+<p>更重要的是，Linter 的输出是一堆<strong>文本报告</strong>。20 条规则、15 个文件，Linter 输出可能有上百行。你仍然缺乏<strong>全局视图</strong>——哪些规则经常被违反？哪些文件是重灾区？Agent 的行为是否在改善？</p>
+<h3 id="阶段三：Spec-CI（2024-年初-—-2024-年中）"><a href="#阶段三：Spec-CI（2024-年初-—-2024-年中）" class="headerlink" title="阶段三：Spec + CI（2024 年初 — 2024 年中）"></a>阶段三：Spec + CI（2024 年初 — 2024 年中）</h3><p><strong>特征</strong>：自然语言 Spec + Linter + CI&#x2F;CD Pipeline 验证。</p>
+<p>下一步是把验证搬到 CI 流水线里。不只是静态检查，还包括：</p>
+<ul>
+<li><strong>单元测试</strong>：Agent 写的代码必须通过所有现有测试</li>
+<li><strong>集成测试</strong>：修改后的模块必须通过集成测试</li>
+<li><strong>类型检查</strong>：mypy&#x2F;pyright 等类型检查工具</li>
+<li><strong>安全扫描</strong>：SAST 工具扫描安全漏洞</li>
+<li><strong>自定义 Harness 脚本</strong>：团队编写的验证脚本，比如”检查 API 文档是否同步更新”</li>
+</ul>
+<p>CI 的工作流：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs nestedtext"><span class="hljs-attribute">Agent 提交代码 → CI Pipeline 触发 → </span><br><span class="hljs-attribute">  Stage 1</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Lint → </span><br>  <span class="hljs-attribute">Stage 2</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Type Check → </span><br>  <span class="hljs-attribute">Stage 3</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Unit Test → </span><br>  <span class="hljs-attribute">Stage 4</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Integration Test → </span><br>  <span class="hljs-attribute">Stage 5</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Security Scan → </span><br>  全部通过 → ✓<br></code></pre></td></tr></table></figure>
+
+<p><strong>进步</strong>：CI 把约束验证<strong>自动化</strong>和<strong>流程化</strong>了。Agent 不能再”偷偷”提交不合规的代码——CI 会拦住它。而且 CI 的结果是结构化的——每个 stage 通过&#x2F;失败，可以聚合、追踪。</p>
+<p><strong>局限</strong>：CI 解决了”代码是否正确”的问题，但没有解决”过程是否正确”的问题：</p>
+<ul>
+<li>Agent 在完成任务的 35 分钟里，经历了多少次 CI 失败和重试？</li>
+<li>Agent 是否做了大量无关的修改，只是碰巧通过了 CI？</li>
+<li>CI 只能检查最终产出，无法监控中间过程</li>
+</ul>
+<p><strong>可视化的萌芽</strong>：CI 平台（GitHub Actions、GitLab CI）开始提供 pipeline 可视化——你可以看到每个 stage 的状态、耗时、日志。但这个可视化是<strong>以 pipeline 为中心</strong>的，不是以 Agent 为中心的。你看到的是”Stage 3 失败了”，而不是”Agent 在第 12 分钟做了一个导致 Stage 3 失败的决策”。</p>
+<h3 id="阶段四：Spec-Harness-Monitor（2024-年中-—-2025-年初）"><a href="#阶段四：Spec-Harness-Monitor（2024-年中-—-2025-年初）" class="headerlink" title="阶段四：Spec + Harness Monitor（2024 年中 — 2025 年初）"></a>阶段四：Spec + Harness Monitor（2024 年中 — 2025 年初）</h3><p><strong>特征</strong>：结构化 Spec + CI + 运行时行为监控。</p>
+<p>这是质变的一步。人们开始意识到：<strong>AI Agent 不是普通代码的提交者，它是一个自主决策的执行者</strong>。对普通开发者，CI 足够了，因为你可以假设开发者”理解自己在做什么”。对 AI Agent，你不能做这个假设——你需要<strong>监控它的决策过程</strong>。</p>
+<p>Harness Monitor 应运而生。它在 CI 的基础上增加了：</p>
+<ul>
+<li><strong>行为追踪</strong>（Behavioral Tracing）：记录 Agent 的每一个动作——读什么文件、调用什么工具、传了什么参数、LLM 返回了什么</li>
+<li><strong>约束运行时检查</strong>（Runtime Constraint Checking）：不只是检查最终代码，而是在 Agent 执行过程中实时检查约束。”Agent 正在尝试删除 <code>config/production.yml</code>——这条操作违反了 Spec 第 5 条”。</li>
+<li><strong>Evidence 收集</strong>（Evidence Collection）：Agent 的每一个决策都被记录为 Evidence，供后续 Review 使用。</li>
+</ul>
+<p>工具链变成：</p>
+<figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs sqf">Structured Spec（YAML/JSON） → <span class="hljs-built_in">Agent</span> 启动 → <br>  Harness Monitor 开始记录 → <br>  <span class="hljs-built_in">Agent</span> 执行（每个动作被追踪）→ <br>  运行时约束检查（实时拦截违规）→ <br>  <span class="hljs-built_in">Agent</span> 完成 → CI 验证最终产出 → <br>  Evidence 汇总 → Review<br></code></pre></td></tr></table></figure>
+
+<p><strong>进步</strong>：Harness Monitor 把”约束”从<strong>事后检查</strong>提升到了<strong>事中监控</strong>。这就像是给承包商装了摄像头——你可以实时看到他在做什么，而不仅仅是验收时检查结果。</p>
+<p><strong>局限</strong>：Harness Monitor 产生了海量数据。一次 35 分钟的执行可能产生数千条 trace 记录、数十个 constraint check、几百个 evidence。这些数据以 JSON&#x2F;text 的形式存在，<strong>人几乎不可能从中提取有意义的信息</strong>。</p>
+<p>你有了数据，但你没有<strong>洞察</strong>。</p>
+<p>这就是可视化成为刚需的时刻。</p>
+<h3 id="阶段五：Harness-可视化（2025-年至今）"><a href="#阶段五：Harness-可视化（2025-年至今）" class="headerlink" title="阶段五：Harness 可视化（2025 年至今）"></a>阶段五：Harness 可视化（2025 年至今）</h3><p><strong>特征</strong>：将 Harness Monitor 产生的数据转化为人类可理解的可视化。</p>
+<p>Harness 可视化不是锦上添花的 UI 美化——它是<strong>数据到洞察的转换层</strong>。它的核心任务是把 Harness Monitor 产生的非结构化&#x2F;半结构化数据，转化为工程师可以快速理解和行动的视觉形式。</p>
+<p>这不仅仅是”画图表”。Harness 可视化需要解决几个独特挑战：</p>
+<ol>
+<li><strong>时间维度</strong>：AI Agent 的执行是时间序列数据，需要时间线可视化</li>
+<li><strong>因果维度</strong>：Agent 的动作之间存在因果关系（因为读了文件 A，所以修改了文件 B），需要因果图可视化</li>
+<li><strong>约束维度</strong>：需要在同一个视图中展示约束的状态和 Agent 的行为</li>
+<li><strong>层级维度</strong>：不同角色（开发者、Review、管理者）需要不同粒度的视图</li>
+</ol>
+<h3 id="工具链演化时间线总结"><a href="#工具链演化时间线总结" class="headerlink" title="工具链演化时间线总结"></a>工具链演化时间线总结</h3><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>时间段</th>
+<th>约束形式</th>
+<th>验证方式</th>
+<th>验证时机</th>
+<th>可视化程度</th>
+<th>核心局限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>一：纯手写 Spec</strong></td>
+<td>2023 初—2023 中</td>
+<td>自然语言 Prompt</td>
+<td>人工 Review</td>
+<td>事后</td>
+<td>无</td>
+<td>LLM 遵守率低，人工成本高</td>
+</tr>
+<tr>
+<td><strong>二：Spec + Linter</strong></td>
+<td>2023 中—2023 末</td>
+<td>NL + 静态规则</td>
+<td>Linter 自动检查</td>
+<td>写完即检</td>
+<td>文本报告</td>
+<td>只能检查静态模式</td>
+</tr>
+<tr>
+<td><strong>三：Spec + CI</strong></td>
+<td>2024 初—2024 中</td>
+<td>NL + Linter + Pipeline</td>
+<td>CI 自动化流水线</td>
+<td>提交后</td>
+<td>Pipeline 状态图</td>
+<td>只能检查最终产出</td>
+</tr>
+<tr>
+<td><strong>四：Spec + Harness Monitor</strong></td>
+<td>2024 中—2025 初</td>
+<td>结构化 Spec</td>
+<td>运行时追踪 + CI</td>
+<td>执行中</td>
+<td>原始数据（JSON）</td>
+<td>数据过载，缺乏洞察</td>
+</tr>
+<tr>
+<td><strong>五：Harness 可视化</strong></td>
+<td>2025 至今</td>
+<td>结构化 Spec + 可视化层</td>
+<td>全链路可视化</td>
+<td>实时 + 事后</td>
+<td>多层可视化架构</td>
+<td>仍在演化中</td>
+</tr>
+</tbody></table>
+<p><strong>一条清晰的线索</strong>：约束的定义从<strong>模糊到精确</strong>（NL → Linter → 结构化 Spec），验证的时机从<strong>事后到实时</strong>（Review → CI → Runtime），但可视化一直滞后——直到阶段五才追上来。Harness 可视化的出现，标志着 AI 工程工具链走向成熟：我们终于有了和约束粒度匹配的观察工具。</p>
+<hr>
+<h2 id="第四章：现有方案的可视化缺口"><a href="#第四章：现有方案的可视化缺口" class="headerlink" title="第四章：现有方案的可视化缺口"></a>第四章：现有方案的可视化缺口</h2><p>在讨论理想方案之前，让我们先看看现有的工具有哪些可视化能力，以及它们在哪里卡壳。</p>
+<h3 id="4-1-IDE-可视化"><a href="#4-1-IDE-可视化" class="headerlink" title="4.1 IDE 可视化"></a>4.1 IDE 可视化</h3><p><strong>现状</strong>：Cursor、Windsurf、Copilot 等 AI 编码工具在 IDE 中提供了一定程度的可视化——diff 预览、inline suggestion、chat history。</p>
+<p><strong>缺口</strong>：</p>
+<ul>
+<li><strong>微观视角陷阱</strong>：IDE 可视化天然聚焦于”当前文件”和”当前编辑”。但 AI Agent 的工作范围往往横跨多个文件、多个目录。你在 IDE 中看到的只是冰山一角。</li>
+<li><strong>缺乏时间维度</strong>：IDE 展示的是”当前状态”，不是”变化过程”。你看到文件被修改了，但看不到修改之前 Agent 经历了什么——它试了几个方案？为什么选了当前这个？</li>
+<li><strong>无约束视图</strong>：IDE 不知道 Harness Spec 的存在。Agent 可能正在违反一条约束，但 IDE 不会给你任何提示。</li>
+</ul>
+<h3 id="4-2-CI-CD-可视化"><a href="#4-2-CI-CD-可视化" class="headerlink" title="4.2 CI&#x2F;CD 可视化"></a>4.2 CI&#x2F;CD 可视化</h3><p><strong>现状</strong>：GitHub Actions、GitLab CI、Jenkins 等 CI 平台提供了 pipeline 可视化——stage 状态、耗时、日志。</p>
+<p><strong>缺口</strong>：</p>
+<ul>
+<li><strong>Pipeline-centric，不是 Agent-centric</strong>：CI 可视化以 pipeline 为中心组织信息。”Stage 2 失败了”是 CI 的语言，不是 Agent 的语言。你需要的不是”Stage 2 失败了”，而是”Agent 在第 8 分钟做了一个导致测试失败的修改”。</li>
+<li><strong>缺乏因果链</strong>：CI 的每个 stage 是独立运行的。Stage 3 的失败可能和 Stage 1 的某个 warning 相关，但 CI 不会帮你建立这种关联。</li>
+<li><strong>最终产出偏见</strong>：CI 天然关注”最终结果是否正确”。但 Harness 需要关注”过程是否正确”——即使最终结果碰巧正确，如果过程有问题（比如 Agent 尝试了危险操作后才回滚），你也需要知道。</li>
+</ul>
+<h3 id="4-3-Code-Review-可视化"><a href="#4-3-Code-Review-可视化" class="headerlink" title="4.3 Code Review 可视化"></a>4.3 Code Review 可视化</h3><p><strong>现状</strong>：GitHub PR、GitLab MR 提供了 diff 可视化、comment 线程、review 状态。</p>
+<p><strong>缺口</strong>：</p>
+<ul>
+<li><strong>静态快照</strong>：PR diff 是代码变更的静态快照。它告诉你”什么变了”，但不告诉你”为什么变”和”怎么变的”。AI Agent 的修改理由往往深埋在它的推理过程中，但 PR 界面无法呈现这些推理。</li>
+<li><strong>缺乏行为上下文</strong>：Review 看到的是代码变更，不是 Agent 的行为。Agent 可能尝试了 5 种方案，最终选择了第 5 种。前 4 种尝试的信息（对理解第 5 种方案为什么是这样）在 PR 中完全丢失。</li>
+<li><strong>Review 负担</strong>：AI Agent 可能一次修改 30 个文件、产生 2000 行 diff。对 Reviewer 来说，这已经超出了人类有效 review 的范围（通常认为 200-400 行 diff 是 review 的有效上限）。没有可视化辅助，Review 变成了形式主义。</li>
+</ul>
+<h3 id="4-4-Chat-UI-可视化"><a href="#4-4-Chat-UI-可视化" class="headerlink" title="4.4 Chat UI 可视化"></a>4.4 Chat UI 可视化</h3><p><strong>现状</strong>：ChatGPT、Claude 的对话界面是一种”线性可视化”——把 Agent 的行为展现在一个线性的对话流中。</p>
+<p><strong>缺口</strong>：</p>
+<ul>
+<li><strong>线性叙事的局限</strong>：对话 UI 是线性的——消息 1、消息 2、消息 3……但 Agent 的行为不是线性的。它可能并行做了几件事，或者在某个决策点回退了。线性 UI 无法表达这种非线性结构。</li>
+<li><strong>信息密度低</strong>：对话 UI 的信息密度很低。35 分钟的执行可能产生几百条消息，其中大部分是中间过程。你需要的不是逐条阅读这些消息，而是看到<strong>高层摘要 + 下钻能力</strong>。</li>
+<li><strong>缺乏聚合</strong>：对话 UI 没有聚合视图。你无法看到”过去 10 次执行中，约束 X 的违反率是多少”。</li>
+</ul>
+<h3 id="4-5-缺口总结"><a href="#4-5-缺口总结" class="headerlink" title="4.5 缺口总结"></a>4.5 缺口总结</h3><table>
+<thead>
+<tr>
+<th>工具类型</th>
+<th>视角</th>
+<th>时间维度</th>
+<th>因果维度</th>
+<th>约束可见性</th>
+<th>聚合能力</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IDE</td>
+<td>文件级</td>
+<td>无</td>
+<td>无</td>
+<td>无</td>
+<td>无</td>
+</tr>
+<tr>
+<td>CI&#x2F;CD</td>
+<td>Pipeline 级</td>
+<td>Stage 级</td>
+<td>无</td>
+<td>间接</td>
+<td>Pipeline 级</td>
+</tr>
+<tr>
+<td>Code Review</td>
+<td>Diff 级</td>
+<td>快照</td>
+<td>无</td>
+<td>无</td>
+<td>PR 级</td>
+</tr>
+<tr>
+<td>Chat UI</td>
+<td>消息级</td>
+<td>线性</td>
+<td>无</td>
+<td>无</td>
+<td>无</td>
+</tr>
+<tr>
+<td><strong>需要的</strong></td>
+<td><strong>Agent 级</strong></td>
+<td><strong>连续</strong></td>
+<td><strong>有</strong></td>
+<td><strong>一等公民</strong></td>
+<td><strong>跨任务</strong></td>
+</tr>
+</tbody></table>
+<p>每个现有工具都在自己的领域做对了什么，但没有一个覆盖了 Harness 可视化的全部需求。我们需要一个新的可视化层——一个以 Agent 行为为中心的、跨越时间和因果维度的、把约束作为一等公民的可视化系统。</p>
+<hr>
+<h2 id="第五章：理想模型：三层可视化架构"><a href="#第五章：理想模型：三层可视化架构" class="headerlink" title="第五章：理想模型：三层可视化架构"></a>第五章：理想模型：三层可视化架构</h2><p>基于以上分析，我提出一个 Harness 可视化的理想模型：<strong>三层架构</strong>。每一层解决不同的问题，服务不同的角色，同时层与层之间可以自由钻取。</p>
+<h3 id="5-1-第一层：执行时间线（Execution-Timeline）"><a href="#5-1-第一层：执行时间线（Execution-Timeline）" class="headerlink" title="5.1 第一层：执行时间线（Execution Timeline）"></a>5.1 第一层：执行时间线（Execution Timeline）</h3><p><strong>服务对象</strong>：开发者、调试者</p>
+<p><strong>核心问题</strong>：”Agent 做了什么？什么时候做的？花了多长时间？”</p>
+<p><strong>视觉形式</strong>：横向时间线，类似 Git 提交历史的时间线视图，但更丰富：</p>
+<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs gams"><span class="hljs-number">0</span><span class="hljs-built_in">min</span>        <span class="hljs-number">5</span><span class="hljs-built_in">min</span>        <span class="hljs-number">10</span><span class="hljs-built_in">min</span>       <span class="hljs-number">15</span><span class="hljs-built_in">min</span>       <span class="hljs-number">20</span><span class="hljs-built_in">min</span>       <span class="hljs-number">25</span><span class="hljs-built_in">min</span>       <span class="hljs-number">30</span><span class="hljs-built_in">min</span>       <span class="hljs-number">35</span><span class="hljs-built_in">min</span><br>├───────────┼───────────┼───────────┼───────────┼───────────┼───────────┼───────────┤<br>│ 读取文件   │ 修改代码   │ 运行测试   │ 修复错误   │ 再次测试   │ 修改文档   │ 最终检查   │<br>│ (<span class="hljs-number">12</span> <span class="hljs-keyword">files</span>) │ (<span class="hljs-number">5</span> <span class="hljs-keyword">files</span>)  │ ❌ <span class="hljs-number">3</span>失败   │ (<span class="hljs-number">2</span> <span class="hljs-keyword">files</span>)  │ ✅ 全通过  │ (<span class="hljs-number">1</span> <span class="hljs-keyword">file</span>)   │ ✅         │<br>│ 🔵 低风险   │ 🟡 中风险   │ 🔴 高风险  │ 🟡 中风险   │ 🟢 低风险   │ 🟢 低风险   │ 🟢 低风险   │<br></code></pre></td></tr></table></figure>
+
+<p><strong>关键元素</strong>：</p>
+<ul>
+<li><strong>阶段划分</strong>：Agent 的行为被自动分组为语义化的阶段——“调研”、”实现”、”测试”、”修复”、”收尾”。不是按时间等分，而是按<strong>语义</strong>划分。</li>
+<li><strong>风险色标</strong>：每个阶段根据约束检查的结果标记风险等级。绿色 &#x3D; 无约束违反，黄色 &#x3D; 软约束警告，红色 &#x3D; 硬约束违反或接近违反。</li>
+<li><strong>耗时热力</strong>：每个阶段的耗时用色温表示。如果某个阶段异常耗时（比如”修复错误”花了 20 分钟），它会以更深的颜色高亮。</li>
+<li><strong>动作计数</strong>：每个阶段内的动作数量（读&#x2F;写&#x2F;调用工具的次数）。这能帮你看清 Agent 的工作量分布。</li>
+</ul>
+<p><strong>交互方式</strong>：点击任意阶段，下钻到该阶段内的详细动作列表。再点击某个动作，看到该动作的完整上下文——当时的 Agent prompt、LLM response、文件状态。</p>
+<h3 id="5-2-第二层：影响图谱（Impact-Graph）"><a href="#5-2-第二层：影响图谱（Impact-Graph）" class="headerlink" title="5.2 第二层：影响图谱（Impact Graph）"></a>5.2 第二层：影响图谱（Impact Graph）</h3><p><strong>服务对象</strong>：Reviewer、架构师</p>
+<p><strong>核心问题</strong>：”Agent 的修改影响了哪些东西？这些影响之间有什么关系？”</p>
+<p><strong>视觉形式</strong>：有向无环图（DAG）或力导向图。节点是代码实体（文件、函数、类、模块），边是依赖&#x2F;影响关系。</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs vim">               ┌──────────┐<br>               │ auth.<span class="hljs-keyword">py</span>  │ ← 修改（核心变更）<br>               └──┬───┬───┘<br>                  │   │<br>         ┌────────┘   └────────┐<br>         ▼                     ▼<br>┌──────────────┐      ┌──────────────┐<br>│ jwt_utils.<span class="hljs-keyword">py</span> │      │ middleware.<span class="hljs-keyword">py</span>│ ← 修改（级联影响）<br>└──────┬───────┘      └──────┬───────┘<br>       │                     │<br>       ▼                     ▼<br>┌──────────────┐      ┌──────────────┐<br>│ test_auth.<span class="hljs-keyword">py</span> │      │ test_mw.<span class="hljs-keyword">py</span>   │ ← 修改（测试适配）<br>└──────────────┘      └──────────────┘<br></code></pre></td></tr></table></figure>
+
+<p><strong>关键元素</strong>：</p>
+<ul>
+<li><strong>节点着色</strong>：按修改类型着色——绿色（新增）、黄色（修改）、红色（删除）、灰色（未修改但被影响）。</li>
+<li><strong>边标注</strong>：依赖类型——“调用”、”导入”、”测试”、”配置”。</li>
+<li><strong>爆炸半径</strong>（Blast Radius）：自动计算并高亮”爆炸半径”——Agent 的核心修改影响了多少个下游实体。爆炸半径越大，Reviewer 需要越仔细。</li>
+<li><strong>约束覆盖</strong>：图谱上叠加约束检查结果。如果某个修改违反了约束，对应的节点会显示警告标记。</li>
+</ul>
+<p><strong>交互方式</strong>：点击节点查看 diff。点击边查看依赖详情。可以切换”代码视图”和”模块视图”——模块视图以目录&#x2F;模块为单位聚合节点，适合宏观审查。</p>
+<h3 id="5-3-第三层：治理仪表盘（Governance-Dashboard）"><a href="#5-3-第三层：治理仪表盘（Governance-Dashboard）" class="headerlink" title="5.3 第三层：治理仪表盘（Governance Dashboard）"></a>5.3 第三层：治理仪表盘（Governance Dashboard）</h3><p><strong>服务对象</strong>：Tech Lead、工程管理者</p>
+<p><strong>核心问题</strong>：”Harness 系统健康吗？Agent 的长期表现如何？”</p>
+<p><strong>视觉形式</strong>：多面板仪表盘，包含多个图表和指标。</p>
+<p><strong>关键面板</strong>：</p>
+<ul>
+<li><strong>任务成功率趋势图</strong>：折线图，展示过去 N 天的任务成功率</li>
+<li><strong>约束违反热力图</strong>：以约束为行、以任务为列的矩阵，颜色表示违反程度。一眼看出哪些约束最常被违反。</li>
+<li><strong>执行时间分布图</strong>：直方图，展示任务执行时间的分布。是否有异常值？</li>
+<li><strong>Agent”性格”雷达图</strong>：多维度评分——“保守 vs 激进”、”简洁 vs 冗余”、”遵循规范 vs 自作主张”、”快速 vs 谨慎”。</li>
+<li><strong>Spec 效果追踪</strong>：每条 Spec 规则的”ROI”——它减少了多少错误，又引入了多少误报。</li>
+</ul>
+<h3 id="5-4-三层之间的钻取路径"><a href="#5-4-三层之间的钻取路径" class="headerlink" title="5.4 三层之间的钻取路径"></a>5.4 三层之间的钻取路径</h3><p>三层架构的核心价值不仅在于每层的可视化，更在于层间的<strong>钻取路径</strong>（Drill-down Path）：</p>
+<figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs sqf">治理仪表盘：约束违反热力图显示<span class="hljs-string">&quot;规则 #7 本周被违反 5 次&quot;</span><br>  ↓ 点击<span class="hljs-string">&quot;规则 #7&quot;</span><br>影响图谱：展示本周 <span class="hljs-number">5</span> 次违反涉及的文件和依赖关系<br>  ↓ 点击某次违反<br>执行时间线：展示该次执行的完整过程，高亮违反发生的时刻<br>  ↓ 点击该时刻<br>原始数据：<span class="hljs-built_in">Agent</span> 当时看到的上下文、做出的推理、执行的动作<br></code></pre></td></tr></table></figure>
+
+<p>这种<strong>从宏观到微观的无缝钻取</strong>，是 Harness 可视化和传统日志&#x2F;仪表盘的根本区别。传统方案中，宏观（仪表盘）和微观（日志）是断裂的——你看到仪表盘上有个异常，然后需要手动去翻日志找原因。Harness 可视化要做的，是<strong>消除这个断裂</strong>。</p>
+<hr>
+<h2 id="第六章：关键可视化模式"><a href="#第六章：关键可视化模式" class="headerlink" title="第六章：关键可视化模式"></a>第六章：关键可视化模式</h2><p>三层架构描述了”骨架”，现在我们来填充”血肉”——具体到每个可视化组件，有哪些经过验证的<strong>设计模式</strong>可以借鉴。</p>
+<h3 id="6-1-约束热力图（Constraint-Heatmap）"><a href="#6-1-约束热力图（Constraint-Heatmap）" class="headerlink" title="6.1 约束热力图（Constraint Heatmap）"></a>6.1 约束热力图（Constraint Heatmap）</h3><p><strong>场景</strong>：你定义了 20 条约束，Agent 完成了一次任务。你想一眼看出哪些约束被触发、触发的频率和严重程度。</p>
+<p><strong>设计</strong>：</p>
+<ul>
+<li>矩阵热力图。横轴是时间（或执行阶段），纵轴是约束。</li>
+<li>每个单元格的颜色表示约束在该时间点的状态：绿色（通过）、黄色（警告）、红色（违反）、灰色（未评估）。</li>
+<li>鼠标悬停显示详情——为什么这条约束在此时被触发。</li>
+</ul>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs arduino">约束 / 时间    <span class="hljs-number">0</span><span class="hljs-number">-5</span>min  <span class="hljs-number">5</span><span class="hljs-number">-10</span>min  <span class="hljs-number">10</span><span class="hljs-number">-15</span>min  <span class="hljs-number">15</span><span class="hljs-number">-20</span>min  <span class="hljs-number">20</span><span class="hljs-number">-25</span>min  <span class="hljs-number">25</span><span class="hljs-number">-30</span>min  <span class="hljs-number">30</span><span class="hljs-number">-35</span>min<br>────────────────────────────────────────────────────────────────────────────────<br>禁止删文件     🟢       🟢       🟢        🟢        🟢        🟢        🟢<br>函数≤<span class="hljs-number">50</span>行     🟢       🟡       🟡        🟡        🟢        🟢        🟢<br>测试覆盖率≥<span class="hljs-number">80</span>% ─       ─        🟡        🔴        🟡        🟢        🟢<br>不修改config/  🟢       🟢       🟢        🟢        🟢        🟢        🟢<br>不引入新依赖   🟢       🟢       🟢        🟢        🟢        🟡        🟡<br>API文档同步    ─       ─        ─         ─         ─         🟡        🟢<br></code></pre></td></tr></table></figure>
+
+<p><strong>洞察</strong>：从这个热力图你能一眼看出：测试覆盖率在 15-20 分钟区间出现了红色违反，但在后续修复后变绿。<code>不引入新依赖</code>在最后阶段出现警告——Agent 引入了新依赖。这些都是需要 Review 关注的信号。</p>
+<h3 id="6-2-决策树回放（Decision-Tree-Replay）"><a href="#6-2-决策树回放（Decision-Tree-Replay）" class="headerlink" title="6.2 决策树回放（Decision Tree Replay）"></a>6.2 决策树回放（Decision Tree Replay）</h3><p><strong>场景</strong>：Agent 在任务执行过程中做出了多个关键决策。你想理解每个决策的推理过程，以及如果做了不同选择会怎样。</p>
+<p><strong>设计</strong>：</p>
+<p>类似 Git 的分支可视化，但用于 Agent 的决策过程：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs bash">开始任务：JWT → Paseto 迁移<br>│<br>├─ 决策1：先读现有代码 or 先读 Paseto 文档？<br>│  └─ 选择：先读现有代码 ✅（理由：需要理解当前结构）<br>│     │<br>│     ├─ 决策2：整体替换 or 增量迁移？<br>│     │  ├─ 方案A：整体替换（风险高，速度快）<br>│     │  └─ 方案B：增量迁移（风险低，速度慢） ✅ 已选<br>│     │     │<br>│     │     ├─ 决策3：从哪个模块开始？<br>│     │     │  ├─ auth/token.py（核心）<br>│     │     │  └─ auth/middleware.py（入口） ✅ 已选<br>│     │     │     │<br>│     │     │     └─ 决策4：测试策略<br>│     │     │        ├─ 先写测试再迁移<br>│     │     │        └─ 先迁移再补测试 ✅ 已选 ⚠️（风险较高）<br></code></pre></td></tr></table></figure>
+
+<p><strong>洞察</strong>：决策树回放让你看到 Agent 在每个岔路口的选择和理由。特别是标记了 ⚠️ 的决策——“先迁移再补测试”——这是一个有争议的选择。如果你不赞同，你可以在 Spec 中加入约束：”所有迁移任务必须先编写或更新测试”。</p>
+<p>这种可视化的价值不仅在于<strong>事后审计</strong>，更在于<strong>Spec 演化</strong>——你通过观察 Agent 的决策模式，不断改进你的约束定义。</p>
+<h3 id="6-3-熵变化曲线（Entropy-Curve）"><a href="#6-3-熵变化曲线（Entropy-Curve）" class="headerlink" title="6.3 熵变化曲线（Entropy Curve）"></a>6.3 熵变化曲线（Entropy Curve）</h3><p><strong>场景</strong>：你想知道 Agent 的行为是否”可预测”——它是在按照预期的路径推进，还是开始”乱来”？</p>
+<p><strong>设计</strong>：折线图，Y 轴是”行为熵”（Behavioral Entropy），X 轴是时间。</p>
+<ul>
+<li><strong>低熵</strong>：Agent 按照可预测的模式工作——读文件、修改文件、运行测试。行为高度结构化。</li>
+<li><strong>高熵</strong>：Agent 开始做意料之外的事情——频繁切换目标、反复修改同一个文件、调用了不常用的工具。</li>
+</ul>
+<figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs scss">熵值<br>▲<br>│     ╱╲<br>│    ╱  ╲        ╱╲╱╲<br>│   ╱    ╲      ╱    ╲<br>│──╱──────╲────╱──────╲────<br>│          ╲  ╱        ╲<br>│           ╲╱          ╲<br>└─────────────────────────────► 时间<br>  调研    实现    测试    修复    完成<br>  (低熵)  (中熵)  (低熵)  (高熵!)  (低熵)<br></code></pre></td></tr></table></figure>
+
+<p><strong>洞察</strong>：”修复”阶段出现了高熵——Agent 的行为变得不可预测，反复尝试不同的修复方案。这是一个<strong>信号</strong>：</p>
+<ol>
+<li><strong>积极信号</strong>：Agent 遇到了复杂 bug，需要探索多种修复方案。这是正常的。</li>
+<li><strong>消极信号</strong>：Agent 陷入了”反复试错”的循环，缺乏系统性的调试策略。这时候可能需要人工介入，或者改进 Spec 中的调试指引。</li>
+</ol>
+<p>关键不在于熵高或低，而在于<strong>熵是否在你的预期之内</strong>。如果”修复”阶段通常是低熵的，但这次突然高熵了，那说明这次的问题可能比以往更复杂。</p>
+<h3 id="6-4-上下文地图（Context-Map）"><a href="#6-4-上下文地图（Context-Map）" class="headerlink" title="6.4 上下文地图（Context Map）"></a>6.4 上下文地图（Context Map）</h3><p><strong>场景</strong>：你想知道 Agent 在做决策时”看到了”多大的世界——它的上下文窗口中包含了哪些信息，又忽略了哪些。</p>
+<p><strong>设计</strong>：类似地理地图的”探索迷雾”可视化——Agent 读过的文件&#x2F;区域是明亮的，没读过的是灰暗的（”迷雾”）。</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs stylus">代码库地图（已探索区域）<br><br>┌── <span class="hljs-attribute">src</span>/ ──────────────────────┐<br>│  ├── auth/                   │<br>│  │   ├── token<span class="hljs-selector-class">.py</span>      ✅ 已读│<br>│  │   ├── middleware<span class="hljs-selector-class">.py</span> ✅ 已读│<br>│  │   ├── oauth<span class="hljs-selector-class">.py</span>      ✅ 已读│<br>│  │   └── __init__<span class="hljs-selector-class">.py</span>   ░░ 未读│<br>│  ├── api/                    │<br>│  │   ├── routes<span class="hljs-selector-class">.py</span>     ✅ 已读│<br>│  │   ├── handlers<span class="hljs-selector-class">.py</span>   ░░ 未读│  ← 可能有遗漏！<br>│  │   └── validators<span class="hljs-selector-class">.py</span> ░░ 未读│<br>│  ├── models/                 │<br>│  │   └── (全部 ░░ 未读)       │<br>│  └── config/                 │<br>│      └── settings<span class="hljs-selector-class">.py</span>   🔒 禁读│<br>└──────────────────────────────┘<br>探索率：<span class="hljs-number">40%</span>（已读 <span class="hljs-number">5</span>/<span class="hljs-number">13</span> 文件）<br></code></pre></td></tr></table></figure>
+
+<p><strong>洞察</strong>：Agent 只读了 <code>api/routes.py</code> 但没有读 <code>api/handlers.py</code>。如果 <code>routes.py</code> 调用了 <code>handlers.py</code> 中的函数，而 Agent 修改了 <code>routes.py</code> 中的接口，那 <code>handlers.py</code> 中的调用方可能需要同步修改——但 Agent 不知道，因为它没读过这个文件。</p>
+<p>上下文地图的另一个用途是<strong>优化 Agent 的上下文策略</strong>。如果你发现 Agent 在类似任务中总是忽略某些文件，你可以在 Spec 中明确指定需要读取的文件列表，或者改进 Agent 的文件发现策略。</p>
+<h3 id="6-5-Gate-决策流（Gate-Decision-Flow）"><a href="#6-5-Gate-决策流（Gate-Decision-Flow）" class="headerlink" title="6.5 Gate 决策流（Gate Decision Flow）"></a>6.5 Gate 决策流（Gate Decision Flow）</h3><p><strong>场景</strong>：Harness 中的 Review Gate 对 Agent 的产出做了审查。你想看到 Gate 的完整决策过程。</p>
+<p><strong>设计</strong>：流程图 + 状态标注。</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><code class="hljs crmsh">任务完成<br>  │<br>  ▼<br>┌─────────────────┐<br>│ Gate <span class="hljs-number">1</span>: Harness  │<br>│ <span class="hljs-literal">Monitor</span>          │<br>│ <span class="hljs-string">&quot;发生了什么？&quot;</span>     │<br>└───────┬─────────┘<br>        │<br>   ┌────┴────┐<br>   │ 评估结果  │<br>   ├─────────┤<br>   │ ✅ 修改<span class="hljs-number">5</span>个│<br>   │    文件  │<br>   │ ✅ <span class="hljs-number">3</span>个测试│<br>   │    通过  │<br>   │ ⚠️ <span class="hljs-number">1</span>个新 │<br>   │    依赖  │<br>   └────┬────┘<br>        │ 通过 ▼<br>┌─────────────────┐<br>│ Gate <span class="hljs-number">2</span>: Entrix   │<br>│ Fitness          │<br>│ <span class="hljs-string">&quot;应该是什么？&quot;</span>     │<br>└───────┬─────────┘<br>        │<br>   ┌────┴────┐<br>   │ 评估结果  │<br>   ├─────────┤<br>   │ ✅ 符合架构│<br>   │    意图  │<br>   │ ✅ 无安全 │<br>   │    风险  │<br>   │ ⚠️ 迁移不 │<br>   │    完整  │<br>   └────┬────┘<br>        │ 条件通过 ▼<br>┌─────────────────┐<br>│ Gate <span class="hljs-number">3</span>: Gate     │<br>│ Specialist       │<br>│ <span class="hljs-string">&quot;能否推进？&quot;</span>      │<br>└───────┬─────────┘<br>        │<br>   ┌────┴────┐<br>   │ 最终决策  │<br>   ├─────────┤<br>   │ ✅ 允许合并│<br>   │ 📝 需补充 │<br>   │    迁移文档│<br>   └─────────┘<br></code></pre></td></tr></table></figure>
+
+<p><strong>洞察</strong>：Gate 决策流让你看到多层审查的完整过程——每一层关注什么、发现了什么、做出了什么判断。特别重要的是<strong>条件通过</strong>（Conditional Pass）的标注——Gate 2 认为迁移不完整，但不是致命问题，所以条件通过并传递给 Gate 3 做最终判断。这种分层决策的可视化，比一个简单的”通过&#x2F;不通过”提供了丰富得多的信息。</p>
+<h3 id="6-6-六种模式的关系"><a href="#6-6-六种模式的关系" class="headerlink" title="6.6 六种模式的关系"></a>6.6 六种模式的关系</h3><p>这六种可视化模式不是孤立的——它们覆盖了 Harness 四层循环的不同层面：</p>
+<table>
+<thead>
+<tr>
+<th>可视化模式</th>
+<th>主要服务层</th>
+<th>核心问题</th>
+<th>时间尺度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>约束热力图</td>
+<td>Observe</td>
+<td>哪些约束被触发？</td>
+<td>单次执行</td>
+</tr>
+<tr>
+<td>决策树回放</td>
+<td>Run</td>
+<td>Agent 为什么做了这个选择？</td>
+<td>单次执行</td>
+</tr>
+<tr>
+<td>熵变化曲线</td>
+<td>Run + Observe</td>
+<td>Agent 是否按预期行事？</td>
+<td>单次执行</td>
+</tr>
+<tr>
+<td>上下文地图</td>
+<td>Context</td>
+<td>Agent 看到了什么？</td>
+<td>单次执行</td>
+</tr>
+<tr>
+<td>Gate 决策流</td>
+<td>Govern</td>
+<td>审查结论是什么？</td>
+<td>单次执行</td>
+</tr>
+<tr>
+<td>治理仪表盘</td>
+<td>Govern</td>
+<td>长期趋势如何？</td>
+<td>跨任务</td>
+</tr>
+</tbody></table>
+<p>理想的可视化系统应该<strong>同时提供这些模式</strong>，并允许用户在它们之间自由切换和钻取。</p>
+<hr>
+<h2 id="第七章：Routa-的-Harness-Monitor-实践分析"><a href="#第七章：Routa-的-Harness-Monitor-实践分析" class="headerlink" title="第七章：Routa 的 Harness Monitor 实践分析"></a>第七章：Routa 的 Harness Monitor 实践分析</h2><p>理论讲够了，让我们看一个真实的案例。<strong>Routa</strong> 是一个 workspace-first multi-agent coordination platform，它的 Harness Monitor 设计提供了很多有价值的实践经验。</p>
+<h3 id="7-1-Routa-的核心架构：四层-Loop-Review-Gate"><a href="#7-1-Routa-的核心架构：四层-Loop-Review-Gate" class="headerlink" title="7.1 Routa 的核心架构：四层 Loop + Review Gate"></a>7.1 Routa 的核心架构：四层 Loop + Review Gate</h3><p>Routa 的核心执行模型是一个四层循环，和我们前面讨论的四层模型高度对应。在理解架构之前，先记住 Routa 的三个核心角色：</p>
+<ul>
+<li><strong>ROUTA</strong> 负责协调（coordinates）——它是编排者，决定谁做什么、什么时候做</li>
+<li><strong>CRAFTER</strong> 负责实现（implements）——它是执行者，真正动手写代码、改文件、跑测试</li>
+<li><strong>GATE</strong> 负责验证（verifies）——它是守卫者，检查 CRAFTER 的产出是否符合规范</li>
+</ul>
+<p>这三个角色通过 Kanban 协调总线串联起来：</p>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm">Kanban（协调总线）<br>  │<br>  ├─ <span class="hljs-keyword">Backlog </span>Refiner（需求精炼）<br>  │    └─ 分析需求，拆分为可执行的 TODO<br>  │<br>  ├─ Todo <span class="hljs-keyword">Orchestrator（任务编排）</span><br><span class="hljs-keyword"></span>  │    └─ 排列优先级，分配给 specialist<br>  │<br>  ├─ Dev Crafter（开发执行）<br>  │    └─ CRAFTER 主导：代码编写、修改、测试<br>  │<br>  ├─ Review Guard（审查守卫）<br>  │    └─ GATE 主导：Harness Monitor + 约束验证<br>  │<br>  └─ Done Reporter（完成报告）<br>       └─ 汇总 Evidence，生成报告<br></code></pre></td></tr></table></figure>
+
+<p>ROUTA 贯穿整个 Kanban 流程，在每个泳道之间协调任务流转；CRAFTER 在 Dev Crafter 泳道中全力输出；GATE 在 Review Guard 泳道中严格把关。三者之间的配合默契度，直接决定了 Harness 的有效性。</p>
+<p><strong>关键设计决策</strong>：Routa 把 Kanban 作为<strong>协调总线</strong>——每个泳道（swimlane）背后不是一个简单的任务队列，而是一个完整的 specialist prompt。这意味着：</p>
+<ul>
+<li>每个 specialist 有自己的上下文、约束和能力</li>
+<li>任务在泳道之间流转时，会经过<strong>转换</strong>（不仅仅是状态变更）</li>
+<li>Kanban 本身就是一个<strong>可视化协调层</strong>——你可以看到任务在哪个阶段、谁在处理、是否有阻塞</li>
+</ul>
+<h3 id="7-2-Review-Gate-的三层设计"><a href="#7-2-Review-Gate-的三层设计" class="headerlink" title="7.2 Review Gate 的三层设计"></a>7.2 Review Gate 的三层设计</h3><p>Routa 的 Review Gate 是它最精巧的设计之一。三层审查，每层关注不同的问题：</p>
+<p><strong>第一层：Harness Monitor（”发生了什么？”）</strong></p>
+<p>这是事实层。它记录和回答的是客观事实：</p>
+<ul>
+<li>修改了哪些文件？每个文件的变更摘要</li>
+<li>运行了哪些命令？每个命令的输出</li>
+<li>调用了哪些外部 API？参数和响应是什么</li>
+<li>执行耗时和资源消耗</li>
+</ul>
+<p><strong>第二层：Entrix Fitness（”应该是什么？”）</strong></p>
+<p>这是规范层。它把 Harness Monitor 收集的事实和预定义的 Spec 进行比对：</p>
+<ul>
+<li>变更范围是否符合预期？（Spec 说改 3 个文件，实际改了 5 个）</li>
+<li>代码风格是否符合规范？（和 Lint 规则比对）</li>
+<li>安全约束是否满足？（检查敏感信息、权限边界）</li>
+<li>性能约束是否满足？（检查是否有 N+1 查询、不必要的循环）</li>
+</ul>
+<p><strong>第三层：Gate Specialist（”能否推进？”）</strong></p>
+<p>这是决策层。综合前两层的信息，做出最终判断：</p>
+<ul>
+<li>通过（PASS）：质量达标，可以推进到下一阶段</li>
+<li>条件通过（CONDITIONAL PASS）：有小问题但非致命，记录待办事项后推进</li>
+<li>回退（REWORK）：需要 Crafter 修复后重新提交</li>
+<li>终止（ABORT）：严重问题，任务需要人工介入</li>
+</ul>
+<p><strong>为什么三层？</strong> 因为每层需要不同的”心智模型”。Harness Monitor 需要”观察者”的客观性，Entrix Fitness 需要”审计员”的严谨性，Gate Specialist 需要”决策者”的判断力。把这些职责混在一个 prompt 里，效果会大打折扣——模型（LLM）会在不同角色之间”串台”。</p>
+<h3 id="7-3-Routa-做对了什么"><a href="#7-3-Routa-做对了什么" class="headerlink" title="7.3 Routa 做对了什么"></a>7.3 Routa 做对了什么</h3><p><strong>① Trace 是一等公民</strong></p>
+<p>Routa 把 Trace（行为追踪）作为系统的一等数据类型。每一条 trace 都有：</p>
+<ul>
+<li><code>trace_id</code>：唯一标识</li>
+<li><code>span_id</code>：在一个 trace 内的子操作标识</li>
+<li><code>parent_span_id</code>：父操作的标识（构成树结构）</li>
+<li><code>timestamp</code>：时间戳</li>
+<li><code>action_type</code>：动作类型（read&#x2F;write&#x2F;execute&#x2F;think）</li>
+<li><code>input/output</code>：输入输出</li>
+<li><code>constraint_checks</code>：该动作触发的约束检查</li>
+</ul>
+<p>这种结构化的 trace 数据，是所有可视化的基础。没有它，Harness 可视化就是无源之水。</p>
+<p><strong>② Evidence-based Review</strong></p>
+<p>Routa 的 Review 不是基于代码 diff 的（传统方式），而是基于 <strong>Evidence</strong> 的。每次 Review Guard 审查一个任务，它看到的不仅仅是代码变更，而是：</p>
+<ul>
+<li>任务上下文（需求是什么、为什么要做）</li>
+<li>执行 trace（Crafter 做了什么、为什么这么做）</li>
+<li>约束检查结果（哪些约束通过了、哪些违反了）</li>
+<li>Evidence 列表（每个关键决策的”证据”）</li>
+</ul>
+<p>这就像法庭审判——不是只看结果（代码），而是看证据链（trace + constraint checks + reasoning）。</p>
+<p><strong>③ Kanban 作为协调总线</strong></p>
+<p>Kanban 不仅仅是任务管理工具，它是<strong>协调的可视化层</strong>。当 Crafter 完成一个任务并提交 Review 时：</p>
+<ol>
+<li>任务卡片从 “Dev Crafter” 泳道移到 “Review Guard” 泳道</li>
+<li>卡片上显示执行摘要（修改文件数、测试结果、风险等级）</li>
+<li>Review Guard 处理时，卡片状态更新为 “审查中”</li>
+<li>审查完成后，卡片要么移到 “Done Reporter”，要么退回 “Dev Crafter”</li>
+</ol>
+<p>整个团队可以实时看到任务的状态——不是通过看日志，而是通过看 Kanban 板。这是一种<strong>零成本的协作可视化</strong>。</p>
+<h3 id="7-4-可视化空间：Routa-还可以做什么"><a href="#7-4-可视化空间：Routa-还可以做什么" class="headerlink" title="7.4 可视化空间：Routa 还可以做什么"></a>7.4 可视化空间：Routa 还可以做什么</h3><p>尽管 Routa 的 Harness Monitor 设计已经很成熟，但在可视化方面仍有提升空间：</p>
+<p><strong>缺失一：跨任务聚合</strong></p>
+<p>Routa 的 Kanban 可视化是<strong>单次任务维度</strong>的。你看到的是某个任务在泳道之间的流转。但你很难看到：</p>
+<ul>
+<li>过去一周，Dev Crafter 泳道的平均停留时间是多少？</li>
+<li>哪些类型的任务最容易被 Review Guard 退回？</li>
+<li>Gate Specialist 的”条件通过”率是多少？这些条件通过后来都修复了吗？</li>
+</ul>
+<p>这需要治理仪表盘——也就是我们三层架构中的第三层。</p>
+<p><strong>缺失二：决策树可视化</strong></p>
+<p>Routa 的 trace 数据足以支持决策树可视化，但目前的 UI 只展示了线性 trace 列表。如果把 trace 中的 <code>parent_span_id</code> 关系可视化为树状结构，Reviewer 能更直观地理解 Agent 的决策路径。</p>
+<p><strong>缺失三：上下文地图</strong></p>
+<p>Review Guard 在审查时会读取相关文件，但它”看到了什么”这个信息没有被可视化。如果能看到 Review Guard 的上下文地图，就能判断它的审查是否充分——是否遗漏了某些关键文件。</p>
+<h3 id="7-5-对-Unity-工程的启示"><a href="#7-5-对-Unity-工程的启示" class="headerlink" title="7.5 对 Unity 工程的启示"></a>7.5 对 Unity 工程的启示</h3><p>Routa 的实践给我们几个关键启示：</p>
+<ol>
+<li><p><strong>Trace 先行</strong>：在做可视化之前，先确保你有结构化的 trace 数据。可视化是 trace 数据的消费端，如果 trace 数据不够丰富或不够结构化，可视化就是空中楼阁。</p>
+</li>
+<li><p><strong>分层 Review</strong>：不要把所有审查逻辑塞进一个 prompt。三层 Review Gate 的设计（事实 → 规范 → 决策）是一个值得借鉴的模式。</p>
+</li>
+<li><p><strong>Kanban 即可视化</strong>：不需要一开始就做复杂的三层可视化架构。Kanban 本身就是一个简单但有效的可视化起点——它让任务的流转变得可见。</p>
+</li>
+<li><p><strong>Evidence 驱动</strong>：Review 应该基于 Evidence（结构化的执行证据），而不是基于 diff（代码文本差异）。这个范式转变对可视化设计有深远影响——你需要展示的不是”代码变了什么”，而是”Agent 做了什么，为什么这么做，结果是什么”。</p>
+</li>
+</ol>
+<hr>
+<h2 id="第八章：从概念到落地"><a href="#第八章：从概念到落地" class="headerlink" title="第八章：从概念到落地"></a>第八章：从概念到落地</h2><p>谈了这么多理论，如果明天就要开始做 Harness 可视化，应该怎么做？我建议一个三阶段策略：MVP → 进阶 → 工程化。</p>
+<h3 id="8-1-MVP：让-Agent-的行为变得可见（1-2-周）"><a href="#8-1-MVP：让-Agent-的行为变得可见（1-2-周）" class="headerlink" title="8.1 MVP：让 Agent 的行为变得可见（1-2 周）"></a>8.1 MVP：让 Agent 的行为变得可见（1-2 周）</h3><p><strong>目标</strong>：不追求完美的可视化，先做到”能看到”。</p>
+<p><strong>具体行动</strong>：</p>
+<ol>
+<li><p><strong>Trace 结构化</strong>：在 Agent 执行循环中加入 trace 埋点。每个动作记录 <code>&#123;timestamp, action_type, input, output, duration&#125;</code>。这是所有后续可视化的基础。</p>
+</li>
+<li><p><strong>时间线 MVP</strong>：用最简单的形式——一个 Markdown 表格或静态 HTML 页面——展示 Agent 的执行时间线。不需要交互，不需要钻取，只需要按时间顺序列出 Agent 的动作。</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs markdown">| 时间 | 动作 | 目标 | 结果 | 耗时 |<br>|------|------|------|------|------|<br>| 0:01 | read | auth/token.py | 成功 | 0.5s |<br>| 0:02 | read | auth/middleware.py | 成功 | 0.3s |<br>| 3:15 | write | auth/token.py | 已修改 | 1.2s |<br>| 5:30 | execute | pytest | 3 failures | 12s |<br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>约束检查日志</strong>：把 Harness Spec 中的约束实现为运行时检查函数，在 Agent 动作后调用，记录检查结果。</p>
+</li>
+<li><p><strong>执行摘要</strong>：在任务完成后，自动生成一段自然语言摘要——“任务耗时 35 分钟，修改了 5 个文件，运行了 3 次测试（2 次失败后修复），引入了 1 个新依赖。”</p>
+</li>
+</ol>
+<p><strong>交付物</strong>：一个简单的 HTML 页面，展示时间线 + 约束检查结果 + 执行摘要。</p>
+<h3 id="8-2-进阶：加入因果和约束维度（3-4-周）"><a href="#8-2-进阶：加入因果和约束维度（3-4-周）" class="headerlink" title="8.2 进阶：加入因果和约束维度（3-4 周）"></a>8.2 进阶：加入因果和约束维度（3-4 周）</h3><p><strong>目标</strong>：从”能看到”到”能理解”。</p>
+<p><strong>具体行动</strong>：</p>
+<ol>
+<li><p><strong>动作因果图</strong>：分析 trace 数据中的因果关系——“读文件 A 导致了写文件 B”。用简单的箭头或连线展示这种因果关系。不需要完整的 DAG，只需要最直接的因果链。</p>
+</li>
+<li><p><strong>约束热力图</strong>：把约束检查结果以时间×约束的矩阵形式展示。用 CSS 即可实现颜色编码。</p>
+</li>
+<li><p><strong>风险评分</strong>：根据约束违反的频率和严重程度，给每次执行计算一个风险评分。高风险执行在列表中优先展示。</p>
+</li>
+<li><p><strong>文件爆炸半径</strong>：自动计算一次执行影响了多少文件、多少行代码。爆炸半径大的执行自动标记为”需要详细 Review”。</p>
+</li>
+<li><p><strong>Gate 决策可视化</strong>：如果使用了多层 Gate（如 Routa 的三层 Gate），把每层的决策过程可视化——通过、条件通过、回退。</p>
+</li>
+</ol>
+<p><strong>交付物</strong>：一个交互式 Web 页面，支持时间线 + 因果图 + 约束热力图，可以从宏观视图钻取到具体动作。</p>
+<h3 id="8-3-工程化：构建可持续的可视化系统（持续迭代）"><a href="#8-3-工程化：构建可持续的可视化系统（持续迭代）" class="headerlink" title="8.3 工程化：构建可持续的可视化系统（持续迭代）"></a>8.3 工程化：构建可持续的可视化系统（持续迭代）</h3><p><strong>目标</strong>：从”能理解”到”能治理”。</p>
+<p><strong>具体行动</strong>：</p>
+<ol>
+<li><p><strong>治理仪表盘</strong>：跨任务聚合指标——成功率、约束违反率、执行时间分布、Agent 行为模式。这是长期价值最高的可视化组件。</p>
+</li>
+<li><p><strong>Spec 演化追踪</strong>：记录每条 Spec 规则的修改历史和效果变化。回答”这条规则加入后，相关的约束违反是否减少了？”</p>
+</li>
+<li><p><strong>Agent 性格分析</strong>：基于大量执行数据，分析 Agent 的”性格特征”——它倾向于过度工程化还是欠工程化？它是保守的还是激进的？</p>
+</li>
+<li><p><strong>团队协作视图</strong>：不同角色的定制视图——Tech Lead 看治理仪表盘，Reviewer 看影响图谱，DevOps 看资源消耗。</p>
+</li>
+<li><p><strong>告警系统</strong>：基于可视化指标设置告警——“如果某类约束的违反率突然升高，发送通知”。</p>
+</li>
+</ol>
+<p><strong>技术选型建议</strong>：</p>
+<ul>
+<li><strong>数据层</strong>：Trace 数据存储在时序数据库（如 ClickHouse、TimescaleDB），约束数据存储在关系数据库</li>
+<li><strong>可视化层</strong>：对于交互式图表，D3.js 或 ECharts；对于仪表盘，Grafana 或自定义 React 组件</li>
+<li><strong>API 层</strong>：GraphQL 很适合这种需要灵活钻取的场景——前端可以按需查询不同粒度的数据</li>
+</ul>
+<p><strong>工程化注意事项</strong>：</p>
+<ul>
+<li><strong>性能</strong>：一次 35 分钟的执行可能产生数千条 trace。可视化层需要支持聚合和采样——不需要每次都展示所有原始数据</li>
+<li><strong>存储</strong>：Trace 数据增长很快。制定数据保留策略——原始 trace 保留 30 天，聚合指标永久保留</li>
+<li><strong>隐私</strong>：Trace 数据可能包含敏感信息（API key、用户数据）。确保可视化系统的访问控制和数据脱敏</li>
+</ul>
+<hr>
+<h2 id="第九章：未来展望"><a href="#第九章：未来展望" class="headerlink" title="第九章：未来展望"></a>第九章：未来展望</h2><p>Harness 可视化还处于早期阶段。让我大胆预测几个方向。</p>
+<h3 id="9-1-实时协作审查"><a href="#9-1-实时协作审查" class="headerlink" title="9.1 实时协作审查"></a>9.1 实时协作审查</h3><p>未来的 Harness 可视化不会只是”事后查看”，而是支持<strong>实时协作审查</strong>。当 Agent 正在执行时，多个团队成员可以同时观察其行为，添加评论，甚至在关键时刻介入（暂停 Agent、修改约束、提供指导）。</p>
+<p>这就像直播 code review——但不是 review 人写的代码，而是实时观察 AI 的行为并给出反馈。这种模式能极大提高团队对 AI Agent 的信任度，因为”看到了过程”比”看到了结果”更能建立信任。</p>
+<h3 id="9-2-Agent-to-Agent-可视化"><a href="#9-2-Agent-to-Agent-可视化" class="headerlink" title="9.2 Agent-to-Agent 可视化"></a>9.2 Agent-to-Agent 可视化</h3><p>当多个 Agent 协作时（Multi-Agent 场景），可视化需要覆盖的不只是单个 Agent 的行为，而是 Agent 之间的<strong>交互模式</strong>：</p>
+<ul>
+<li>Agent A 产出了什么，传递给了 Agent B？</li>
+<li>Agent B 基于 Agent A 的产出做了什么决策？</li>
+<li>两个 Agent 之间是否存在”乒乓”模式（A 改了 B 又改回去）？</li>
+<li>协作的整体效率如何？有多少时间花在了 Agent 间的”通信”上？</li>
+</ul>
+<p>这对可视化提出了新的挑战——你需要一个<strong>多 Agent 拓扑图</strong>，展示 Agent 之间的数据流和控制流。</p>
+<h3 id="9-3-自适应可视化"><a href="#9-3-自适应可视化" class="headerlink" title="9.3 自适应可视化"></a>9.3 自适应可视化</h3><p>不同的人、不同的场景需要不同的可视化。未来系统可能会根据上下文自动调整可视化模式：</p>
+<ul>
+<li><strong>调试场景</strong>：自动切换到决策树回放 + 熵变化曲线</li>
+<li><strong>Review 场景</strong>：自动切换到影响图谱 + 约束热力图</li>
+<li><strong>管理场景</strong>：自动切换到治理仪表盘</li>
+<li><strong>新人 onboarding</strong>：自动切换到上下文地图 + 简化的时间线</li>
+</ul>
+<h3 id="9-4-可视化驱动的-Spec-优化"><a href="#9-4-可视化驱动的-Spec-优化" class="headerlink" title="9.4 可视化驱动的 Spec 优化"></a>9.4 可视化驱动的 Spec 优化</h3><p>最终，可视化不只是”看 Agent 做了什么”，而是<strong>驱动 Harness 本身的进化</strong>。通过观察可视化，你发现某些约束总是被违反——这说明约束可能定义得不合理，需要调整。你发现 Agent 总是在某个阶段卡住——这说明 Spec 中缺少对该场景的指引。</p>
+<p>这是一个<strong>正向反馈循环</strong>：</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs crmsh"><span class="hljs-keyword">Spec</span> 定义 → Agent 执行 → Harness <span class="hljs-literal">Monitor</span> 记录 → 可视化展示 → 人类洞察 → <span class="hljs-keyword">Spec</span> 优化<br>     ▲                                                                       │<br>     └───────────────────────────────────────────────────────────────────────┘<br></code></pre></td></tr></table></figure>
+
+<p>可视化是这个循环的催化剂。没有它，从”执行”到”洞察”这一步只能靠人工翻日志——慢、不可靠、不可扩展。</p>
+<h3 id="9-5-从工程走向产品"><a href="#9-5-从工程走向产品" class="headerlink" title="9.5 从工程走向产品"></a>9.5 从工程走向产品</h3><p>目前 Harness 可视化主要是工程团队的内部工具。但随着 AI Agent 进入更多非技术场景（设计、营销、法律），Harness 可视化需要变成<strong>用户友好的产品</strong>——不是只有工程师能看懂的技术仪表盘，而是任何人都能理解的”AI 工作报告”。</p>
+<p>想象一下：你是一个产品经理，你让 AI Agent 做了一个竞品分析。Agent 完成后，你看到的不是一堆 JSON trace，而是一个精美的交互式报告——“Agent 分析了 15 个竞品，重点调研了 5 个，发现 3 个关键趋势。以下是详细的分析过程和证据。”这才是 Harness 可视化的终极形态。</p>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>让我们回到开头的问题：当 AI Agent 跑了 35 分钟，你只看到一个 ✅，你能信任它吗？</p>
+<p><strong>答案是：不应该信任，除非你能看到过程。</strong></p>
+<p>Harness 可视化要做的，就是把那个 ✅ 背后的 35 分钟展开给你看：</p>
+<ul>
+<li><strong>执行时间线</strong>让你看到 Agent 做了什么、花了多长时间</li>
+<li><strong>影响图谱</strong>让你看到 Agent 的修改影响了什么、范围有多大</li>
+<li><strong>治理仪表盘</strong>让你看到 Harness 系统是否健康、趋势如何</li>
+<li><strong>约束热力图</strong>让你看到哪些规则被触发、Agent 是否在边界内工作</li>
+<li><strong>决策树回放</strong>让你看到 Agent 在每个岔路口的选择和理由</li>
+<li><strong>Gate 决策流</strong>让你看到多层审查的完整过程</li>
+</ul>
+<p>从工具链演化的角度看，Harness 可视化不是可有可无的 UI 美化，而是 AI 工具链演化的<strong>必然终点</strong>——我们终于有了和约束粒度匹配的观察工具。</p>
+<p>从实践的角度看，Routa 的 Harness Monitor 提供了一个优秀的参考：Trace 作为一等公民、Evidence-based Review、Kanban 作为协调总线——这些设计决策值得每一个构建 Harness 系统的团队学习。</p>
+<p>从未来的角度看，Harness 可视化还处于”CLI 时代”（类比软件工程早期的命令行界面）。它需要走向”GUI 时代”——更直观、更交互、更面向非技术用户。而在这个过程中，那些率先投资 Harness 可视化的团队，将在 AI 工程的”可视化鸿沟”中获得先发优势。</p>
+<p><strong>记住</strong>：你看不见的东西，你无法信任。你无法信任的东西，你无法依赖。你不能依赖的 AI Agent，不如不要。</p>
+<hr>
+<p><strong>系列阅读</strong>：</p>
+<ul>
+<li><a href="/2026/05/28/tengine-philosophy/">TEngine 的工程哲学</a>（上一篇）</li>
+<li>本文：Harness 的可见性危机</li>
+<li>下一篇：（预告）Multi-Agent 协调的工程实践——从 Routa 到你的团队</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Engineering/" class="category-chain-item">Engineering</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Engineering/AI-Infrastructure/" class="category-chain-item">AI-Infrastructure</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI-Agent/" class="print-no-link">#AI-Agent</a>
+      
+        <a href="/tags/Harness/" class="print-no-link">#Harness</a>
+      
+        <a href="/tags/Visualization/" class="print-no-link">#Visualization</a>
+      
+        <a href="/tags/Multi-Agent/" class="print-no-link">#Multi-Agent</a>
+      
+        <a href="/tags/Routa/" class="print-no-link">#Routa</a>
+      
+        <a href="/tags/Engineering-Philosophy/" class="print-no-link">#Engineering-Philosophy</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅</div>
+      <div>https://alex-rachel.github.io/2026/06/02/harness-visualization/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年6月2日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/27/tengine-sdd-harness-engineering/" title="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解">
+                        <span class="hidden-mobile">TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'c8355f2c93189136022efdcaf3f9b2bf'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,964 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="为什么用 Compute Shader 做物理？Unity 自带的 PhysX 是 CPU 物理引擎，适合刚体碰撞检测，但处理万级以上粒子或布料节点时性能急剧下降。Compute Shader 让物理计算搬到 GPU 上并行执行：  1024 个线程组 × 64 线程&#x2F;组 &#x3D; 65536 个粒子同时并行更新 数据常驻 GPU，无需 CPU→GPU 数据传输（除非需要读回） 与渲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/34-simulation-physics/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="为什么用 Compute Shader 做物理？Unity 自带的 PhysX 是 CPU 物理引擎，适合刚体碰撞检测，但处理万级以上粒子或布料节点时性能急剧下降。Compute Shader 让物理计算搬到 GPU 上并行执行：  1024 个线程组 × 64 线程&#x2F;组 &#x3D; 65536 个粒子同时并行更新 数据常驻 GPU，无需 CPU→GPU 数据传输（除非需要读回） 与渲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T06:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.723Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="Compute Shader">
+<meta property="article:tag" content="GPU物理">
+<meta property="article:tag" content="布料模拟">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 14:30" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          14k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          116 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="为什么用-Compute-Shader-做物理？"><a href="#为什么用-Compute-Shader-做物理？" class="headerlink" title="为什么用 Compute Shader 做物理？"></a>为什么用 Compute Shader 做物理？</h2><p>Unity 自带的 PhysX 是 CPU 物理引擎，适合刚体碰撞检测，但处理<strong>万级以上粒子或布料节点</strong>时性能急剧下降。<strong>Compute Shader</strong> 让物理计算搬到 GPU 上并行执行：</p>
+<ul>
+<li>1024 个线程组 × 64 线程&#x2F;组 &#x3D; <strong>65536 个粒子</strong>同时并行更新</li>
+<li>数据常驻 GPU，无需 CPU→GPU 数据传输（除非需要读回）</li>
+<li>与渲染 Shader 共享 <code>GraphicsBuffer</code>，无需格式转换</li>
+</ul>
+<p>本篇实现两个完整示例：<strong>GPU 布料模拟</strong>（弹簧质点系统）和 <strong>N-body 粒子群</strong>（引力模拟），均包含 Compute Shader + 渲染 Shader + C# 控制脚本。</p>
+<h2 id="Compute-Shader-工作流基础"><a href="#Compute-Shader-工作流基础" class="headerlink" title="Compute Shader 工作流基础"></a>Compute Shader 工作流基础</h2><h3 id="创建-Compute-Shader"><a href="#创建-Compute-Shader" class="headerlink" title="创建 Compute Shader"></a>创建 Compute Shader</h3><p>Project 窗口右键 → Create → Shader → Compute Shader，得到 <code>.compute</code> 文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// ClothSimulation.compute 基础结构<br>#pragma kernel UpdateCloth   // 声明一个 kernel 函数<br><br>// 数据缓冲：RWStructuredBuffer 可读可写<br>RWStructuredBuffer&lt;float4&gt; _Positions;  // xyz=位置, w=质量倒数（0=固定点）<br>RWStructuredBuffer&lt;float4&gt; _Velocities; // xyz=速度, w=未使用<br><br>// 常量（通过 C# 的 SetFloat/SetVector 传入）<br>float _DeltaTime;<br>float3 _Gravity;<br>float _Damping;<br><br>// 线程组大小（必须与 C# 的 Dispatch 调用匹配）<br>[numthreads(64, 1, 1)]<br>void UpdateCloth(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    uint idx = id.x;<br>    // ... 物理计算 ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="C-调用流程"><a href="#C-调用流程" class="headerlink" title="C# 调用流程"></a>C# 调用流程</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 基本 Dispatch 模式</span><br>ComputeShader cs;<br><span class="hljs-built_in">int</span> kernelIndex = cs.FindKernel(<span class="hljs-string">&quot;UpdateCloth&quot;</span>);<br><br><span class="hljs-comment">// 绑定缓冲</span><br>cs.SetBuffer(kernelIndex, <span class="hljs-string">&quot;_Positions&quot;</span>,  positionBuffer);<br>cs.SetBuffer(kernelIndex, <span class="hljs-string">&quot;_Velocities&quot;</span>, velocityBuffer);<br><br><span class="hljs-comment">// 设置参数</span><br>cs.SetFloat(<span class="hljs-string">&quot;_DeltaTime&quot;</span>, Time.deltaTime);<br>cs.SetVector(<span class="hljs-string">&quot;_Gravity&quot;</span>,  <span class="hljs-keyword">new</span> Vector3(<span class="hljs-number">0</span>, <span class="hljs-number">-9.8f</span>, <span class="hljs-number">0</span>));<br><br><span class="hljs-comment">// 执行（particleCount / 64 个线程组，每组 64 线程）</span><br>cs.Dispatch(kernelIndex, Mathf.CeilToInt(particleCount / <span class="hljs-number">64.0f</span>), <span class="hljs-number">1</span>, <span class="hljs-number">1</span>);<br></code></pre></td></tr></table></figure>
+
+<h3 id="ComputeBuffer-vs-GraphicsBuffer"><a href="#ComputeBuffer-vs-GraphicsBuffer" class="headerlink" title="ComputeBuffer vs GraphicsBuffer"></a>ComputeBuffer vs GraphicsBuffer</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>用途</th>
+<th>推荐场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ComputeBuffer</code></td>
+<td>Compute Shader 数据</td>
+<td>旧版 API，Unity 2020 以前</td>
+</tr>
+<tr>
+<td><code>GraphicsBuffer</code></td>
+<td>同时用于 Compute + 渲染</td>
+<td>Unity 2021+，推荐</td>
+</tr>
+<tr>
+<td><code>RWTexture2D</code></td>
+<td>图像输出（写纹理）</td>
+<td>流体模拟、高度图生成</td>
+</tr>
+</tbody></table>
+<p>Unity 2021+ 推荐统一使用 <code>GraphicsBuffer</code>，它既可以作为 Compute Shader 的 <code>RWStructuredBuffer</code>，也可以直接作为渲染 Shader 的顶点&#x2F;索引缓冲（<code>Graphics.DrawMeshInstancedIndirect</code>）。</p>
+<h2 id="实战示例一：GPU-布料模拟"><a href="#实战示例一：GPU-布料模拟" class="headerlink" title="实战示例一：GPU 布料模拟"></a>实战示例一：GPU 布料模拟</h2><h3 id="数据结构设计"><a href="#数据结构设计" class="headerlink" title="数据结构设计"></a>数据结构设计</h3><p>布料是一个 M×N 的质点网格，相邻质点之间用弹簧连接：</p>
+<ul>
+<li>结构弹簧（Structural）：连接上下左右邻居，防止拉伸</li>
+<li>剪切弹簧（Shear）：连接对角线邻居，防止剪切形变</li>
+<li>弯曲弹簧（Bend）：连接间隔 2 的邻居，防止折叠</li>
+</ul>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 质点数据（与 Compute Shader 中的结构体对应）</span><br><span class="hljs-keyword">struct</span> ClothParticle<br>&#123;<br>    <span class="hljs-keyword">public</span> Vector3 position;  <span class="hljs-comment">// 当前位置</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span>   invMass;   <span class="hljs-comment">// 质量倒数（0 = 固定不动）</span><br>    <span class="hljs-keyword">public</span> Vector3 velocity;  <span class="hljs-comment">// 当前速度</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span>   padding;   <span class="hljs-comment">// 对齐到 32 字节</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="Compute-Shader：弹簧质点布料"><a href="#Compute-Shader：弹簧质点布料" class="headerlink" title="Compute Shader：弹簧质点布料"></a>Compute Shader：弹簧质点布料</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// ClothSimulation.compute<br>#pragma kernel ApplyForces    // Step 1: 外力 + 弹簧力<br>#pragma kernel IntegratePos   // Step 2: 位置积分<br>#pragma kernel SolveConstraints // Step 3（可选）: 约束松弛<br><br>struct Particle<br>&#123;<br>    float3 position;<br>    float  invMass;   // 0 = 固定点（悬挂点）<br>    float3 velocity;<br>    float  padding;<br>&#125;;<br><br>RWStructuredBuffer&lt;Particle&gt; _Particles;<br><br>int   _ClothWidth;   // 布料列数<br>int   _ClothHeight;  // 布料行数<br>float _DeltaTime;<br>float _Damping;      // 速度阻尼（0.98 左右）<br>float3 _Gravity;<br>float _SpringK;      // 弹簧刚度<br>float _RestLength;   // 弹簧自然长度（等于格子间距）<br>float3 _Wind;        // 风力<br><br>// 获取粒子索引（从网格坐标）<br>int GetIndex(int x, int y)<br>&#123;<br>    x = clamp(x, 0, _ClothWidth - 1);<br>    y = clamp(y, 0, _ClothHeight - 1);<br>    return y * _ClothWidth + x;<br>&#125;<br><br>// 弹簧力计算<br>float3 SpringForce(float3 posA, float3 posB, float restLen)<br>&#123;<br>    float3 delta = posB - posA;<br>    float  dist  = length(delta);<br>    if (dist &lt; 0.0001) return float3(0, 0, 0);<br>    // 胡克定律：F = k * (|Δx| - L₀) * 方向<br>    return _SpringK * (dist - restLen) * normalize(delta);<br>&#125;<br><br>[numthreads(8, 8, 1)]<br>void ApplyForces(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    int x = (int)id.x;<br>    int y = (int)id.y;<br>    if (x &gt;= _ClothWidth || y &gt;= _ClothHeight) return;<br><br>    int idx = GetIndex(x, y);<br>    Particle p = _Particles[idx];<br><br>    // 固定点不受力影响<br>    if (p.invMass &lt;= 0.0) return;<br><br>    float3 force = _Gravity / p.invMass; // F = mg<br>    force += _Wind; // 风力<br><br>    // ===== 结构弹簧（4 邻居）=====<br>    float3 pos = p.position;<br>    if (x &gt; 0)             force += SpringForce(pos, _Particles[GetIndex(x-1, y)].position, _RestLength);<br>    if (x &lt; _ClothWidth-1) force += SpringForce(pos, _Particles[GetIndex(x+1, y)].position, _RestLength);<br>    if (y &gt; 0)             force += SpringForce(pos, _Particles[GetIndex(x, y-1)].position, _RestLength);<br>    if (y &lt; _ClothHeight-1)force += SpringForce(pos, _Particles[GetIndex(x, y+1)].position, _RestLength);<br><br>    // ===== 剪切弹簧（4 对角）=====<br>    float diagRest = _RestLength * 1.41421; // sqrt(2)<br>    if (x &gt; 0 &amp;&amp; y &gt; 0)              force += SpringForce(pos, _Particles[GetIndex(x-1, y-1)].position, diagRest);<br>    if (x &lt; _ClothWidth-1 &amp;&amp; y &gt; 0)  force += SpringForce(pos, _Particles[GetIndex(x+1, y-1)].position, diagRest);<br>    if (x &gt; 0 &amp;&amp; y &lt; _ClothHeight-1) force += SpringForce(pos, _Particles[GetIndex(x-1, y+1)].position, diagRest);<br>    if (x &lt; _ClothWidth-1 &amp;&amp; y &lt; _ClothHeight-1) force += SpringForce(pos, _Particles[GetIndex(x+1, y+1)].position, diagRest);<br><br>    // ===== 弯曲弹簧（间隔 2）=====<br>    float bendRest = _RestLength * 2.0;<br>    if (x &gt; 1)             force += SpringForce(pos, _Particles[GetIndex(x-2, y)].position, bendRest) * 0.3;<br>    if (x &lt; _ClothWidth-2) force += SpringForce(pos, _Particles[GetIndex(x+2, y)].position, bendRest) * 0.3;<br>    if (y &gt; 1)             force += SpringForce(pos, _Particles[GetIndex(x, y-2)].position, bendRest) * 0.3;<br>    if (y &lt; _ClothHeight-2)force += SpringForce(pos, _Particles[GetIndex(x, y+2)].position, bendRest) * 0.3;<br><br>    // 速度更新（半隐式欧拉）<br>    p.velocity += force * p.invMass * _DeltaTime;<br>    p.velocity *= _Damping; // 阻尼<br><br>    _Particles[idx] = p;<br>&#125;<br><br>[numthreads(8, 8, 1)]<br>void IntegratePos(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    int x = (int)id.x;<br>    int y = (int)id.y;<br>    if (x &gt;= _ClothWidth || y &gt;= _ClothHeight) return;<br><br>    int idx = GetIndex(x, y);<br>    Particle p = _Particles[idx];<br><br>    if (p.invMass &lt;= 0.0) return; // 固定点<br><br>    // 位置积分<br>    p.position += p.velocity * _DeltaTime;<br><br>    // 简单地面碰撞（y &gt; -5）<br>    if (p.position.y &lt; -5.0)<br>    &#123;<br>        p.position.y = -5.0;<br>        p.velocity.y = max(0, p.velocity.y); // 阻止穿透<br>        p.velocity.xz *= 0.9; // 摩擦力<br>    &#125;<br><br>    _Particles[idx] = p;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="C-控制脚本"><a href="#C-控制脚本" class="headerlink" title="C# 控制脚本"></a>C# 控制脚本</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">GPUClothSimulation</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;布料参数&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> ComputeShader clothCS;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span>   clothWidth   = <span class="hljs-number">32</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span>   clothHeight  = <span class="hljs-number">32</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> restLength   = <span class="hljs-number">0.1f</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> springK      = <span class="hljs-number">500f</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> damping      = <span class="hljs-number">0.98f</span>;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;物理参数&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> Vector3 gravity    = <span class="hljs-keyword">new</span> Vector3(<span class="hljs-number">0</span>, <span class="hljs-number">-9.8f</span>, <span class="hljs-number">0</span>);<br>    <span class="hljs-keyword">public</span> Vector3 wind       = <span class="hljs-keyword">new</span> Vector3(<span class="hljs-number">0.5f</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.3f</span>);<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;渲染&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> Material clothMaterial; <span class="hljs-comment">// 用于渲染布料的 URP 材质</span><br><br>    <span class="hljs-keyword">private</span> GraphicsBuffer particleBuffer;<br>    <span class="hljs-keyword">private</span> GraphicsBuffer indexBuffer;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> applyForcesKernel;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> integratePosKernel;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> particleCount;<br><br>    <span class="hljs-keyword">struct</span> ClothParticle<br>    &#123;<br>        <span class="hljs-keyword">public</span> Vector3 position;<br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span>   invMass;<br>        <span class="hljs-keyword">public</span> Vector3 velocity;<br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span>   padding;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        particleCount = clothWidth * clothHeight;<br><br>        <span class="hljs-comment">// 初始化粒子数据</span><br>        <span class="hljs-keyword">var</span> particles = <span class="hljs-keyword">new</span> ClothParticle[particleCount];<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> y = <span class="hljs-number">0</span>; y &lt; clothHeight; y++)<br>        &#123;<br>            <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> x = <span class="hljs-number">0</span>; x &lt; clothWidth; x++)<br>            &#123;<br>                <span class="hljs-built_in">int</span> idx = y * clothWidth + x;<br>                particles[idx].position = <span class="hljs-keyword">new</span> Vector3(<br>                    (x - clothWidth * <span class="hljs-number">0.5f</span>) * restLength,<br>                    <span class="hljs-number">0</span>,<br>                    (y - clothHeight * <span class="hljs-number">0.5f</span>) * restLength<br>                );<br>                particles[idx].velocity = Vector3.zero;<br>                <span class="hljs-comment">// 顶行固定（invMass = 0）</span><br>                particles[idx].invMass = (y == clothHeight - <span class="hljs-number">1</span>) ? <span class="hljs-number">0f</span> : <span class="hljs-number">1f</span>;<br>            &#125;<br>        &#125;<br><br>        <span class="hljs-comment">// 创建 GPU 缓冲（GraphicsBuffer 可同时用于 Compute + 渲染）</span><br>        particleBuffer = <span class="hljs-keyword">new</span> GraphicsBuffer(<br>            GraphicsBuffer.Target.Structured,<br>            particleCount,<br>            System.Runtime.InteropServices.Marshal.SizeOf&lt;ClothParticle&gt;()<br>        );<br>        particleBuffer.SetData(particles);<br><br>        <span class="hljs-comment">// 生成三角形索引（用于渲染布料网格）</span><br>        <span class="hljs-keyword">var</span> indices = GenerateClothIndices();<br>        indexBuffer = <span class="hljs-keyword">new</span> GraphicsBuffer(<br>            GraphicsBuffer.Target.Index,<br>            indices.Length,<br>            <span class="hljs-keyword">sizeof</span>(<span class="hljs-built_in">int</span>)<br>        );<br>        indexBuffer.SetData(indices);<br><br>        <span class="hljs-comment">// 获取 kernel 索引</span><br>        applyForcesKernel   = clothCS.FindKernel(<span class="hljs-string">&quot;ApplyForces&quot;</span>);<br>        integratePosKernel  = clothCS.FindKernel(<span class="hljs-string">&quot;IntegratePos&quot;</span>);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-built_in">int</span>[] <span class="hljs-title">GenerateClothIndices</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 每个四边形由 2 个三角形组成</span><br>        <span class="hljs-built_in">int</span> quadCount = (clothWidth - <span class="hljs-number">1</span>) * (clothHeight - <span class="hljs-number">1</span>);<br>        <span class="hljs-keyword">var</span> indices = <span class="hljs-keyword">new</span> <span class="hljs-built_in">int</span>[quadCount * <span class="hljs-number">6</span>];<br>        <span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> y = <span class="hljs-number">0</span>; y &lt; clothHeight - <span class="hljs-number">1</span>; y++)<br>        &#123;<br>            <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> x = <span class="hljs-number">0</span>; x &lt; clothWidth - <span class="hljs-number">1</span>; x++)<br>            &#123;<br>                <span class="hljs-built_in">int</span> tl = y * clothWidth + x;<br>                <span class="hljs-built_in">int</span> tr = tl + <span class="hljs-number">1</span>;<br>                <span class="hljs-built_in">int</span> bl = tl + clothWidth;<br>                <span class="hljs-built_in">int</span> br = bl + <span class="hljs-number">1</span>;<br>                <span class="hljs-comment">// 三角形 1</span><br>                indices[i++] = tl; indices[i++] = bl; indices[i++] = tr;<br>                <span class="hljs-comment">// 三角形 2</span><br>                indices[i++] = tr; indices[i++] = bl; indices[i++] = br;<br>            &#125;<br>        &#125;<br>        <span class="hljs-keyword">return</span> indices;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 子步骤（提高稳定性：将 deltaTime 分成多个小步）</span><br>        <span class="hljs-built_in">int</span> substeps = <span class="hljs-number">4</span>;<br>        <span class="hljs-built_in">float</span> dt = Time.deltaTime / substeps;<br><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> s = <span class="hljs-number">0</span>; s &lt; substeps; s++)<br>        &#123;<br>            <span class="hljs-comment">// 传递参数</span><br>            clothCS.SetBuffer(applyForcesKernel,  <span class="hljs-string">&quot;_Particles&quot;</span>, particleBuffer);<br>            clothCS.SetBuffer(integratePosKernel, <span class="hljs-string">&quot;_Particles&quot;</span>, particleBuffer);<br>            clothCS.SetInt(<span class="hljs-string">&quot;_ClothWidth&quot;</span>,   clothWidth);<br>            clothCS.SetInt(<span class="hljs-string">&quot;_ClothHeight&quot;</span>,  clothHeight);<br>            clothCS.SetFloat(<span class="hljs-string">&quot;_DeltaTime&quot;</span>,  dt);<br>            clothCS.SetFloat(<span class="hljs-string">&quot;_Damping&quot;</span>,    damping);<br>            clothCS.SetFloat(<span class="hljs-string">&quot;_SpringK&quot;</span>,    springK);<br>            clothCS.SetFloat(<span class="hljs-string">&quot;_RestLength&quot;</span>, restLength);<br>            clothCS.SetVector(<span class="hljs-string">&quot;_Gravity&quot;</span>,   gravity);<br>            clothCS.SetVector(<span class="hljs-string">&quot;_Wind&quot;</span>,      wind);<br><br>            <span class="hljs-comment">// ApplyForces：8×8 线程组</span><br>            <span class="hljs-built_in">int</span> groupX = Mathf.CeilToInt(clothWidth  / <span class="hljs-number">8.0f</span>);<br>            <span class="hljs-built_in">int</span> groupY = Mathf.CeilToInt(clothHeight / <span class="hljs-number">8.0f</span>);<br>            clothCS.Dispatch(applyForcesKernel,  groupX, groupY, <span class="hljs-number">1</span>);<br>            clothCS.Dispatch(integratePosKernel, groupX, groupY, <span class="hljs-number">1</span>);<br>        &#125;<br><br>        <span class="hljs-comment">// 将粒子缓冲传给渲染材质</span><br>        clothMaterial.SetBuffer(<span class="hljs-string">&quot;_ParticleBuffer&quot;</span>, particleBuffer);<br>        clothMaterial.SetInt(<span class="hljs-string">&quot;_ClothWidth&quot;</span>, clothWidth);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnRenderObject</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (clothMaterial == <span class="hljs-literal">null</span> || indexBuffer == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br>        <span class="hljs-comment">// 使用 Graphics.DrawProceduralNow 渲染布料网格</span><br>        clothMaterial.SetPass(<span class="hljs-number">0</span>);<br>        Graphics.DrawProceduralNow(MeshTopology.Triangles, indexBuffer, indexBuffer.count);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        particleBuffer?.Dispose();<br>        indexBuffer?.Dispose();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="布料渲染-Shader"><a href="#布料渲染-Shader" class="headerlink" title="布料渲染 Shader"></a>布料渲染 Shader</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/ClothRenderer&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _ClothTex   (&quot;Cloth Texture&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _Color      (&quot;Color&quot;, Color) = (0.8, 0.7, 0.6, 1)<br>        _Roughness  (&quot;Roughness&quot;, Range(0, 1)) = 0.8<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Cull Off // 双面渲染<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #pragma target   4.5 // Compute Shader 需要至少 Shader Model 4.5<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            // 与 C# 结构体对应<br>            struct Particle<br>            &#123;<br>                float3 position;<br>                float  invMass;<br>                float3 velocity;<br>                float  padding;<br>            &#125;;<br><br>            StructuredBuffer&lt;Particle&gt; _ParticleBuffer; // 只读（非 RW）<br>            int _ClothWidth;<br><br>            TEXTURE2D(_ClothTex); SAMPLER(sampler_ClothTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _Color;<br>                float  _Roughness;<br>            CBUFFER_END<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 positionWS  : TEXCOORD0;<br>                float3 normalWS    : TEXCOORD1;<br>                float2 uv          : TEXCOORD2;<br>            &#125;;<br><br>            Varyings vert(uint vertexID : SV_VertexID)<br>            &#123;<br>                Varyings OUT;<br>                Particle p = _ParticleBuffer[vertexID];<br><br>                // 计算法线（通过相邻粒子的叉积）<br>                int x = vertexID % _ClothWidth;<br>                int y = vertexID / _ClothWidth;<br>                float3 right = _ParticleBuffer[clamp(y * _ClothWidth + x + 1, 0, _ClothWidth * 100)].position;<br>                float3 up    = _ParticleBuffer[clamp((y + 1) * _ClothWidth + x, 0, _ClothWidth * 100)].position;<br>                float3 normal = normalize(cross(right - p.position, up - p.position));<br><br>                OUT.positionHCS = TransformWorldToHClip(p.position);<br>                OUT.positionWS  = p.position;<br>                OUT.normalWS    = normal;<br>                // UV 基于网格坐标生成<br>                OUT.uv = float2(x / (float)(_ClothWidth - 1), y / (float)(_ClothWidth - 1));<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                half4 albedo = SAMPLE_TEXTURE2D(_ClothTex, sampler_ClothTex, IN.uv) * _Color;<br><br>                InputData inputData = (InputData)0;<br>                inputData.positionWS = IN.positionWS;<br>                inputData.normalWS   = normalize(IN.normalWS);<br>                inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(IN.positionWS);<br>                inputData.shadowCoord = TransformWorldToShadowCoord(IN.positionWS);<br><br>                SurfaceData surfaceData = (SurfaceData)0;<br>                surfaceData.albedo     = albedo.rgb;<br>                surfaceData.smoothness = 1.0 - _Roughness;<br>                surfaceData.alpha      = 1.0;<br><br>                return UniversalFragmentPBR(inputData, surfaceData);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例二：N-body-引力粒子群"><a href="#实战示例二：N-body-引力粒子群" class="headerlink" title="实战示例二：N-body 引力粒子群"></a>实战示例二：N-body 引力粒子群</h2><p>适合制作星系、粒子群、魔法能量汇聚等效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// GravitySimulation.compute<br>#pragma kernel UpdateGravity<br><br>struct Particle<br>&#123;<br>    float3 position;<br>    float  mass;<br>    float3 velocity;<br>    float  padding;<br>&#125;;<br><br>RWStructuredBuffer&lt;Particle&gt; _Particles;<br>int   _ParticleCount;<br>float _DeltaTime;<br>float _G;           // 引力常数（游戏中通常调小，如 0.01）<br>float _Softening;   // 软化参数（防止近距离引力无穷大）<br>float3 _AttractorPos; // 中心吸引体位置<br><br>[numthreads(64, 1, 1)]<br>void UpdateGravity(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    uint i = id.x;<br>    if (i &gt;= (uint)_ParticleCount) return;<br><br>    Particle pi = _Particles[i];<br>    float3 force = float3(0, 0, 0);<br><br>    // 中心吸引力（玩家飞船/星球）<br>    float3 toCenter = _AttractorPos - pi.position;<br>    float distSq = dot(toCenter, toCenter) + _Softening * _Softening;<br>    force += _G * 100.0 * normalize(toCenter) / distSq;<br><br>    // N-body 相互引力（O(N²)，N &lt; 512 时可接受）<br>    // 注意：此循环在 GPU 上并行运行，每个线程计算自己受到的合力<br>    for (int j = 0; j &lt; _ParticleCount; j++)<br>    &#123;<br>        if (j == (int)i) continue;<br>        Particle pj = _Particles[j];<br>        float3 delta = pj.position - pi.position;<br>        float distSq2 = dot(delta, delta) + _Softening * _Softening;<br>        // F = G * mi * mj / r² * 方向<br>        force += _G * pj.mass * normalize(delta) / distSq2;<br>    &#125;<br><br>    // 速度韦莱（Verlet）积分<br>    pi.velocity += force / pi.mass * _DeltaTime;<br>    pi.velocity *= 0.999; // 轻微阻尼防止能量发散<br>    pi.position += pi.velocity * _DeltaTime;<br><br>    _Particles[i] = pi;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Burst-ECS-vs-GPU-Compute-的边界"><a href="#Burst-ECS-vs-GPU-Compute-的边界" class="headerlink" title="Burst ECS vs GPU Compute 的边界"></a>Burst ECS vs GPU Compute 的边界</h2><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐方案</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&lt; 1000 粒子，需要精确碰撞</td>
+<td>Burst + ECS</td>
+<td>CPU 逻辑控制更灵活</td>
+</tr>
+<tr>
+<td>1000~100000 粒子，视觉效果为主</td>
+<td>Compute Shader</td>
+<td>GPU 并行效率高</td>
+</tr>
+<tr>
+<td>&gt; 100000 粒子</td>
+<td>Compute + Indirect Rendering</td>
+<td>完全 GPU 化</td>
+</tr>
+<tr>
+<td>布料（需要与角色骨骼互动）</td>
+<td>混合：CPU 骨骼 + GPU 布料</td>
+<td>数据同步在关键帧</td>
+</tr>
+<tr>
+<td>流体模拟</td>
+<td>Compute + RWTexture2D</td>
+<td>纹理读写更适合流场</td>
+</tr>
+</tbody></table>
+<h2 id="Graphics-DrawMeshInstancedIndirect-渲染大量粒子"><a href="#Graphics-DrawMeshInstancedIndirect-渲染大量粒子" class="headerlink" title="Graphics.DrawMeshInstancedIndirect 渲染大量粒子"></a>Graphics.DrawMeshInstancedIndirect 渲染大量粒子</h2><p>对于超大量粒子（&gt;100k），使用 Indirect Rendering 完全避免 CPU 逐粒子 DrawCall：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 准备 Indirect 参数缓冲</span><br><span class="hljs-built_in">uint</span>[] indirectArgs = <span class="hljs-keyword">new</span> <span class="hljs-built_in">uint</span>[] &#123;<br>    (<span class="hljs-built_in">uint</span>)particleMesh.GetIndexCount(<span class="hljs-number">0</span>),  <span class="hljs-comment">// 每个实例的索引数</span><br>    (<span class="hljs-built_in">uint</span>)particleCount,                   <span class="hljs-comment">// 实例数量</span><br>    (<span class="hljs-built_in">uint</span>)particleMesh.GetIndexStart(<span class="hljs-number">0</span>),   <span class="hljs-comment">// 起始索引</span><br>    (<span class="hljs-built_in">uint</span>)particleMesh.GetBaseVertex(<span class="hljs-number">0</span>),   <span class="hljs-comment">// 基础顶点</span><br>    <span class="hljs-number">0</span>                                      <span class="hljs-comment">// 起始实例</span><br>&#125;;<br>argsBuffer = <span class="hljs-keyword">new</span> ComputeBuffer(<span class="hljs-number">1</span>, <span class="hljs-number">5</span> * <span class="hljs-keyword">sizeof</span>(<span class="hljs-built_in">uint</span>), ComputeBufferType.IndirectArguments);<br>argsBuffer.SetData(indirectArgs);<br><br><span class="hljs-comment">// 每帧渲染（零 CPU Draw Call 开销）</span><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>&#123;<br>    particleMaterial.SetBuffer(<span class="hljs-string">&quot;_ParticleBuffer&quot;</span>, particleBuffer);<br>    Graphics.DrawMeshInstancedIndirect(<br>        particleMesh, <span class="hljs-number">0</span>, particleMaterial,<br>        <span class="hljs-keyword">new</span> Bounds(Vector3.zero, Vector3.one * <span class="hljs-number">1000</span>),<br>        argsBuffer<br>    );<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><ul>
+<li><strong>线程组大小</strong>：布料用 <code>[numthreads(8,8,1)]</code>（适合 2D 网格），粒子用 <code>[numthreads(64,1,1)]</code>（适合 1D 数组）。线程数应是 32 或 64 的倍数以对齐 Warp&#x2F;Wavefront</li>
+<li><strong>Bank Conflict</strong>：避免多个线程同时访问同一内存 Bank。使用 <code>SV_GroupIndex</code> 而非全局 ID 做共享内存寻址时要注意偏移</li>
+<li><strong>子步骤</strong>：布料等刚性弹簧系统每帧需要 4-8 个子步骤以保证稳定，时间步长 <code>dt = Time.deltaTime / substeps</code></li>
+<li><strong>Mobile 限制</strong>：<code>ComputeShader</code> 需要 OpenGL ES 3.1+ 或 Vulkan&#x2F;Metal，iOS 需要 Metal（A7 芯片以上支持）。发布移动端前务必通过 <code>SystemInfo.supportsComputeShaders</code> 检查</li>
+</ul>
+<p>Compute Shader 是 Unity 游戏特效中最强大也最复杂的工具，掌握它之后，你可以在 GPU 上运行完整的物理世界，而 CPU 只需在每帧发出一个 Dispatch 命令。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/GPU-%E8%AE%A1%E7%AE%97%E4%B8%8E%E6%A8%A1%E6%8B%9F/" class="category-chain-item">GPU 计算与模拟</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/Compute-Shader/" class="print-no-link">#Compute Shader</a>
+      
+        <a href="/tags/GPU%E7%89%A9%E7%90%86/" class="print-no-link">#GPU物理</a>
+      
+        <a href="/tags/%E5%B8%83%E6%96%99%E6%A8%A1%E6%8B%9F/" class="print-no-link">#布料模拟</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群</div>
+      <div>https://alex-rachel.github.io/2026/04/01/34-simulation-physics/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/35-webgl-pitfalls/" title="Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十五）：URP Shader 开发常见陷阱与调试指南</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/33-polar-uv-manipulation/" title="Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵">
+                        <span class="hidden-mobile">Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '12a88c64e414fc6b455c4c68bd363eaf'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

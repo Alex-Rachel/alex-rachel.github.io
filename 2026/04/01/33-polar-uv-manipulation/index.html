@@ -1,0 +1,927 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="UV 动画是技能特效的基础在 Unity 游戏开发中，技能特效、HUD 图标、魔法阵、传送门等视觉效果大量依赖 UV 动画——通过在每帧修改纹理坐标而非移动几何体来实现运动感。配合极坐标变换，几乎所有旋转对称的特效都可以用极简的代码实现。 本篇覆盖四个核心主题：UV Scrolling&#x2F;Rotation 标准实现、极坐标变换原理、Unity 中的 ShaderGraph Polar Co">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/33-polar-uv-manipulation/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="UV 动画是技能特效的基础在 Unity 游戏开发中，技能特效、HUD 图标、魔法阵、传送门等视觉效果大量依赖 UV 动画——通过在每帧修改纹理坐标而非移动几何体来实现运动感。配合极坐标变换，几乎所有旋转对称的特效都可以用极简的代码实现。 本篇覆盖四个核心主题：UV Scrolling&#x2F;Rotation 标准实现、极坐标变换原理、Unity 中的 ShaderGraph Polar Co">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T06:20:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.723Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="UV动画">
+<meta property="article:tag" content="极坐标">
+<meta property="article:tag" content="技能特效">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 14:20" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          10k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          87 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="UV-动画是技能特效的基础"><a href="#UV-动画是技能特效的基础" class="headerlink" title="UV 动画是技能特效的基础"></a>UV 动画是技能特效的基础</h2><p>在 Unity 游戏开发中，技能特效、HUD 图标、魔法阵、传送门等视觉效果大量依赖 <strong>UV 动画</strong>——通过在每帧修改纹理坐标而非移动几何体来实现运动感。配合极坐标变换，几乎所有旋转对称的特效都可以用极简的代码实现。</p>
+<p>本篇覆盖四个核心主题：UV Scrolling&#x2F;Rotation 标准实现、极坐标变换原理、Unity 中的 ShaderGraph Polar Coordinates 节点，以及两个完整特效 Shader。</p>
+<h2 id="UV-Scrolling-与-UV-Rotation"><a href="#UV-Scrolling-与-UV-Rotation" class="headerlink" title="UV Scrolling 与 UV Rotation"></a>UV Scrolling 与 UV Rotation</h2><h3 id="UV-滚动（Scrolling）"><a href="#UV-滚动（Scrolling）" class="headerlink" title="UV 滚动（Scrolling）"></a>UV 滚动（Scrolling）</h3><p>最常见的 UV 动画：让纹理沿某个方向持续移动。适合瀑布、传送带、流动能量等效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 在 Fragment Shader 中<br>float2 ScrollUV(float2 uv, float2 speed)<br>&#123;<br>    // _Time.y = 游戏运行秒数（对应 ShaderToy 的 iTime）<br>    return uv + speed * _Time.y;<br>&#125;<br><br>// 用法示例<br>float2 uv = IN.uv;<br>uv = ScrollUV(uv, float2(0.1, 0.05)); // X方向 0.1 UV/秒，Y 方向 0.05 UV/秒<br>half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);<br></code></pre></td></tr></table></figure>
+
+<h3 id="UV-旋转（Rotation）"><a href="#UV-旋转（Rotation）" class="headerlink" title="UV 旋转（Rotation）"></a>UV 旋转（Rotation）</h3><p>让纹理绕某个中心点旋转。技能准备动画、旋转符文常用此效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 绕 pivot 点旋转 UV，angle 单位：弧度<br>float2 RotateUV(float2 uv, float2 pivot, float angle)<br>&#123;<br>    float s = sin(angle);<br>    float c = cos(angle);<br>    // 平移到原点<br>    uv -= pivot;<br>    // 旋转矩阵<br>    uv = float2(uv.x * c - uv.y * s,<br>                uv.x * s + uv.y * c);<br>    // 平移回去<br>    uv += pivot;<br>    return uv;<br>&#125;<br><br>// 用法示例：绕中心持续旋转<br>float2 uv = RotateUV(IN.uv, float2(0.5, 0.5), _Time.y * _RotateSpeed);<br></code></pre></td></tr></table></figure>
+
+<h3 id="多层-UV-叠加"><a href="#多层-UV-叠加" class="headerlink" title="多层 UV 叠加"></a>多层 UV 叠加</h3><p>将两层纹理以不同速度叠加，产生复杂的流动感：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">float2 uv1 = IN.uv + float2(_Time.y * 0.05, _Time.y * 0.03);<br>float2 uv2 = RotateUV(IN.uv, float2(0.5, 0.5), _Time.y * 0.5);<br>half4 layer1 = SAMPLE_TEXTURE2D(_MainTex,   sampler_MainTex,   uv1);<br>half4 layer2 = SAMPLE_TEXTURE2D(_NoiseTex,  sampler_NoiseTex,  uv2);<br>// 加法混合：两层叠加<br>half4 result = saturate(layer1 + layer2 * _NoiseStrength);<br></code></pre></td></tr></table></figure>
+
+<h2 id="极坐标变换原理"><a href="#极坐标变换原理" class="headerlink" title="极坐标变换原理"></a>极坐标变换原理</h2><p>极坐标将 2D 平面上的点从 <code>(x, y)</code> 表示为 <code>(r, θ)</code>：</p>
+<ul>
+<li><code>r = length(p)</code> — 到中心的距离</li>
+<li><code>θ = atan2(y, x)</code> — 角度，范围 <code>[-π, π]</code></li>
+</ul>
+<p>HLSL 实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">static const float PI  = 3.14159265;<br>static const float TAU = 6.28318530;<br><br>// 笛卡尔 → 极坐标（输出 x=角度[0,1]归一化, y=半径）<br>float2 ToPolar(float2 p)<br>&#123;<br>    float r = length(p);<br>    float theta = atan2(p.y, p.x) / TAU + 0.5; // 归一化到 [0, 1]<br>    return float2(theta, r);<br>&#125;<br><br>// 极坐标 → 笛卡尔<br>float2 FromPolar(float2 polar)<br>&#123;<br>    float angle = polar.x * TAU;<br>    return float2(cos(angle), sin(angle)) * polar.y;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="旋涡变换（Swirl）"><a href="#旋涡变换（Swirl）" class="headerlink" title="旋涡变换（Swirl）"></a>旋涡变换（Swirl）</h3><p>在极坐标中将角度加上与半径相关的偏移，产生旋涡感：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">float2 SwirlUV(float2 uv, float strength, float speed)<br>&#123;<br>    // UV 以中心为原点<br>    float2 p = uv - 0.5;<br>    float r = length(p);<br>    float theta = atan2(p.y, p.x);<br>    // 旋涡：角度偏移量与半径成正比，并随时间旋转<br>    theta += strength * r + speed * _Time.y;<br>    // 重建笛卡尔坐标<br>    return float2(cos(theta), sin(theta)) * r + 0.5;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="极坐标扇形遮罩"><a href="#极坐标扇形遮罩" class="headerlink" title="极坐标扇形遮罩"></a>极坐标扇形遮罩</h3><p>在极坐标中制作扇形，用于技能范围指示器的扇形显示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 返回 [0,1]：1 = 在扇形内，0 = 在扇形外<br>// sectorAngle: 扇形角度（弧度），fillPercent: 填充进度 [0,1]<br>float SectorMask(float2 uv, float sectorAngle, float fillPercent, float rotation)<br>&#123;<br>    float2 p = uv - 0.5;<br>    float r = length(p);<br><br>    // 半径限制：只在圆环范围内<br>    float inRing = step(0.3, r) * step(r, 0.5);<br><br>    // 角度计算（以 Y 轴正方向为 0 度，顺时针为正）<br>    float angle = atan2(p.x, p.y); // 注意：x,y 顺序决定 0 度方向<br>    angle = frac(angle / TAU + rotation + 0.5); // 归一化到 [0, 1]<br><br>    // 扇形填充<br>    float halfSector = sectorAngle / TAU * 0.5;<br>    float inSector = step(angle, fillPercent * sectorAngle / TAU);<br><br>    return inRing * inSector;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例一：旋转技能范围指示器"><a href="#实战示例一：旋转技能范围指示器" class="headerlink" title="实战示例一：旋转技能范围指示器"></a>实战示例一：旋转技能范围指示器</h2><p>这是 MOBA&#x2F;RPG 游戏中常见的地面投影技能范围 Shader，带发光边缘和方向指示扇形。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/SkillRangeIndicator&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainColor      (&quot;Fill Color&quot;,          Color)    = (0.2, 0.8, 1.0, 0.3)<br>        _EdgeColor      (&quot;Edge Glow Color&quot;,     Color)    = (0.4, 1.0, 1.0, 1.0)<br>        _SectorColor    (&quot;Sector Color&quot;,        Color)    = (1.0, 0.5, 0.1, 0.8)<br>        _InnerRadius    (&quot;Inner Radius&quot;,        Range(0, 0.5)) = 0.1<br>        _OuterRadius    (&quot;Outer Radius&quot;,        Range(0, 0.5)) = 0.45<br>        _EdgeWidth      (&quot;Edge Glow Width&quot;,     Range(0.001, 0.1)) = 0.02<br>        _SectorAngle    (&quot;Sector Angle (deg)&quot;,  Range(0, 360)) = 60<br>        _FillPercent    (&quot;Fill Percent&quot;,        Range(0, 1)) = 1.0<br>        _RotateSpeed    (&quot;Rotation Speed&quot;,      Float) = 0.5<br>        _GridTex        (&quot;Grid/Pattern Tex&quot;,    2D)    = &quot;white&quot; &#123;&#125;<br>        _GridScrollSpeed(&quot;Grid Scroll Speed&quot;,   Float) = 0.1<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot;     = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>            &quot;Queue&quot;          = &quot;Transparent&quot;<br>        &#125;<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        ZWrite Off<br>        Cull Off // 双面渲染（地面贴片两面都可见）<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>            &#125;;<br><br>            TEXTURE2D(_GridTex); SAMPLER(sampler_GridTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainColor;<br>                float4 _EdgeColor;<br>                float4 _SectorColor;<br>                float  _InnerRadius;<br>                float  _OuterRadius;<br>                float  _EdgeWidth;<br>                float  _SectorAngle;<br>                float  _FillPercent;<br>                float  _RotateSpeed;<br>                float  _GridScrollSpeed;<br>            CBUFFER_END<br><br>            static const float PI  = 3.14159265;<br>            static const float TAU = 6.28318530;<br><br>            // UV 旋转辅助<br>            float2 RotateUV(float2 uv, float2 pivot, float angle)<br>            &#123;<br>                float s = sin(angle), c = cos(angle);<br>                uv -= pivot;<br>                uv = float2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);<br>                return uv + pivot;<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br>                float2 p  = uv - 0.5; // 以中心为原点<br>                float  r  = length(p);<br>                float  t  = _Time.y;<br><br>                // ===== 圆环基础形状 =====<br>                float inCircle = step(_InnerRadius, r) * step(r, _OuterRadius);<br>                // 边缘发光（外圈和内圈各一条光边）<br>                float outerEdge = 1.0 - smoothstep(_OuterRadius - _EdgeWidth, _OuterRadius, r);<br>                float innerEdge = smoothstep(_InnerRadius, _InnerRadius + _EdgeWidth, r);<br>                float edgeMask  = (1.0 - innerEdge) + (1.0 - outerEdge * step(r, _OuterRadius));<br>                edgeMask = saturate(edgeMask * inCircle);<br><br>                // ===== 扇形遮罩 =====<br>                float sectorAngleRad = _SectorAngle * PI / 180.0;<br>                float angle = atan2(p.x, p.y); // Y 轴向上为 0 度<br>                angle = frac(angle / TAU + 0.5); // 归一化 [0,1]<br>                float sectorNorm = sectorAngleRad / TAU;<br>                float inSector   = step(angle, _FillPercent * sectorNorm) * inCircle;<br><br>                // ===== 网格纹理（旋转滚动）=====<br>                float2 gridUV = RotateUV(uv, float2(0.5, 0.5), t * _RotateSpeed);<br>                // 向外滚动效果<br>                float2 polarUV = float2(atan2(p.y, p.x) / TAU + 0.5, r);<br>                polarUV.y += t * _GridScrollSpeed; // 极坐标中的径向滚动<br>                half4 grid = SAMPLE_TEXTURE2D(_GridTex, sampler_GridTex, polarUV);<br><br>                // ===== 合成输出 =====<br>                // 底层：半透明圆环填充<br>                half4 col = _MainColor;<br>                col.rgb += grid.rgb * 0.2; // 叠加网格纹理增加细节<br><br>                // 扇形指向区域：使用扇形颜色<br>                col = lerp(col, _SectorColor, inSector * (1.0 - edgeMask));<br><br>                // 发光边缘叠加<br>                col.rgb = lerp(col.rgb, _EdgeColor.rgb, edgeMask);<br>                col.a   = saturate(col.a + edgeMask * _EdgeColor.a);<br><br>                // 遮罩：只在圆环范围内显示<br>                col.a *= inCircle;<br><br>                // 呼吸动画：边缘亮度随时间脉动<br>                float breathe = 0.8 + 0.2 * sin(t * 3.0);<br>                col.rgb *= breathe;<br><br>                return col;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例二：魔法阵-Shader"><a href="#实战示例二：魔法阵-Shader" class="headerlink" title="实战示例二：魔法阵 Shader"></a>实战示例二：魔法阵 Shader</h2><p>多层旋转 UV + 噪声扰动 + 加法混合，实现地面魔法阵效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/MagicCircle&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _OuterRing      (&quot;Outer Ring Tex&quot;,      2D)    = &quot;white&quot; &#123;&#125;<br>        _MiddleRing     (&quot;Middle Ring Tex&quot;,     2D)    = &quot;white&quot; &#123;&#125;<br>        _InnerSymbol    (&quot;Inner Symbol Tex&quot;,    2D)    = &quot;white&quot; &#123;&#125;<br>        _NoiseTex       (&quot;Noise Distortion&quot;,    2D)    = &quot;gray&quot;  &#123;&#125;<br>        _Color1         (&quot;Color 1 (Outer)&quot;,     Color) = (0.3, 0.6, 1.0, 1.0)<br>        _Color2         (&quot;Color 2 (Middle)&quot;,    Color) = (0.8, 0.3, 1.0, 1.0)<br>        _Color3         (&quot;Color 3 (Inner)&quot;,     Color) = (1.0, 1.0, 0.5, 1.0)<br>        _RotateSpeed1   (&quot;Outer Rotate Speed&quot;,  Float) = 0.2<br>        _RotateSpeed2   (&quot;Middle Rotate Speed&quot;, Float) = -0.5<br>        _RotateSpeed3   (&quot;Inner Rotate Speed&quot;,  Float) = 1.0<br>        _NoiseStrength  (&quot;Noise Distortion&quot;,    Range(0, 0.1)) = 0.02<br>        _GlowPower      (&quot;Glow Intensity&quot;,      Range(0, 5)) = 2.0<br>        _FadeRadius     (&quot;Fade at Edge&quot;,        Range(0.1, 0.5)) = 0.45<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot;     = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>            &quot;Queue&quot;          = &quot;Transparent+10&quot;<br>        &#125;<br>        Blend One One   // 加法混合：魔法阵叠加在地面上发光<br>        ZWrite Off<br>        Cull Off<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            struct Attributes &#123; float4 positionOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings   &#123; float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            TEXTURE2D(_OuterRing);   SAMPLER(sampler_OuterRing);<br>            TEXTURE2D(_MiddleRing);  SAMPLER(sampler_MiddleRing);<br>            TEXTURE2D(_InnerSymbol); SAMPLER(sampler_InnerSymbol);<br>            TEXTURE2D(_NoiseTex);    SAMPLER(sampler_NoiseTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _Color1, _Color2, _Color3;<br>                float  _RotateSpeed1, _RotateSpeed2, _RotateSpeed3;<br>                float  _NoiseStrength;<br>                float  _GlowPower;<br>                float  _FadeRadius;<br>            CBUFFER_END<br><br>            static const float TAU = 6.28318530;<br><br>            float2 RotateAroundCenter(float2 uv, float angle)<br>            &#123;<br>                float s = sin(angle), c = cos(angle);<br>                float2 p = uv - 0.5;<br>                p = float2(p.x * c - p.y * s, p.x * s + p.y * c);<br>                return p + 0.5;<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br>                float  t  = _Time.y;<br>                float  r  = length(uv - 0.5);<br><br>                // ===== 噪声扰动 UV =====<br>                // 使用极坐标 UV 采样噪声，产生有机流动感<br>                float2 p = uv - 0.5;<br>                float2 polarUV = float2(atan2(p.y, p.x) / TAU + 0.5, r);<br>                half2 noise = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, polarUV + t * 0.05).rg;<br>                float2 distortedUV = uv + (noise * 2.0 - 1.0) * _NoiseStrength;<br><br>                // ===== 三层旋转环 =====<br>                float2 uv1 = RotateAroundCenter(distortedUV, t * _RotateSpeed1 * TAU);<br>                float2 uv2 = RotateAroundCenter(distortedUV, t * _RotateSpeed2 * TAU);<br>                float2 uv3 = RotateAroundCenter(distortedUV, t * _RotateSpeed3 * TAU);<br><br>                half4 outer  = SAMPLE_TEXTURE2D(_OuterRing,   sampler_OuterRing,   uv1);<br>                half4 middle = SAMPLE_TEXTURE2D(_MiddleRing,  sampler_MiddleRing,  uv2);<br>                half4 inner  = SAMPLE_TEXTURE2D(_InnerSymbol, sampler_InnerSymbol, uv3);<br><br>                // ===== 颜色化 =====<br>                half3 c1 = outer.r  * _Color1.rgb * outer.a;<br>                half3 c2 = middle.r * _Color2.rgb * middle.a;<br>                half3 c3 = inner.r  * _Color3.rgb * inner.a;<br><br>                // 加法混合三层<br>                half3 finalColor = c1 + c2 + c3;<br><br>                // ===== 全局发光强度 =====<br>                finalColor *= _GlowPower;<br><br>                // ===== 边缘衰减（圆形遮罩）=====<br>                float edgeFade = 1.0 - smoothstep(_FadeRadius * 0.8, _FadeRadius, r);<br>                float alpha = edgeFade;<br><br>                // ===== 呼吸脉冲 =====<br>                float pulse = 0.85 + 0.15 * sin(t * 2.5);<br>                finalColor *= pulse;<br><br>                return half4(finalColor, alpha);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-中的极坐标节点"><a href="#ShaderGraph-中的极坐标节点" class="headerlink" title="ShaderGraph 中的极坐标节点"></a>ShaderGraph 中的极坐标节点</h2><p>Unity ShaderGraph 内置了 <strong>Polar Coordinates</strong> 节点：</p>
+<ol>
+<li>从 ShaderGraph 节点搜索中添加 <code>Polar Coordinates</code></li>
+<li><strong>输入</strong>：<ul>
+<li><code>UV</code>：原始 UV（通常来自 UV 节点）</li>
+<li><code>Center</code>：旋转中心（默认 (0.5, 0.5)）</li>
+<li><code>Radial Scale</code>：径向缩放</li>
+<li><code>Length Scale</code>：角度方向缩放</li>
+</ul>
+</li>
+<li><strong>输出</strong>：极坐标 UV（X &#x3D; 角度归一化，Y &#x3D; 半径）</li>
+</ol>
+<p>典型连接方式（旋转纹理）：</p>
+<figure class="highlight coq"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs coq">UV → Polar Coordinates → <span class="hljs-keyword">Add</span>(<span class="hljs-keyword">Time</span> * Speed) → Sample Texture <span class="hljs-number">2</span>D<br></code></pre></td></tr></table></figure>
+
+<p>ShaderGraph 中实现技能指示器扇形：</p>
+<ol>
+<li><code>UV → Subtract(0.5)</code> 得到中心化 UV</li>
+<li><code>Polar Coordinates</code> 输出极坐标</li>
+<li><code>Step(FillPercent, polar.x)</code> 生成扇形遮罩</li>
+<li>结合 <code>Length</code> 节点的圆形遮罩做 <code>Multiply</code> 得到圆环扇形</li>
+</ol>
+<h2 id="UV-动画性能考量"><a href="#UV-动画性能考量" class="headerlink" title="UV 动画性能考量"></a>UV 动画性能考量</h2><ul>
+<li><strong><code>_Time.y</code> 精度</strong>：Unity 的 <code>_Time.y</code> 在长时间运行后可能产生浮点精度问题（约运行 10 小时后开始出现闪烁）。对于需要极高精度的 UV 动画，使用 <code>frac(_Time.y * speed)</code> 将值限制在 [0,1] 范围内</li>
+<li><strong>三角函数成本</strong>：<code>sin</code>&#x2F;<code>cos</code> 在移动端 GPU 比较昂贵。技巧：<code>RotateUV</code> 每帧只计算一次旋转矩阵，不要在循环内反复调用</li>
+<li><strong>多层叠加</strong>：魔法阵的三层旋转纹理在 mid-range 移动设备上通常没有问题，但超过 5 层需要考虑合并</li>
+<li><strong>LOD 与距离淡出</strong>：技能指示器在远距离应该淡出，可以通过相机距离驱动 <code>_FadeRadius</code> 参数实现</li>
+<li><strong>抗锯齿</strong>：扇形边缘的 <code>step</code> 函数会产生硬锯齿。改用 <code>smoothstep</code> 加 2-3 像素宽度过渡，或在 MSAA 开启时效果自然平滑</li>
+</ul>
+<p>UV 动画和极坐标变换是游戏特效中性价比最高的技术：代码量极少，视觉冲击力强，CPU 消耗为零，是每个 Unity 特效 Shader 工程师必须熟练掌握的基础技能。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%9D%90%E6%A0%87%E4%B8%8E%E5%8F%98%E6%8D%A2/" class="category-chain-item">坐标与变换</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/UV%E5%8A%A8%E7%94%BB/" class="print-no-link">#UV动画</a>
+      
+        <a href="/tags/%E6%9E%81%E5%9D%90%E6%A0%87/" class="print-no-link">#极坐标</a>
+      
+        <a href="/tags/%E6%8A%80%E8%83%BD%E7%89%B9%E6%95%88/" class="print-no-link">#技能特效</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵</div>
+      <div>https://alex-rachel.github.io/2026/04/01/33-polar-uv-manipulation/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/34-simulation-physics/" title="Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/32-texture-mapping-advanced/" title="Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样">
+                        <span class="hidden-mobile">Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'fea1087de6ba7d7fc64a5f9e765949f5'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,938 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="SDF 在 Unity 游戏开发中的实际用途3D SDF（有向距离场）在 Unity 中不是用于替代网格渲染的，而是作为辅助工具解决传统网格渲染的局限：  局部体积雾：基于角色或物体周围的 SDF 定义雾效范围，比 Box&#x2F;Sphere Fog 更精确 软粒子与软接触：粒子接近几何体时平滑融合，避免硬切割 VFX Graph SDF 场：Unity VFX Graph 可以烘焙网格为 S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（六）：URP 中的 SDF 3D 应用 — 体积雾与软粒子">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/06-sdf-3d/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="SDF 在 Unity 游戏开发中的实际用途3D SDF（有向距离场）在 Unity 中不是用于替代网格渲染的，而是作为辅助工具解决传统网格渲染的局限：  局部体积雾：基于角色或物体周围的 SDF 定义雾效范围，比 Box&#x2F;Sphere Fog 更精确 软粒子与软接触：粒子接近几何体时平滑融合，避免硬切割 VFX Graph SDF 场：Unity VFX Graph 可以烘焙网格为 S">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T01:50:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.719Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="SDF 3D">
+<meta property="article:tag" content="体积雾">
+<meta property="article:tag" content="软粒子">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（六）：URP 中的 SDF 3D 应用 — 体积雾与软粒子 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（六）：URP 中的 SDF 3D 应用 — 体积雾与软粒子"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 09:50" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          10k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          85 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（六）：URP 中的 SDF 3D 应用 — 体积雾与软粒子</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="SDF-在-Unity-游戏开发中的实际用途"><a href="#SDF-在-Unity-游戏开发中的实际用途" class="headerlink" title="SDF 在 Unity 游戏开发中的实际用途"></a>SDF 在 Unity 游戏开发中的实际用途</h2><p>3D SDF（有向距离场）在 Unity 中不是用于替代网格渲染的，而是作为辅助工具解决传统网格渲染的局限：</p>
+<ol>
+<li><strong>局部体积雾</strong>：基于角色或物体周围的 SDF 定义雾效范围，比 Box&#x2F;Sphere Fog 更精确</li>
+<li><strong>软粒子与软接触</strong>：粒子接近几何体时平滑融合，避免硬切割</li>
+<li><strong>VFX Graph SDF 场</strong>：Unity VFX Graph 可以烘焙网格为 SDF，驱动粒子碰撞、避障</li>
+<li><strong>毛发&#x2F;草地的接触阴影</strong>：用 SDF 近似计算接触区域的阴影和 AO</li>
+</ol>
+<p><strong>Unity VFX Graph 的 SDF 支持：</strong><br>Unity 2021+ 的 VFX Graph 内置 <code>SDF Bake Tool</code>，可以将任意网格烘焙为 3D 纹理（<code>Texture3D</code>），在粒子系统中用作碰撞场或吸引场。这使得精确的粒子-几何体交互成为可能，不再局限于简单的 Box&#x2F;Sphere 碰撞体。</p>
+<h2 id="URP-中实现体积雾的两种方案"><a href="#URP-中实现体积雾的两种方案" class="headerlink" title="URP 中实现体积雾的两种方案"></a>URP 中实现体积雾的两种方案</h2><p><strong>方案一：Renderer Feature（屏幕空间后处理）</strong><br>在所有不透明物体渲染完成后，插入一个 Pass，对每个屏幕像素重建世界坐标，计算雾的密度。</p>
+<p><strong>方案二：在透明物体 Pass 中内联（本文重点）</strong><br>直接在材质 Shader 的 Fragment 中计算，适合局部雾效（如魔法圆阵、毒雾区域）。</p>
+<h2 id="URP-Custom-Render-Feature：体积雾架构"><a href="#URP-Custom-Render-Feature：体积雾架构" class="headerlink" title="URP Custom Render Feature：体积雾架构"></a>URP Custom Render Feature：体积雾架构</h2><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// C# 侧：注册体积雾 Renderer Feature</span><br><span class="hljs-comment">// 在 Project Settings → URP Asset → Renderer 中添加此 Feature</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">VolumetricFogFeature</span> : <span class="hljs-title">ScriptableRendererFeature</span><br>&#123;<br>    [<span class="hljs-meta">System.Serializable</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">FogSettings</span><br>    &#123;<br>        <span class="hljs-keyword">public</span> Material fogMaterial;         <span class="hljs-comment">// 体积雾后处理材质</span><br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> fogDensity = <span class="hljs-number">0.5f</span>;<br>        <span class="hljs-keyword">public</span> Color fogColor = Color.gray;<br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> fogHeight = <span class="hljs-number">2.0f</span>;       <span class="hljs-comment">// 雾效最大高度</span><br>        <span class="hljs-keyword">public</span> Vector3 fogCenter;            <span class="hljs-comment">// SDF 球形雾的中心（世界坐标）</span><br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> fogRadius = <span class="hljs-number">5.0f</span>;       <span class="hljs-comment">// SDF 球形雾半径</span><br>    &#125;<br><br>    <span class="hljs-keyword">public</span> FogSettings settings = <span class="hljs-keyword">new</span> FogSettings();<br>    VolumetricFogPass _fogPass;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Create</span>()</span><br>    &#123;<br>        _fogPass = <span class="hljs-keyword">new</span> VolumetricFogPass(settings);<br>        <span class="hljs-comment">// 在透明物体之后、后处理之前插入</span><br>        _fogPass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">AddRenderPasses</span>(<span class="hljs-params">ScriptableRenderer renderer, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// 只对主摄像机生效，不影响 SceneView</span><br>        <span class="hljs-keyword">if</span> (renderingData.cameraData.cameraType == CameraType.Game)<br>        &#123;<br>            <span class="hljs-comment">// 传递参数到 Shader</span><br>            settings.fogMaterial.SetFloat(<span class="hljs-string">&quot;_FogDensity&quot;</span>, settings.fogDensity);<br>            settings.fogMaterial.SetColor(<span class="hljs-string">&quot;_FogColor&quot;</span>, settings.fogColor);<br>            settings.fogMaterial.SetFloat(<span class="hljs-string">&quot;_FogHeight&quot;</span>, settings.fogHeight);<br>            settings.fogMaterial.SetVector(<span class="hljs-string">&quot;_FogCenter&quot;</span>, settings.fogCenter);<br>            settings.fogMaterial.SetFloat(<span class="hljs-string">&quot;_FogRadius&quot;</span>, settings.fogRadius);<br>            renderer.EnqueuePass(_fogPass);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例：URP-SDF-局部体积雾-Shader"><a href="#完整示例：URP-SDF-局部体积雾-Shader" class="headerlink" title="完整示例：URP SDF 局部体积雾 Shader"></a>完整示例：URP SDF 局部体积雾 Shader</h2><p>基于球形 SDF 的局部雾效，在迷雾区域&#x2F;毒气场景中使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/VolumetricFog&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _FogColor    (&quot;Fog Color&quot;,        Color)  = (0.5, 0.8, 0.5, 1.0)<br>        _FogDensity  (&quot;Fog Density&quot;,      Range(0.0, 2.0))  = 0.5<br>        _FogHeight   (&quot;Max Height&quot;,       Float)  = 3.0<br>        _FogCenter   (&quot;Fog Center (WS)&quot;,  Vector) = (0, 0, 0, 0)<br>        _FogRadius   (&quot;Fog Sphere Radius&quot;,Float)  = 5.0<br>        _RaySteps    (&quot;Ray March Steps&quot;,  Range(8, 32)) = 16<br>        _StepSize    (&quot;Ray Step Size&quot;,    Range(0.1, 1.0)) = 0.4<br>        // 噪声纹理（用于扰动雾密度）<br>        _NoiseTex    (&quot;Noise Texture&quot;,    2D) = &quot;white&quot; &#123;&#125;<br>        _NoiseScale  (&quot;Noise Scale&quot;,      Range(0.1, 2.0)) = 0.5<br>        _NoiseSpeed  (&quot;Noise Speed&quot;,      Range(0.0, 1.0)) = 0.1<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;Queue&quot; = &quot;Transparent&quot;<br>            &quot;RenderType&quot; = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br><br>        Blend SrcAlpha OneMinusSrcAlpha<br>        ZWrite Off<br>        // 只渲染背面（从内部看雾，避免正面遮挡）<br>        Cull Front<br><br>        Pass<br>        &#123;<br>            Name &quot;VolumetricFogPass&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl&quot;<br><br>            TEXTURE2D(_NoiseTex); SAMPLER(sampler_NoiseTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _NoiseTex_ST;<br>                float4 _FogColor;<br>                float4 _FogCenter;   // xyz: 世界坐标中心<br>                float  _FogDensity;<br>                float  _FogHeight;<br>                float  _FogRadius;<br>                float  _RaySteps;<br>                float  _StepSize;<br>                float  _NoiseScale;<br>                float  _NoiseSpeed;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 positionWS  : TEXCOORD0;   // 世界空间位置（用于光线方向）<br>                float4 screenPos   : TEXCOORD1;   // 屏幕坐标（深度采样）<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            // ======== SDF 形状函数（世界空间）========<br><br>            // 球形 SDF（局部雾的边界）<br>            float sdSphere(float3 p, float3 center, float radius)<br>            &#123;<br>                return length(p - center) - radius;<br>            &#125;<br><br>            // 高度限制（雾不超过指定高度）<br>            float sdHeightLimit(float3 p, float yMin, float yMax)<br>            &#123;<br>                return max(yMin - p.y, p.y - yMax);<br>            &#125;<br><br>            // 综合雾 SDF（球形 + 高度限制的交集）<br>            float fogSDF(float3 p)<br>            &#123;<br>                float dSphere = sdSphere(p, _FogCenter.xyz, _FogRadius);<br>                float dHeight = sdHeightLimit(p, _FogCenter.y - 0.5, _FogCenter.y + _FogHeight);<br>                // 交集：取两者的最大值（在球形内且在高度范围内）<br>                return max(dSphere, dHeight);<br>            &#125;<br><br>            // ======== 雾密度函数 ========<br>            float sampleFogDensity(float3 posWS, float noiseTime)<br>            &#123;<br>                // SDF 值：负值 = 在雾内部，正值 = 外部<br>                float sdfVal = fogSDF(posWS);<br>                if (sdfVal &gt; 0.0) return 0.0; // 在雾外直接跳过<br><br>                // 基础密度（从边缘到中心线性增加）<br>                float baseDensity = saturate(-sdfVal / (_FogRadius * 0.5));<br><br>                // 高度衰减（底部密，顶部稀）<br>                float heightFade = 1.0 - saturate((posWS.y - _FogCenter.y) / _FogHeight);<br>                heightFade = pow(heightFade, 1.5);<br><br>                // 噪声扰动（让雾看起来有体积感）<br>                float2 noiseUV = posWS.xz * _NoiseScale + noiseTime;<br>                float noise = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, noiseUV, 2.0).r;<br>                // 噪声叠加（减弱部分密度，产生云朵状孔洞）<br>                float noiseMask = lerp(0.5, 1.5, noise);<br><br>                return baseDensity * heightFade * noiseMask * _FogDensity;<br>            &#125;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.positionWS  = TransformObjectToWorld(IN.positionOS.xyz);<br>                OUT.screenPos   = ComputeScreenPos(OUT.positionHCS);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 screenUV = IN.screenPos.xy / IN.screenPos.w;<br>                float noiseTime = _Time.y * _NoiseSpeed;<br><br>                // ===== 重建相机光线 =====<br>                float3 cameraPosWS = GetCameraPositionWS();<br>                float3 rayDir = normalize(IN.positionWS - cameraPosWS);<br><br>                // ===== 场景深度限制（光线不穿越不透明物体）=====<br>                float sceneDepth = LinearEyeDepth(<br>                    SampleSceneDepth(screenUV),<br>                    _ZBufferParams<br>                );<br>                // 将场景深度转换为光线行进的最大距离<br>                float maxRayDist = sceneDepth;<br><br>                // ===== 光线步进（Ray March Through Fog）=====<br>                float totalDensity = 0.0;<br>                float3 totalColor  = float3(0, 0, 0);<br>                float rayT = 0.01; // 起始偏移（避免自相交）<br>                int steps = (int)_RaySteps;<br><br>                for (int i = 0; i &lt; steps; i++)<br>                &#123;<br>                    if (rayT &gt; maxRayDist) break; // 超过场景深度停止<br><br>                    float3 samplePos = cameraPosWS + rayDir * rayT;<br>                    float density = sampleFogDensity(samplePos, noiseTime);<br><br>                    if (density &gt; 0.001)<br>                    &#123;<br>                        // 获取主光源（在雾内采样光照）<br>                        Light mainLight = GetMainLight();<br>                        // 光照对雾颜色的影响<br>                        float NdotL = saturate(dot(float3(0, 1, 0), mainLight.direction));<br>                        float3 litFogColor = _FogColor.rgb * lerp(0.4, 1.0, NdotL) * mainLight.color;<br><br>                        // 累积（Beer-Lambert 吸收模型）<br>                        float absorption = density * _StepSize;<br>                        totalColor += litFogColor * absorption * (1.0 - totalDensity);<br>                        totalDensity += absorption * (1.0 - totalDensity);<br>                    &#125;<br><br>                    // 如果已经完全不透明则提前退出<br>                    if (totalDensity &gt;= 0.99) break;<br><br>                    rayT += _StepSize;<br>                &#125;<br><br>                totalDensity = saturate(totalDensity);<br>                return half4(totalColor / max(totalDensity, 0.001), totalDensity);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="软粒子-Shader：SDF-融合边缘"><a href="#软粒子-Shader：SDF-融合边缘" class="headerlink" title="软粒子 Shader：SDF 融合边缘"></a>软粒子 Shader：SDF 融合边缘</h2><p>软粒子的核心思想是用深度差值控制粒子 Alpha，让粒子接触几何体时平滑淡出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/SoftParticle&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex         (&quot;Particle Texture&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _Color           (&quot;Color&quot;,      Color)    = (1,1,1,1)<br>        _SoftRange       (&quot;Soft Range&quot;, Range(0.01, 5.0)) = 1.0<br>        // SDF 精确融合（比简单深度差更精确）<br>        _SDFBlendRadius  (&quot;SDF Blend Radius&quot;, Range(0.0, 2.0)) = 0.5<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;Queue&quot; = &quot;Transparent&quot;<br>            &quot;RenderType&quot; = &quot;Transparent&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        ZWrite Off<br>        Cull Off<br><br>        Pass<br>        &#123;<br>            Name &quot;SoftParticlePass&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile_particles  // 粒子系统特殊关键字<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl&quot;<br><br>            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float4 _Color;<br>                float  _SoftRange;<br>                float  _SDFBlendRadius;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float2 uv         : TEXCOORD0;<br>                float4 color      : COLOR;<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>                float4 color       : COLOR;<br>                float4 screenPos   : TEXCOORD1;<br>                float  eyeDepth    : TEXCOORD2;  // 视空间深度（用于软粒子）<br>                UNITY_VERTEX_OUTPUT_STEREO<br>            &#125;;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                UNITY_SETUP_INSTANCE_ID(IN);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);<br>                OUT.color = IN.color;<br>                OUT.screenPos = ComputeScreenPos(OUT.positionHCS);<br>                // 视空间 Z（正值）<br>                OUT.eyeDepth = -TransformObjectToView(IN.positionOS.xyz).z;<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 screenUV = IN.screenPos.xy / IN.screenPos.w;<br><br>                // 采样场景深度<br>                float sceneDepth = LinearEyeDepth(<br>                    SampleSceneDepth(screenUV),<br>                    _ZBufferParams<br>                );<br><br>                // 深度差：正值 = 粒子在几何体前面<br>                float depthDiff = sceneDepth - IN.eyeDepth;<br><br>                // 软粒子 Alpha 因子（平滑过渡）<br>                float softFactor = smoothstep(0.0, _SoftRange, depthDiff);<br><br>                // 纹理采样<br>                half4 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);<br>                half4 col = texColor * _Color * IN.color;<br>                col.a *= softFactor;<br><br>                return col;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-实现软粒子"><a href="#ShaderGraph-实现软粒子" class="headerlink" title="ShaderGraph 实现软粒子"></a>ShaderGraph 实现软粒子</h2><ol>
+<li><code>Scene Depth</code> 节点（Eye 采样模式）→ 场景深度</li>
+<li><code>Screen Position</code> 节点（Raw 模式）→ 做透视除法 → 屏幕 UV</li>
+<li>粒子片元的深度：用 <code>Position</code> 节点（View 空间）取负 Z 分量</li>
+<li><code>Subtract</code>（场景深度 - 粒子深度）→ <code>Smoothstep</code> → 软因子</li>
+<li>软因子 × 粒子 Alpha → <code>Alpha</code> 输出</li>
+</ol>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><p><strong>体积雾的性能瓶颈：</strong></p>
+<ul>
+<li>光线步进步数是主要开销：16 步适合移动端，32 步适合 PC</li>
+<li>每步的 <code>SampleSceneDepth</code> 可以在循环外缓存（只需采样一次）</li>
+<li>使用 <code>_StepSize</code> 控制步长（大步长 &#x3D; 少步数 &#x3D; 快，但可能漏采样）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>步数</th>
+<th>效果</th>
+<th>性能（移动端）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>8 步</td>
+<td>粗糙，有条带伪影</td>
+<td>~0.3ms</td>
+</tr>
+<tr>
+<td>16 步</td>
+<td>够用，轻微条带</td>
+<td>~0.6ms</td>
+</tr>
+<tr>
+<td>32 步</td>
+<td>高质量</td>
+<td>~1.2ms</td>
+</tr>
+</tbody></table>
+<p><strong>优化技巧：</strong></p>
+<ul>
+<li>只对雾 SDF 包围盒内的屏幕区域运行光线步进</li>
+<li>蓝噪声 Jitter（蓝噪声扰动起始步长）可以用更少步数换取相近质量</li>
+<li>在单独的半分辨率 RT 中渲染体积雾，然后上采样到全分辨率</li>
+</ul>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><ol>
+<li><p><strong>软粒子需要 URP Depth Texture</strong>：在 URP Asset 中勾选 <code>Depth Texture</code> 选项，否则 <code>SampleSceneDepth</code> 返回全 1，软粒子效果消失。</p>
+</li>
+<li><p><strong>体积雾中 <code>SampleSceneDepth</code> 的 RenderPassEvent</strong>：如果体积雾 Pass 插在 <code>AfterRenderingOpaques</code> 之前，深度纹理可能还未写入完整，导致雾穿透几何体。确保 Pass 在 <code>AfterRenderingOpaques</code> 之后执行。</p>
+</li>
+<li><p><strong>光线步进的浮点精度</strong>：当 <code>_FogCenter</code> 在大世界坐标（如 (5000, 0, 5000)）时，<code>length(p - _FogCenter)</code> 会有精度问题。解决方案：将 <code>_FogCenter</code> 转换为相机相对坐标后再计算。</p>
+</li>
+<li><p><strong>VFX Graph SDF Bake 的 Texture3D 精度</strong>：烘焙分辨率（32&#x2F;64&#x2F;128）决定 SDF 的精确程度。低分辨率的 SDF 在粒子精确碰撞时会有明显误差，特别是薄几何体（如剑刃、草叶）。</p>
+</li>
+</ol>
+<p>下一篇文章将讲解 Unity URP 的法线贴图完整体系：切线空间、TBN 矩阵、UnpackNormal 的内部实现，以及视差贴图（Parallax Mapping）的实现。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/SDF-%E6%8A%80%E6%9C%AF/" class="category-chain-item">SDF 技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/SDF-3D/" class="print-no-link">#SDF 3D</a>
+      
+        <a href="/tags/%E4%BD%93%E7%A7%AF%E9%9B%BE/" class="print-no-link">#体积雾</a>
+      
+        <a href="/tags/%E8%BD%AF%E7%B2%92%E5%AD%90/" class="print-no-link">#软粒子</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（六）：URP 中的 SDF 3D 应用 — 体积雾与软粒子</div>
+      <div>https://alex-rachel.github.io/2026/04/01/06-sdf-3d/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/07-normal-estimation/" title="Unity Shader 系列（七）：URP 法线体系完整讲解 — TBN 矩阵与视差贴图">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（七）：URP 法线体系完整讲解 — TBN 矩阵与视差贴图</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/05-color-palette/" title="Unity Shader 系列（五）：Unity 颜色管理与 URP 后处理 — 赛博朋克风格特效">
+                        <span class="hidden-mobile">Unity Shader 系列（五）：Unity 颜色管理与 URP 后处理 — 赛博朋克风格特效</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'c1d85a76f99147a806d909facaaa50dc'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

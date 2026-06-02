@@ -1,0 +1,996 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="为什么需要多通道渲染？单帧渲染可以绘制出精美的画面，但许多高级效果本质上需要**跨帧的”记忆”**——流体模拟需要上一帧的速度场，屏幕空间轨迹需要保存历史像素，TAA 需要累积历史帧。这些效果的核心技术在 Unity 中称为 RenderTexture Ping-Pong：将渲染结果写入纹理而非直接输出到屏幕，下一帧再读取这张纹理，实现跨帧数据传递。 本篇将从 Unity 的视角彻底讲清这套技术：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/31-multipass-buffer/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="为什么需要多通道渲染？单帧渲染可以绘制出精美的画面，但许多高级效果本质上需要**跨帧的”记忆”**——流体模拟需要上一帧的速度场，屏幕空间轨迹需要保存历史像素，TAA 需要累积历史帧。这些效果的核心技术在 Unity 中称为 RenderTexture Ping-Pong：将渲染结果写入纹理而非直接输出到屏幕，下一帧再读取这张纹理，实现跨帧数据传递。 本篇将从 Unity 的视角彻底讲清这套技术：">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T06:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.723Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="RenderTexture">
+<meta property="article:tag" content="多通道渲染">
+<meta property="article:tag" content="Ping-Pong">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 14:00" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          13k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          109 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="为什么需要多通道渲染？"><a href="#为什么需要多通道渲染？" class="headerlink" title="为什么需要多通道渲染？"></a>为什么需要多通道渲染？</h2><p>单帧渲染可以绘制出精美的画面，但许多高级效果本质上需要**跨帧的”记忆”**——流体模拟需要上一帧的速度场，屏幕空间轨迹需要保存历史像素，TAA 需要累积历史帧。这些效果的核心技术在 Unity 中称为 <strong>RenderTexture Ping-Pong</strong>：将渲染结果写入纹理而非直接输出到屏幕，下一帧再读取这张纹理，实现跨帧数据传递。</p>
+<p>本篇将从 Unity 的视角彻底讲清这套技术：<code>RenderTexture</code> 创建与管理、三种 Blit 方案的选择、完整 Ping-Pong 实现，以及两个可直接在项目中使用的示例。</p>
+<h2 id="RenderTexture-基础"><a href="#RenderTexture-基础" class="headerlink" title="RenderTexture 基础"></a>RenderTexture 基础</h2><h3 id="创建与配置"><a href="#创建与配置" class="headerlink" title="创建与配置"></a>创建与配置</h3><p>在 Unity 中创建 RenderTexture 有两种方式：Inspector 配置和 C# 代码创建。</p>
+<p><strong>Inspector 配置</strong>（适合静态分辨率、不频繁更改的 RT）：</p>
+<ol>
+<li>Project 窗口右键 → Create → Render Texture</li>
+<li>设置 Size、Color Format（推荐 <code>RGBAFloat</code> 用于物理模拟，<code>RGBA32</code> 用于普通后处理）</li>
+<li>设置 Filter Mode 和 Wrap Mode</li>
+</ol>
+<p><strong>C# 代码创建</strong>（适合运行时动态分辨率）：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 创建 RenderTexture 的标准方式</span><br><span class="hljs-function">RenderTexture <span class="hljs-title">CreateSimulationRT</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> width, <span class="hljs-built_in">int</span> height</span>)</span><br>&#123;<br>    <span class="hljs-keyword">var</span> rt = <span class="hljs-keyword">new</span> RenderTexture(width, height, <span class="hljs-number">0</span>, RenderTextureFormat.ARGBFloat);<br>    rt.filterMode = FilterMode.Bilinear;<br>    rt.wrapMode = TextureWrapMode.Clamp;<br>    rt.enableRandomWrite = <span class="hljs-literal">false</span>; <span class="hljs-comment">// 如果需要 Compute Shader 写入则设为 true</span><br>    rt.Create();<br>    <span class="hljs-keyword">return</span> rt;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="RenderTextureFormat-选择指南"><a href="#RenderTextureFormat-选择指南" class="headerlink" title="RenderTextureFormat 选择指南"></a>RenderTextureFormat 选择指南</h3><table>
+<thead>
+<tr>
+<th>格式</th>
+<th>位深</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ARGB32</code></td>
+<td>8bpc</td>
+<td>普通颜色，后处理</td>
+</tr>
+<tr>
+<td><code>ARGBHalf</code></td>
+<td>16bpc</td>
+<td>HDR 颜色，Bloom</td>
+</tr>
+<tr>
+<td><code>ARGBFloat</code></td>
+<td>32bpc</td>
+<td>物理模拟，精度要求高</td>
+</tr>
+<tr>
+<td><code>RFloat</code></td>
+<td>32bpc 单通道</td>
+<td>高度图，深度数据</td>
+</tr>
+<tr>
+<td><code>RGFloat</code></td>
+<td>32bpc 双通道</td>
+<td>2D 速度场</td>
+</tr>
+</tbody></table>
+<h2 id="三种-Blit-方案对比"><a href="#三种-Blit-方案对比" class="headerlink" title="三种 Blit 方案对比"></a>三种 Blit 方案对比</h2><p>Unity 中有三种将处理结果写入 RenderTexture 的方式，适用场景不同：</p>
+<h3 id="方案一：Graphics-Blit"><a href="#方案一：Graphics-Blit" class="headerlink" title="方案一：Graphics.Blit()"></a>方案一：Graphics.Blit()</h3><p>最简单，适合<strong>简单的全屏后处理</strong>。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 简单用法：将 src 纹理用 mat 材质处理后输出到 dst</span><br>Graphics.Blit(sourceRT, destinationRT, processMaterial);<br><br><span class="hljs-comment">// Ping-Pong 示例</span><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>&#123;<br>    <span class="hljs-comment">// 读 pingRT，写 pongRT</span><br>    Graphics.Blit(pingRT, pongRT, simulationMaterial);<br>    <span class="hljs-comment">// 交换引用</span><br>    (pingRT, pongRT) = (pongRT, pingRT);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>缺点</strong>：在 URP 管线中与渲染顺序不兼容，可能产生时序问题。</p>
+<h3 id="方案二：CommandBuffer-Blit"><a href="#方案二：CommandBuffer-Blit" class="headerlink" title="方案二：CommandBuffer.Blit()"></a>方案二：CommandBuffer.Blit()</h3><p>适合<strong>需要精确控制执行时机</strong>的场景，可插入渲染管线特定阶段。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">CommandBufferPingPong</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    <span class="hljs-keyword">public</span> Material simulationMaterial;<br>    <span class="hljs-keyword">private</span> RenderTexture[] rts = <span class="hljs-keyword">new</span> RenderTexture[<span class="hljs-number">2</span>];<br>    <span class="hljs-keyword">private</span> CommandBuffer cmd;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> currentIndex = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">private</span> Camera cam;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        cam = GetComponent&lt;Camera&gt;();<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++)<br>        &#123;<br>            rts[i] = <span class="hljs-keyword">new</span> RenderTexture(Screen.width, Screen.height, <span class="hljs-number">0</span>, RenderTextureFormat.ARGBFloat);<br>            rts[i].Create();<br>        &#125;<br><br>        cmd = <span class="hljs-keyword">new</span> CommandBuffer &#123; name = <span class="hljs-string">&quot;PingPong Simulation&quot;</span> &#125;;<br>        <span class="hljs-comment">// 在相机渲染完成后执行</span><br>        cam.AddCommandBuffer(CameraEvent.AfterEverything, cmd);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-built_in">int</span> read = currentIndex;<br>        <span class="hljs-built_in">int</span> write = <span class="hljs-number">1</span> - currentIndex;<br><br>        cmd.Clear();<br>        <span class="hljs-comment">// 设置上一帧纹理为 Shader 输入</span><br>        cmd.SetGlobalTexture(<span class="hljs-string">&quot;_PrevFrameTex&quot;</span>, rts[read]);<br>        <span class="hljs-comment">// Blit：读 rts[read]，写 rts[write]</span><br>        cmd.Blit(rts[read], rts[write], simulationMaterial);<br>        <span class="hljs-comment">// 将结果传给后续 Pass</span><br>        cmd.SetGlobalTexture(<span class="hljs-string">&quot;_SimulationResult&quot;</span>, rts[write]);<br><br>        currentIndex = write;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        cam.RemoveCommandBuffer(CameraEvent.AfterEverything, cmd);<br>        cmd.Release();<br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> rt <span class="hljs-keyword">in</span> rts) rt.Release();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="方案三：URP-Renderer-Feature（推荐方案）"><a href="#方案三：URP-Renderer-Feature（推荐方案）" class="headerlink" title="方案三：URP Renderer Feature（推荐方案）"></a>方案三：URP Renderer Feature（推荐方案）</h3><p>这是 URP 中的<strong>标准做法</strong>，通过自定义 <code>ScriptableRendererFeature</code> 注入渲染 Pass，与管线生命周期完全集成，支持 <code>RTHandle</code> 系统。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering.Universal;<br><br><span class="hljs-comment">// 1. 定义渲染 Pass</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">PingPongSimulationPass</span> : <span class="hljs-title">ScriptableRenderPass</span><br>&#123;<br>    <span class="hljs-keyword">private</span> Material simulationMaterial;<br>    <span class="hljs-keyword">private</span> RTHandle[] rtHandles = <span class="hljs-keyword">new</span> RTHandle[<span class="hljs-number">2</span>];<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> currentIndex = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> PrevFrameTexID = Shader.PropertyToID(<span class="hljs-string">&quot;_PrevFrameTex&quot;</span>);<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">PingPongSimulationPass</span>(<span class="hljs-params">Material mat</span>)</span><br>    &#123;<br>        simulationMaterial = mat;<br>        renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Setup</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> width, <span class="hljs-built_in">int</span> height</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// RTHandle 是 URP 推荐的 RT 管理系统，自动处理分辨率缩放</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++)<br>        &#123;<br>            RTHandles.Release(rtHandles[i]);<br>            rtHandles[i] = RTHandles.Alloc(<br>                width, height,<br>                colorFormat: UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat,<br>                filterMode: FilterMode.Bilinear,<br>                wrapMode: TextureWrapMode.Clamp,<br>                name: <span class="hljs-string">$&quot;SimulationBuffer_<span class="hljs-subst">&#123;i&#125;</span>&quot;</span><br>            );<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Execute</span>(<span class="hljs-params">ScriptableRenderContext context, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>    &#123;<br>        <span class="hljs-built_in">int</span> read = currentIndex;<br>        <span class="hljs-built_in">int</span> write = <span class="hljs-number">1</span> - currentIndex;<br><br>        CommandBuffer cmd = CommandBufferPool.Get(<span class="hljs-string">&quot;PingPong&quot;</span>);<br><br>        <span class="hljs-comment">// 将上一帧缓冲传入 Shader</span><br>        cmd.SetGlobalTexture(PrevFrameTexID, rtHandles[read]);<br>        <span class="hljs-comment">// 执行模拟 Blit</span><br>        Blitter.BlitCameraTexture(cmd, rtHandles[read], rtHandles[write], simulationMaterial, <span class="hljs-number">0</span>);<br>        <span class="hljs-comment">// 结果传给显示 Pass</span><br>        cmd.SetGlobalTexture(<span class="hljs-string">&quot;_SimulationResult&quot;</span>, rtHandles[write]);<br><br>        context.ExecuteCommandBuffer(cmd);<br>        CommandBufferPool.Release(cmd);<br><br>        currentIndex = write;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Cleanup</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++)<br>            RTHandles.Release(rtHandles[i]);<br>    &#125;<br>&#125;<br><br><span class="hljs-comment">// 2. 定义 Renderer Feature</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">PingPongRendererFeature</span> : <span class="hljs-title">ScriptableRendererFeature</span><br>&#123;<br>    [<span class="hljs-meta">System.Serializable</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Settings</span><br>    &#123;<br>        <span class="hljs-keyword">public</span> Material simulationMaterial;<br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> bufferWidth = <span class="hljs-number">512</span>;<br>        <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> bufferHeight = <span class="hljs-number">512</span>;<br>    &#125;<br><br>    <span class="hljs-keyword">public</span> Settings settings = <span class="hljs-keyword">new</span> Settings();<br>    <span class="hljs-keyword">private</span> PingPongSimulationPass simulationPass;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Create</span>()</span><br>    &#123;<br>        simulationPass = <span class="hljs-keyword">new</span> PingPongSimulationPass(settings.simulationMaterial);<br>        simulationPass.Setup(settings.bufferWidth, settings.bufferHeight);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">AddRenderPasses</span>(<span class="hljs-params">ScriptableRenderer renderer, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>    &#123;<br>        renderer.EnqueuePass(simulationPass);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Dispose</span>(<span class="hljs-params"><span class="hljs-built_in">bool</span> disposing</span>)</span><br>    &#123;<br>        simulationPass?.Cleanup();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例一：Game-of-Life（细胞自动机）"><a href="#实战示例一：Game-of-Life（细胞自动机）" class="headerlink" title="实战示例一：Game of Life（细胞自动机）"></a>实战示例一：Game of Life（细胞自动机）</h2><p>这是 Ping-Pong 最经典的演示：每帧根据周围邻居数量判断细胞生死。</p>
+<h3 id="C-控制脚本"><a href="#C-控制脚本" class="headerlink" title="C# 控制脚本"></a>C# 控制脚本</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">GameOfLife</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;模拟配置&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> gridWidth = <span class="hljs-number">512</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> gridHeight = <span class="hljs-number">512</span>;<br>    <span class="hljs-keyword">public</span> Material golMaterial;       <span class="hljs-comment">// Game of Life 模拟 Shader</span><br>    <span class="hljs-keyword">public</span> Material displayMaterial;   <span class="hljs-comment">// 显示结果 Shader</span><br><br>    <span class="hljs-keyword">private</span> RenderTexture[] buffers = <span class="hljs-keyword">new</span> RenderTexture[<span class="hljs-number">2</span>];<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> currentBuffer = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">bool</span> initialized = <span class="hljs-literal">false</span>;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 创建两个浮点 RT 用于 Ping-Pong</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++)<br>        &#123;<br>            buffers[i] = <span class="hljs-keyword">new</span> RenderTexture(gridWidth, gridHeight, <span class="hljs-number">0</span>, RenderTextureFormat.RFloat);<br>            buffers[i].filterMode = FilterMode.Point; <span class="hljs-comment">// 细胞自动机需要点采样</span><br>            buffers[i].wrapMode = TextureWrapMode.Repeat;<br>            buffers[i].Create();<br>        &#125;<br><br>        <span class="hljs-comment">// 初始化：随机生成初始状态</span><br>        Texture2D initTex = <span class="hljs-keyword">new</span> Texture2D(gridWidth, gridHeight, TextureFormat.RFloat, <span class="hljs-literal">false</span>);<br>        Color[] pixels = <span class="hljs-keyword">new</span> Color[gridWidth * gridHeight];<br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; pixels.Length; i++)<br>            pixels[i] = <span class="hljs-keyword">new</span> Color(Random.<span class="hljs-keyword">value</span> &gt; <span class="hljs-number">0.7f</span> ? <span class="hljs-number">1f</span> : <span class="hljs-number">0f</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1f</span>);<br>        initTex.SetPixels(pixels);<br>        initTex.Apply();<br>        Graphics.Blit(initTex, buffers[<span class="hljs-number">0</span>]);<br>        Destroy(initTex);<br><br>        initialized = <span class="hljs-literal">true</span>;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (!initialized) <span class="hljs-keyword">return</span>;<br><br>        <span class="hljs-built_in">int</span> read = currentBuffer;<br>        <span class="hljs-built_in">int</span> write = <span class="hljs-number">1</span> - currentBuffer;<br><br>        <span class="hljs-comment">// 执行一步 GoL 模拟</span><br>        golMaterial.SetTexture(<span class="hljs-string">&quot;_PrevState&quot;</span>, buffers[read]);<br>        golMaterial.SetVector(<span class="hljs-string">&quot;_TexelSize&quot;</span>, <span class="hljs-keyword">new</span> Vector4(<span class="hljs-number">1f</span> / gridWidth, <span class="hljs-number">1f</span> / gridHeight, gridWidth, gridHeight));<br>        Graphics.Blit(buffers[read], buffers[write], golMaterial);<br><br>        <span class="hljs-comment">// 把结果传给显示材质</span><br>        displayMaterial.SetTexture(<span class="hljs-string">&quot;_MainTex&quot;</span>, buffers[write]);<br><br>        currentBuffer = write;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> rt <span class="hljs-keyword">in</span> buffers)<br>            <span class="hljs-keyword">if</span> (rt != <span class="hljs-literal">null</span>) rt.Release();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="Game-of-Life-URP-Shader"><a href="#Game-of-Life-URP-Shader" class="headerlink" title="Game of Life URP Shader"></a>Game of Life URP Shader</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/GameOfLife&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _PrevState (&quot;Previous State&quot;, 2D) = &quot;black&quot; &#123;&#125;<br>        _AliveColor (&quot;Alive Color&quot;, Color) = (0.2, 0.9, 0.4, 1)<br>        _DeadColor  (&quot;Dead Color&quot;,  Color) = (0.05, 0.05, 0.1, 1)<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Cull Off ZWrite Off ZTest Always<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float2 uv          : TEXCOORD0;<br>            &#125;;<br><br>            TEXTURE2D(_PrevState);<br>            SAMPLER(sampler_PrevState);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _PrevState_ST;<br>                float4 _TexelSize;   // x=1/w, y=1/h, z=w, w=h<br>                float4 _AliveColor;<br>                float4 _DeadColor;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            // 采样邻居状态（周期性边界）<br>            float SampleCell(float2 uv, float2 offset)<br>            &#123;<br>                float2 sampleUV = frac(uv + offset * _TexelSize.xy);<br>                return SAMPLE_TEXTURE2D(_PrevState, sampler_PrevState, sampleUV).r &gt; 0.5 ? 1.0 : 0.0;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br>                float current = SampleCell(uv, float2(0, 0));<br><br>                // 统计 8 邻居存活数<br>                float neighbors = 0;<br>                neighbors += SampleCell(uv, float2(-1, -1));<br>                neighbors += SampleCell(uv, float2( 0, -1));<br>                neighbors += SampleCell(uv, float2( 1, -1));<br>                neighbors += SampleCell(uv, float2(-1,  0));<br>                neighbors += SampleCell(uv, float2( 1,  0));<br>                neighbors += SampleCell(uv, float2(-1,  1));<br>                neighbors += SampleCell(uv, float2( 0,  1));<br>                neighbors += SampleCell(uv, float2( 1,  1));<br><br>                // Conway&#x27;s Game of Life 规则<br>                // 存活：邻居 2 或 3 → 继续存活<br>                // 死亡：邻居 3 → 复活<br>                float alive = 0.0;<br>                if (current &gt; 0.5)<br>                    alive = (neighbors == 2.0 || neighbors == 3.0) ? 1.0 : 0.0;<br>                else<br>                    alive = (neighbors == 3.0) ? 1.0 : 0.0;<br><br>                // 输出视觉颜色（R 通道存活状态用于下一帧读取）<br>                half4 col = lerp(_DeadColor, _AliveColor, alive);<br>                col.r = alive; // 保证 R 通道精确存储状态<br>                return col;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实战示例二：屏幕空间轨迹拖尾效果"><a href="#实战示例二：屏幕空间轨迹拖尾效果" class="headerlink" title="实战示例二：屏幕空间轨迹拖尾效果"></a>实战示例二：屏幕空间轨迹拖尾效果</h2><p>将当前帧叠加到上一帧，并每帧淡出，产生运动轨迹。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/ScreenTrail&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex    (&quot;Current Frame&quot;,   2D) = &quot;black&quot; &#123;&#125;<br>        _PrevFrame  (&quot;Previous Frame&quot;,  2D) = &quot;black&quot; &#123;&#125;<br>        _FadeSpeed  (&quot;Fade Speed&quot;,      Range(0.01, 0.5)) = 0.05<br>        _BlendMode  (&quot;Blend Strength&quot;,  Range(0, 1)) = 0.92<br>        _GlowColor  (&quot;Glow Tint&quot;,       Color) = (1, 0.6, 0.2, 1)<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Cull Off ZWrite Off ZTest Always<br><br>        Pass<br>        &#123;<br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            struct Attributes &#123; float4 positionOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings   &#123; float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            TEXTURE2D(_MainTex);   SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_PrevFrame); SAMPLER(sampler_PrevFrame);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float  _FadeSpeed;<br>                float  _BlendMode;<br>                float4 _GlowColor;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.uv = IN.uv;<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                // 当前帧内容<br>                half4 current = SAMPLE_TEXTURE2D(_MainTex,   sampler_MainTex,   IN.uv);<br>                // 上一帧已累积的轨迹<br>                half4 prev    = SAMPLE_TEXTURE2D(_PrevFrame, sampler_PrevFrame, IN.uv);<br><br>                // 上一帧轨迹淡出（_BlendMode 越大，拖尾越长）<br>                half4 trail = prev * _BlendMode;<br><br>                // 当前帧内容叠加进轨迹（取亮度较高的部分）<br>                half4 result = max(current * _GlowColor, trail);<br><br>                // 防止无限累积（能量保守）<br>                result = saturate(result);<br>                return result;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>对应的 C# 管理脚本：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br>[<span class="hljs-meta">RequireComponent(typeof(Camera))</span>]<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">ScreenTrailEffect</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    <span class="hljs-keyword">public</span> Material trailMaterial;<br>    [<span class="hljs-meta">Range(0.8f, 0.99f)</span>] <span class="hljs-keyword">public</span> <span class="hljs-built_in">float</span> blendStrength = <span class="hljs-number">0.92f</span>;<br><br>    <span class="hljs-keyword">private</span> RenderTexture accumBuffer;<br>    <span class="hljs-keyword">private</span> RenderTexture tempBuffer;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnRenderImage</span>(<span class="hljs-params">RenderTexture src, RenderTexture dest</span>)</span><br>    &#123;<br>        <span class="hljs-comment">// 延迟初始化，适配分辨率变化</span><br>        <span class="hljs-keyword">if</span> (accumBuffer == <span class="hljs-literal">null</span> || accumBuffer.width != src.width)<br>        &#123;<br>            <span class="hljs-keyword">if</span> (accumBuffer != <span class="hljs-literal">null</span>) accumBuffer.Release();<br>            <span class="hljs-keyword">if</span> (tempBuffer  != <span class="hljs-literal">null</span>) tempBuffer.Release();<br>            accumBuffer = <span class="hljs-keyword">new</span> RenderTexture(src.width, src.height, <span class="hljs-number">0</span>, src.format);<br>            tempBuffer  = <span class="hljs-keyword">new</span> RenderTexture(src.width, src.height, <span class="hljs-number">0</span>, src.format);<br>            accumBuffer.Create();<br>            tempBuffer.Create();<br>        &#125;<br><br>        trailMaterial.SetTexture(<span class="hljs-string">&quot;_PrevFrame&quot;</span>, accumBuffer);<br>        trailMaterial.SetFloat(<span class="hljs-string">&quot;_BlendMode&quot;</span>, blendStrength);<br><br>        <span class="hljs-comment">// 将当前帧 + 历史轨迹合成到 tempBuffer</span><br>        Graphics.Blit(src, tempBuffer, trailMaterial);<br>        <span class="hljs-comment">// 更新历史缓冲</span><br>        Graphics.Blit(tempBuffer, accumBuffer);<br>        <span class="hljs-comment">// 输出到屏幕</span><br>        Graphics.Blit(tempBuffer, dest);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (accumBuffer != <span class="hljs-literal">null</span>) accumBuffer.Release();<br>        <span class="hljs-keyword">if</span> (tempBuffer  != <span class="hljs-literal">null</span>) tempBuffer.Release();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="RTHandle-系统详解"><a href="#RTHandle-系统详解" class="headerlink" title="RTHandle 系统详解"></a>RTHandle 系统详解</h2><p>URP 2021+ 推荐使用 <code>RTHandle</code> 代替裸 <code>RenderTexture</code>，主要优势：</p>
+<ol>
+<li><strong>自动分辨率缩放</strong>：配合 URP 的动态分辨率（DRS）自动调整大小</li>
+<li><strong>统一的生命周期管理</strong>：通过 <code>RTHandles</code> 分配器统一管理，避免内存泄漏</li>
+<li><strong>与 <code>Blitter</code> API 集成</strong>：<code>Blitter.BlitCameraTexture</code> 正确处理平台差异（Metal Y 轴翻转等）</li>
+</ol>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// RTHandle 标准使用模式</span><br><span class="hljs-keyword">private</span> RTHandle m_SimBuffer0;<br><span class="hljs-keyword">private</span> RTHandle m_SimBuffer1;<br><br><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnCameraSetup</span>(<span class="hljs-params">CommandBuffer cmd, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>&#123;<br>    <span class="hljs-keyword">var</span> desc = renderingData.cameraData.cameraTargetDescriptor;<br>    desc.colorFormat = RenderTextureFormat.ARGBFloat;<br>    desc.depthBufferBits = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-comment">// RenderingUtils.ReAllocateIfNeeded 只在尺寸变化时重新分配，避免每帧 GC</span><br>    RenderingUtils.ReAllocateIfNeeded(<span class="hljs-keyword">ref</span> m_SimBuffer0, desc, FilterMode.Bilinear, name: <span class="hljs-string">&quot;SimBuffer0&quot;</span>);<br>    RenderingUtils.ReAllocateIfNeeded(<span class="hljs-keyword">ref</span> m_SimBuffer1, desc, FilterMode.Bilinear, name: <span class="hljs-string">&quot;SimBuffer1&quot;</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="游戏实际应用场景"><a href="#游戏实际应用场景" class="headerlink" title="游戏实际应用场景"></a>游戏实际应用场景</h2><table>
+<thead>
+<tr>
+<th>效果</th>
+<th>Ping-Pong 数据</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>流体&#x2F;烟雾模拟</td>
+<td>速度场 + 密度场</td>
+<td>环境特效</td>
+</tr>
+<tr>
+<td>布料模拟</td>
+<td>顶点位置 + 速度</td>
+<td>角色服装</td>
+</tr>
+<tr>
+<td>屏幕空间轨迹</td>
+<td>累积颜色帧</td>
+<td>子弹时间、粒子拖尾</td>
+</tr>
+<tr>
+<td>TAA 抗锯齿</td>
+<td>历史颜色帧</td>
+<td>画质提升</td>
+</tr>
+<tr>
+<td>动态阴影图</td>
+<td>阴影累积贴图</td>
+<td>软阴影优化</td>
+</tr>
+<tr>
+<td>反应扩散</td>
+<td>化学浓度 AB</td>
+<td>有机纹理生成</td>
+</tr>
+</tbody></table>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><ul>
+<li><strong>格式选择</strong>：物理模拟用 <code>ARGBFloat</code>，纯显示用 <code>ARGBAHalf</code>，节省 50% 显存带宽</li>
+<li><strong>分辨率降采样</strong>：模拟缓冲可以用屏幕分辨率的 1&#x2F;2 或 1&#x2F;4，显示时双线性放大，效果差异极小</li>
+<li><strong>Mobile 注意</strong>：<code>ARGBFloat</code> 在部分 Mali GPU 上不支持作为 RT，需要降级为 <code>ARGBHalf</code></li>
+<li>**避免每帧 <code>new RenderTexture</code>**：使用 <code>RenderingUtils.ReAllocateIfNeeded</code> 或缓存 RT 对象</li>
+<li><strong>RTHandle vs 裸 RenderTexture</strong>：RTHandle 在 URP 中是标准，裸 RenderTexture 在管线内部使用可能产生时序问题</li>
+</ul>
+<h2 id="ShaderGraph-实现思路"><a href="#ShaderGraph-实现思路" class="headerlink" title="ShaderGraph 实现思路"></a>ShaderGraph 实现思路</h2><p>ShaderGraph 本身不支持 Ping-Pong（需要 C# 脚本管理 RT），但可以用于构建显示 Shader：</p>
+<ol>
+<li>在 C# 中管理 Ping-Pong RT，将结果通过 <code>Material.SetTexture</code> 传入</li>
+<li>ShaderGraph 中添加 <code>Texture2D</code> 属性节点接收模拟结果</li>
+<li>连接到 <code>Sample Texture 2D</code> → 颜色&#x2F;发光输出</li>
+</ol>
+<p>模拟逻辑本身（需要读取上一帧）必须用 HLSL Shader 手写，ShaderGraph 无法表达自反馈逻辑。</p>
+<p>多通道 Ping-Pong 是 Unity 中实现持久化 GPU 状态的核心工具，掌握它意味着你可以在 GPU 上运行完整的物理世界并无缝集成到 URP 渲染管线中。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%90%8E%E5%A4%84%E7%90%86%E4%B8%8E%E7%9B%B8%E6%9C%BA/" class="category-chain-item">后处理与相机</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/RenderTexture/" class="print-no-link">#RenderTexture</a>
+      
+        <a href="/tags/%E5%A4%9A%E9%80%9A%E9%81%93%E6%B8%B2%E6%9F%93/" class="print-no-link">#多通道渲染</a>
+      
+        <a href="/tags/Ping-Pong/" class="print-no-link">#Ping-Pong</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术</div>
+      <div>https://alex-rachel.github.io/2026/04/01/31-multipass-buffer/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/32-texture-mapping-advanced/" title="Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/30-camera-effects/" title="Unity Shader 系列（三十）：URP 相机特效实战">
+                        <span class="hidden-mobile">Unity Shader 系列（三十）：URP 相机特效实战</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '54449aa90985ae4948385ce6d9862e53'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,922 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="分形的无限自相似性在游戏中有着丰富的应用——从 Loading 界面的动态 Julia Set，到 Boss 战的程序化能量纹路，再到传送门的迷幻边框效果。本文聚焦 Unity URP 环境中的分形实现，包括全屏后处理分形、程序化雪花生成，以及 Compute Shader 高精度分形探索。 全屏后处理分形：Renderer Feature 实现分形最常见的游戏用途是作为全屏后处理特效，比如传送门">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（二十五）：Unity 中的分形与程序化视觉">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/25-fractal-rendering/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="分形的无限自相似性在游戏中有着丰富的应用——从 Loading 界面的动态 Julia Set，到 Boss 战的程序化能量纹路，再到传送门的迷幻边框效果。本文聚焦 Unity URP 环境中的分形实现，包括全屏后处理分形、程序化雪花生成，以及 Compute Shader 高精度分形探索。 全屏后处理分形：Renderer Feature 实现分形最常见的游戏用途是作为全屏后处理特效，比如传送门">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T05:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.722Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="分形">
+<meta property="article:tag" content="程序化生成">
+<meta property="article:tag" content="后处理特效">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（二十五）：Unity 中的分形与程序化视觉 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（二十五）：Unity 中的分形与程序化视觉"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 13:00" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          10k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          87 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（二十五）：Unity 中的分形与程序化视觉</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>分形的无限自相似性在游戏中有着丰富的应用——从 Loading 界面的动态 Julia Set，到 Boss 战的程序化能量纹路，再到传送门的迷幻边框效果。本文聚焦 Unity URP 环境中的分形实现，包括全屏后处理分形、程序化雪花生成，以及 Compute Shader 高精度分形探索。</p>
+<h2 id="全屏后处理分形：Renderer-Feature-实现"><a href="#全屏后处理分形：Renderer-Feature-实现" class="headerlink" title="全屏后处理分形：Renderer Feature 实现"></a>全屏后处理分形：Renderer Feature 实现</h2><p>分形最常见的游戏用途是作为全屏后处理特效，比如传送门效果、Boss 技能前摇、游戏 Loading 动画。URP 通过自定义 Renderer Feature 实现全屏后处理。</p>
+<h3 id="C-Renderer-Feature-框架"><a href="#C-Renderer-Feature-框架" class="headerlink" title="C# Renderer Feature 框架"></a>C# Renderer Feature 框架</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// FractalPostProcessFeature.cs</span><br><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering.Universal;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">FractalPostProcessFeature</span> : <span class="hljs-title">ScriptableRendererFeature</span><br>&#123;<br>    [<span class="hljs-meta">System.Serializable</span>]<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">FractalSettings</span><br>    &#123;<br>        <span class="hljs-keyword">public</span> Material fractalMaterial;<br>        <span class="hljs-keyword">public</span> RenderPassEvent passEvent = RenderPassEvent.BeforeRenderingPostProcessing;<br>    &#125;<br><br>    <span class="hljs-keyword">public</span> FractalSettings settings = <span class="hljs-keyword">new</span> FractalSettings();<br>    <span class="hljs-keyword">private</span> FractalPass _pass;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Create</span>()</span><br>    &#123;<br>        _pass = <span class="hljs-keyword">new</span> FractalPass(settings);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">AddRenderPasses</span>(<span class="hljs-params">ScriptableRenderer renderer, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (settings.fractalMaterial == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br>        _pass.Setup(renderer.cameraColorTargetHandle);<br>        renderer.EnqueuePass(_pass);<br>    &#125;<br><br>    <span class="hljs-keyword">class</span> <span class="hljs-title">FractalPass</span> : <span class="hljs-title">ScriptableRenderPass</span><br>    &#123;<br>        <span class="hljs-keyword">private</span> FractalSettings _settings;<br>        <span class="hljs-keyword">private</span> RTHandle _source;<br>        <span class="hljs-keyword">private</span> RTHandle _tempRT;<br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> TempTexID = Shader.PropertyToID(<span class="hljs-string">&quot;_TempFractalTex&quot;</span>);<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">FractalPass</span>(<span class="hljs-params">FractalSettings settings</span>)</span><br>        &#123;<br>            _settings = settings;<br>            renderPassEvent = settings.passEvent;<br>        &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Setup</span>(<span class="hljs-params">RTHandle source</span>)</span> &#123; _source = source; &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnCameraSetup</span>(<span class="hljs-params">CommandBuffer cmd, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>        &#123;<br>            <span class="hljs-comment">// 创建临时 RT（与相机分辨率一致）</span><br>            RenderTextureDescriptor desc = renderingData.cameraData.cameraTargetDescriptor;<br>            desc.depthBufferBits = <span class="hljs-number">0</span>;<br>            RenderingUtils.ReAllocateIfNeeded(<span class="hljs-keyword">ref</span> _tempRT, desc, name: <span class="hljs-string">&quot;_TempFractalTex&quot;</span>);<br>        &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Execute</span>(<span class="hljs-params">ScriptableRenderContext context, <span class="hljs-keyword">ref</span> RenderingData renderingData</span>)</span><br>        &#123;<br>            CommandBuffer cmd = CommandBufferPool.Get(<span class="hljs-string">&quot;Fractal Post Process&quot;</span>);<br><br>            <span class="hljs-comment">// 将相机颜色缓冲 Blit 到临时 RT，再用分形材质处理后写回</span><br>            Blitter.BlitCameraTexture(cmd, _source, _tempRT);<br>            Blitter.BlitCameraTexture(cmd, _tempRT, _source, _settings.fractalMaterial, <span class="hljs-number">0</span>);<br><br>            context.ExecuteCommandBuffer(cmd);<br>            CommandBufferPool.Release(cmd);<br>        &#125;<br><br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">override</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnCameraCleanup</span>(<span class="hljs-params">CommandBuffer cmd</span>)</span><br>        &#123;<br>            <span class="hljs-comment">// 不需要手动释放 RTHandle（ReAllocateIfNeeded 管理生命周期）</span><br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="Julia-Set-全屏后处理-Shader"><a href="#Julia-Set-全屏后处理-Shader" class="headerlink" title="Julia Set 全屏后处理 Shader"></a>Julia Set 全屏后处理 Shader</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/FractalJuliaOverlay&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        // 后处理 Shader 必须有这个属性（Blitter 使用）<br>        _BlitTexture (&quot;Source Texture&quot;, 2D) = &quot;white&quot; &#123;&#125;<br><br>        _CParam (&quot;Julia 参数 C（实部, 虚部）&quot;, Vector) = (-0.7, 0.27, 0, 0)<br>        _MaxIter (&quot;最大迭代次数&quot;, Int) = 64<br>        _Zoom (&quot;缩放&quot;, Float) = 1.5<br>        _FractalColor (&quot;分形边界颜色&quot;, Color) = (0.0, 0.8, 1.0, 1.0)<br>        _OverlayStrength (&quot;叠加强度&quot;, Range(0, 1)) = 0.3<br>        _AnimSpeed (&quot;动画速度&quot;, Float) = 0.2<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot; &#125;<br>        ZWrite Off Cull Off ZTest Always<br><br>        Pass<br>        &#123;<br>            HLSLPROGRAM<br>            #pragma vertex Vert        // 使用 URP Blitter 标准顶点着色器<br>            #pragma fragment frag<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl&quot;<br><br>            TEXTURE2D(_BlitTexture); SAMPLER(sampler_BlitTexture);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _BlitTexture_TexelSize;<br>                float2 _CParam;<br>                int _MaxIter;<br>                float _Zoom;<br>                float4 _FractalColor;<br>                float _OverlayStrength;<br>                float _AnimSpeed;<br>            CBUFFER_END<br><br>            // 复数乘法：(a+bi)(c+di) = (ac-bd) + (ad+bc)i<br>            float2 ComplexMul(float2 a, float2 b)<br>            &#123;<br>                return float2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);<br>            &#125;<br><br>            // Julia Set 迭代（返回归一化逃逸时间）<br>            float JuliaSet(float2 z, float2 c, int maxIter)<br>            &#123;<br>                int iter = 0;<br>                for (iter = 0; iter &lt; maxIter; iter++)<br>                &#123;<br>                    if (dot(z, z) &gt; 4.0) break; // 逃逸条件 |z|² &gt; 4<br>                    z = ComplexMul(z, z) + c;   // z = z² + c<br>                &#125;<br><br>                if (iter == maxIter) return 0.0; // 属于集合内部<br><br>                // 平滑逃逸时间（消除带状条纹）<br>                float smoothIter = float(iter) - log2(log2(dot(z, z)));<br>                return smoothIter / float(maxIter);<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                // 获取场景原始颜色<br>                half4 sceneColor = SAMPLE_TEXTURE2D(_BlitTexture, sampler_BlitTexture, IN.texcoord);<br><br>                // 将屏幕 UV 转换为复平面坐标<br>                float2 uv = IN.texcoord * 2.0 - 1.0;<br>                // 修正宽高比<br>                uv.x *= _ScreenParams.x / _ScreenParams.y;<br>                uv /= _Zoom;<br><br>                // 动态 C 参数（Julia Set 形态随时间变化）<br>                float2 c = _CParam;<br>                c.x += sin(_Time.y * _AnimSpeed) * 0.1;<br>                c.y += cos(_Time.y * _AnimSpeed * 0.7) * 0.05;<br><br>                // 计算 Julia Set<br>                float fractalVal = JuliaSet(uv, c, _MaxIter);<br><br>                // 颜色映射：使用余弦调色板产生彩虹色带<br>                float3 fractalColor = 0.5 + 0.5 * cos(<br>                    float3(0.0, 0.4, 0.7) * 6.28318 + fractalVal * 10.0<br>                );<br>                fractalColor *= _FractalColor.rgb;<br><br>                // 与场景颜色叠加（仅集合边界处显示分形）<br>                float edgeMask = fractalVal &gt; 0.0 ? 1.0 : 0.0;<br>                half3 finalColor = lerp(<br>                    sceneColor.rgb,<br>                    sceneColor.rgb + fractalColor * _OverlayStrength,<br>                    edgeMask * _FractalColor.a<br>                );<br><br>                return half4(finalColor, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Mandelbrot-传送门效果"><a href="#Mandelbrot-传送门效果" class="headerlink" title="Mandelbrot 传送门效果"></a>Mandelbrot 传送门效果</h2><p>将 Mandelbrot 集用作传送门的边框装饰：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 在传送门物体的表面 Shader 中<br>float MandelbrotBorder(float2 uv, int maxIter)<br>&#123;<br>    float2 c = uv * 2.5 - float2(0.5, 0.0); // Mandelbrot 的典型视图范围<br>    float2 z = 0.0;<br>    int iter = 0;<br>    for (iter = 0; iter &lt; maxIter; iter++)<br>    &#123;<br>        if (dot(z, z) &gt; 4.0) break;<br>        z = ComplexMul(z, z) + c;<br>    &#125;<br><br>    float t = float(iter) / float(maxIter);<br><br>    // 只渲染边界区域（0.3~0.7 的逃逸值对应分形边界）<br>    float borderMask = smoothstep(0.25, 0.35, t) * (1.0 - smoothstep(0.6, 0.7, t));<br>    return borderMask;<br>&#125;<br><br>// 在 Fragment 中<br>float border = MandelbrotBorder(IN.uv, 48);<br>// 彩色边界 + 发光<br>half3 portalEdge = border * half3(0.2, 0.8, 1.0) * (1.0 + sin(_Time.y * 3.0) * 0.3);<br>finalColor += portalEdge * _GlowIntensity;<br></code></pre></td></tr></table></figure>
+
+<h2 id="程序化雪花-晶体生成-Shader"><a href="#程序化雪花-晶体生成-Shader" class="headerlink" title="程序化雪花&#x2F;晶体生成 Shader"></a>程序化雪花&#x2F;晶体生成 Shader</h2><p>Sierpinski 三角形变体可以生成美丽的雪花晶体图案，适合游戏 Loading 动画或 UI 装饰：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/ProceduralSnowflake&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _Iterations (&quot;迭代次数&quot;, Range(1, 8)) = 5<br>        _SnowColor (&quot;雪花颜色&quot;, Color) = (0.8, 0.9, 1.0, 1.0)<br>        _BackgroundColor (&quot;背景颜色&quot;, Color) = (0.05, 0.1, 0.2, 1.0)<br>        _LineWidth (&quot;线宽&quot;, Float) = 0.015<br>        _RotationSpeed (&quot;旋转速度&quot;, Float) = 0.1<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Transparent&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &quot;Queue&quot;=&quot;Transparent&quot; &#125;<br>        Blend SrcAlpha OneMinusSrcAlpha<br>        ZWrite Off<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            CBUFFER_START(UnityPerMaterial)<br>                int _Iterations;<br>                float4 _SnowColor, _BackgroundColor;<br>                float _LineWidth;<br>                float _RotationSpeed;<br>            CBUFFER_END<br><br>            struct Attributes &#123; float4 posOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings &#123; float4 posCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.posCS = TransformObjectToHClip(IN.posOS.xyz);<br>                OUT.uv = IN.uv * 2.0 - 1.0; // 转换到 [-1, 1]<br>                return OUT;<br>            &#125;<br><br>            // 六重对称折叠（雪花基础变换）<br>            float2 FoldSymmetry6(float2 p)<br>            &#123;<br>                // 将平面折叠为 1/12 扇区，实现 6 重对称<br>                float angle = atan2(p.y, p.x);<br>                float sector = floor(angle / (PI / 3.0)); // PI/3 = 60度<br>                float foldAngle = sector * (PI / 3.0);<br>                float2 folded = float2(<br>                    p.x * cos(-foldAngle) - p.y * sin(-foldAngle),<br>                    p.x * sin(-foldAngle) + p.y * cos(-foldAngle)<br>                );<br>                // 再对 Y 轴折叠（实现完整的 6 重对称）<br>                folded.y = abs(folded.y);<br>                return folded;<br>            &#125;<br><br>            // Koch 雪花曲线 SDF<br>            float KochSnowflakeSDF(float2 p, int iterations)<br>            &#123;<br>                float d = 1e10;<br><br>                for (int i = 0; i &lt; iterations; i++)<br>                &#123;<br>                    float scale = pow(3.0, (float)i);<br>                    float2 q = p * scale;<br><br>                    // 六重对称折叠<br>                    q = FoldSymmetry6(q);<br><br>                    // Koch 迭代：每段线段替换为 W 形<br>                    // 基础三角形边<br>                    float edgeDist = abs(q.y - 0.0) - _LineWidth / scale; // 水平边<br>                    d = min(d, edgeDist);<br>                &#125;<br><br>                return d;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float2 uv = IN.uv;<br><br>                // 旋转动画<br>                float angle = _Time.y * _RotationSpeed;<br>                float2 rotUV = float2(<br>                    uv.x * cos(angle) - uv.y * sin(angle),<br>                    uv.x * sin(angle) + uv.y * cos(angle)<br>                );<br><br>                // 六重对称折叠<br>                float2 foldedUV = FoldSymmetry6(rotUV);<br><br>                // IFS 迭代生成分形雪花<br>                float brightness = 0.0;<br>                float scale = 1.0;<br>                for (int i = 0; i &lt; _Iterations; i++)<br>                &#123;<br>                    float2 q = foldedUV * scale;<br><br>                    // 在每个尺度上绘制六芒星<br>                    float starDist = max(<br>                        abs(q.x) - 0.5 / scale,<br>                        abs(q.y) - 0.15 / scale<br>                    );<br>                    float starMask = smoothstep(_LineWidth, 0.0, starDist);<br>                    brightness += starMask / scale;<br><br>                    scale *= 3.0; // 每次迭代缩小 1/3<br>                &#125;<br><br>                brightness = saturate(brightness);<br><br>                // 颜色输出<br>                half4 col = lerp(_BackgroundColor, _SnowColor, brightness);<br>                return col;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Compute-Shader-高精度分形探索"><a href="#Compute-Shader-高精度分形探索" class="headerlink" title="Compute Shader 高精度分形探索"></a>Compute Shader 高精度分形探索</h2><p>对于需要高精度交互式探索（如游戏内置分形艺术画廊），使用 Compute Shader 并行计算：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// MandelbrotCompute.compute<br>#pragma kernel CSMandelbrot<br><br>RWTexture2D&lt;float4&gt; _Result;<br>float2 _Center;     // 视口中心（复平面坐标）<br>float _Zoom;        // 缩放倍数<br>uint _MaxIter;      // 最大迭代次数<br>float _Time;        // 动画时间<br><br>// 双精度模拟（使用两个 float 实现更高精度）<br>// 在普通精度下缩放超过 1000x 会出现像素化<br>float2 MandelbrotSmooth(float2 c, uint maxIter)<br>&#123;<br>    float2 z = 0.0;<br>    uint iter = 0;<br>    for (iter = 0; iter &lt; maxIter; iter++)<br>    &#123;<br>        if (dot(z, z) &gt; 4.0) break;<br>        z = float2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;<br>    &#125;<br><br>    if (iter &gt;= maxIter) return float2(0.0, 0.0);<br><br>    // 平滑逃逸时间<br>    float smoothIter = (float)iter - log2(max(1.0, log2(dot(z, z))));<br>    return float2(smoothIter / (float)maxIter, 1.0);<br>&#125;<br><br>// HSV 转 RGB<br>float3 HSVtoRGB(float3 hsv)<br>&#123;<br>    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);<br>    float3 p = abs(frac(hsv.xxx + K.xyz) * 6.0 - K.www);<br>    return hsv.z * lerp(K.xxx, saturate(p - K.xxx), hsv.y);<br>&#125;<br><br>[numthreads(8, 8, 1)]<br>void CSMandelbrot(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    uint width, height;<br>    _Result.GetDimensions(width, height);<br><br>    // 屏幕坐标转复平面坐标<br>    float2 uv = ((float2)id.xy / float2(width, height)) * 2.0 - 1.0;<br>    uv.x *= (float)width / (float)height; // 修正宽高比<br>    float2 c = _Center + uv / _Zoom;<br><br>    float2 result = MandelbrotSmooth(c, _MaxIter);<br>    float t = result.x;<br>    bool inSet = result.y &lt; 0.5;<br><br>    float3 color;<br>    if (inSet)<br>    &#123;<br>        color = float3(0, 0, 0); // 集合内部：黑色<br>    &#125;<br>    else<br>    &#123;<br>        // 动态彩色映射<br>        float hue = frac(t * 3.0 + _Time * 0.1);<br>        color = HSVtoRGB(float3(hue, 0.8, 0.9 * t + 0.1));<br>    &#125;<br><br>    _Result[id.xy] = float4(color, 1.0);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="游戏应用场景"><a href="#游戏应用场景" class="headerlink" title="游戏应用场景"></a>游戏应用场景</h2><p><strong>程序化 Boss 动画</strong>：在 Boss 的材质 Shader 中叠加 Julia Set 动态图案，通过 C# 脚本随 Boss 血量调整 C 参数，血量越低分形越混乱：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// Boss 受击时改变 Julia Set 参数</span><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnBossDamaged</span>(<span class="hljs-params"><span class="hljs-built_in">float</span> healthPercent</span>)</span><br>&#123;<br>    <span class="hljs-built_in">float</span> chaos = <span class="hljs-number">1.0f</span> - healthPercent;<br>    <span class="hljs-built_in">float</span> cx = Mathf.Lerp(<span class="hljs-number">-0.7f</span>, <span class="hljs-number">0.1f</span>, chaos);<br>    <span class="hljs-built_in">float</span> cy = Mathf.Lerp(<span class="hljs-number">0.27f</span>, <span class="hljs-number">0.65f</span>, chaos);<br>    bossMaterial.SetVector(<span class="hljs-string">&quot;_CParam&quot;</span>, <span class="hljs-keyword">new</span> Vector4(cx, cy, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>));<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>Loading 动画</strong>：使用前文的 Julia Set 后处理 Shader，在 <code>_AnimSpeed</code> 较高时产生快速变化的彩色分形作为视觉过渡。</p>
+<p><strong>UI 技能特效</strong>：将分形渲染到 RenderTexture，再将 RenderTexture 作为 UI 的 Raw Image 显示，可实现流动的技能冷却可视化。</p>
+<h2 id="ShaderGraph-实现思路"><a href="#ShaderGraph-实现思路" class="headerlink" title="ShaderGraph 实现思路"></a>ShaderGraph 实现思路</h2><ol>
+<li><strong>Custom Function 节点</strong>：Julia Set 迭代无法用标准 ShaderGraph 节点实现，需要 Custom Function 节点嵌入 HLSL 代码</li>
+<li><strong>Screen Position 节点</strong>：获取屏幕空间坐标转换为复平面坐标</li>
+<li><strong>Time 节点</strong>：驱动 C 参数动画</li>
+<li><strong>Emission 输出</strong>：分形颜色连接到 Emission 而非 Base Color，可配合 Bloom 后处理产生发光效果</li>
+</ol>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>适用场景</th>
+<th>性能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fragment Shader（64 次迭代）</td>
+<td>全屏 UI&#x2F;Loading</td>
+<td>中等（约 2ms@1080p）</td>
+</tr>
+<tr>
+<td>Compute Shader（128 次迭代）</td>
+<td>交互式艺术画廊</td>
+<td>高（GPU 并行最优）</td>
+</tr>
+<tr>
+<td>预计算纹理</td>
+<td>静态背景&#x2F;材质</td>
+<td>极高（零运行时开销）</td>
+</tr>
+<tr>
+<td>实时 + 时域累积</td>
+<td>高品质动画</td>
+<td>中等（利用 TAA 积累细节）</td>
+</tr>
+</tbody></table>
+<p>分形是”数学之美在像素上的映射”——在 Unity 的 Renderer Feature 框架下，一个精心设计的分形后处理效果可以让传送门、结界、魔法阵这类特效拥有令人难忘的视觉深度。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E7%A8%8B%E5%BA%8F%E5%8C%96%E4%B8%8E%E5%99%AA%E5%A3%B0/" class="category-chain-item">程序化与噪声</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E5%88%86%E5%BD%A2/" class="print-no-link">#分形</a>
+      
+        <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%94%9F%E6%88%90/" class="print-no-link">#程序化生成</a>
+      
+        <a href="/tags/%E5%90%8E%E5%A4%84%E7%90%86%E7%89%B9%E6%95%88/" class="print-no-link">#后处理特效</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（二十五）：Unity 中的分形与程序化视觉</div>
+      <div>https://alex-rachel.github.io/2026/04/01/25-fractal-rendering/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/26-procedural-2d-pattern/" title="Unity Shader 系列（二十六）：Unity 程序化纹理与材质生成">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（二十六）：Unity 程序化纹理与材质生成</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/24-terrain-rendering/" title="Unity Shader 系列（二十四）：Unity 地形系统与自定义 Shader">
+                        <span class="hidden-mobile">Unity Shader 系列（二十四）：Unity 地形系统与自定义 Shader</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '3cbac878b5c1af303a13a4167d9165aa'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

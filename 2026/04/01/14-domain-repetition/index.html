@@ -1,0 +1,968 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="域重复（Domain Repetition）在 Unity 开发中是一项被严重低估的技术。当你需要渲染无限延伸的地面、密集的地砖、重复的建筑外墙细节，或是任何存在大量重复几何的场景时，域重复技术可以在完全不增加 GPU 内存带宽的情况下，让单张纹理渲染出无限变化的视觉效果，同时避免明显的重复感。本文深入讲解 Unity URP 地形 Shader 中的域重复实践，以及如何与 GPU Instanc">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/14-domain-repetition/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="域重复（Domain Repetition）在 Unity 开发中是一项被严重低估的技术。当你需要渲染无限延伸的地面、密集的地砖、重复的建筑外墙细节，或是任何存在大量重复几何的场景时，域重复技术可以在完全不增加 GPU 内存带宽的情况下，让单张纹理渲染出无限变化的视觉效果，同时避免明显的重复感。本文深入讲解 Unity URP 地形 Shader 中的域重复实践，以及如何与 GPU Instanc">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T03:10:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.720Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="域重复">
+<meta property="article:tag" content="程序化纹理">
+<meta property="article:tag" content="性能优化">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 11:10" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          10k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          87 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>域重复（Domain Repetition）在 Unity 开发中是一项被严重低估的技术。当你需要渲染无限延伸的地面、密集的地砖、重复的建筑外墙细节，或是任何存在大量重复几何的场景时，域重复技术可以在完全不增加 GPU 内存带宽的情况下，让单张纹理渲染出无限变化的视觉效果，同时避免明显的重复感。本文深入讲解 Unity URP 地形 Shader 中的域重复实践，以及如何与 GPU Instancing 协同工作。</p>
+<h2 id="域重复-vs-GPU-Instancing"><a href="#域重复-vs-GPU-Instancing" class="headerlink" title="域重复 vs GPU Instancing"></a>域重复 vs GPU Instancing</h2><p>理解这两种技术的分工非常重要，它们解决的是不同层面的重复问题：</p>
+<table>
+<thead>
+<tr>
+<th>对比维度</th>
+<th>域重复（Shader 内）</th>
+<th>GPU Instancing</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>适用场景</td>
+<td>纹理&#x2F;UV 坐标的无限重复</td>
+<td>相同 Mesh 的大量实例</td>
+</tr>
+<tr>
+<td>解决的问题</td>
+<td>贴图重复感、无限地面</td>
+<td>草地、树木、石头等物件</td>
+</tr>
+<tr>
+<td>内存开销</td>
+<td>极低（只需一份纹理）</td>
+<td>每个实例需要少量数据</td>
+</tr>
+<tr>
+<td>CPU Draw Call</td>
+<td>无变化</td>
+<td>大幅减少（合批）</td>
+</tr>
+<tr>
+<td>典型组合</td>
+<td>地面 Shader + 域重复</td>
+<td>草叶 Mesh + GPU Instancing</td>
+</tr>
+</tbody></table>
+<p><strong>实际项目中往往两者结合</strong>：地面 Shader 内用域重复消除明显的瓷砖接缝感，同时地面上的石头、草丛使用 GPU Instancing 渲染大量实例。</p>
+<h2 id="核心技术：打破重复感的三种方法"><a href="#核心技术：打破重复感的三种方法" class="headerlink" title="核心技术：打破重复感的三种方法"></a>核心技术：打破重复感的三种方法</h2><p>单纯的 <code>frac(uv * tiling)</code> 会产生非常明显的周期性重复，高端游戏中有三种常用技术来消除这种感觉：</p>
+<h3 id="方法一：基于单元格-ID-的随机旋转"><a href="#方法一：基于单元格-ID-的随机旋转" class="headerlink" title="方法一：基于单元格 ID 的随机旋转"></a>方法一：基于单元格 ID 的随机旋转</h3><p>每个瓷砖单元随机旋转 0°&#x2F;90°&#x2F;180°&#x2F;270°，视觉上完全打破规律性：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 返回当前 UV 所在单元格的 ID（整数坐标）<br>float2 GetCellID(float2 uv, float tileSize)<br>&#123;<br>    return floor(uv / tileSize);<br>&#125;<br><br>// 低质量哈希（适合移动端，无 sin 调用）<br>float Hash2D(float2 p)<br>&#123;<br>    p = frac(p * float2(0.1031, 0.1030));<br>    p += dot(p, p.yx + 33.33);<br>    return frac((p.x + p.y) * p.x);<br>&#125;<br><br>// 单元格内随机旋转 UV<br>float2 TileWithRandomRotation(float2 uv, float tileSize)<br>&#123;<br>    float2 cellID = GetCellID(uv, tileSize);<br>    float2 cellUV = frac(uv / tileSize);  // [0,1] 内的局部 UV<br><br>    // 随机旋转角度（限定为 90° 的倍数，保证边缘无缝）<br>    float randVal = Hash2D(cellID);<br>    float angle   = floor(randVal * 4.0) * 1.5708; // 0, 90, 180, 270 度<br><br>    // 绕单元格中心旋转<br>    float2 centeredUV = cellUV - 0.5;<br>    float  cosA = cos(angle), sinA = sin(angle);<br>    float2 rotatedUV = float2(<br>        cosA * centeredUV.x - sinA * centeredUV.y,<br>        sinA * centeredUV.x + cosA * centeredUV.y<br>    );<br>    return rotatedUV + 0.5;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="方法二：随机翻转（性能更好）"><a href="#方法二：随机翻转（性能更好）" class="headerlink" title="方法二：随机翻转（性能更好）"></a>方法二：随机翻转（性能更好）</h3><p>只做水平&#x2F;垂直翻转，避免 sin&#x2F;cos 的计算开销：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">float2 TileWithRandomFlip(float2 uv, float tileSize)<br>&#123;<br>    float2 cellID = floor(uv / tileSize);<br>    float2 cellUV = frac(uv / tileSize);<br><br>    // 每个单元格独立决定是否翻转 X 和 Y<br>    float rx = frac(sin(dot(cellID, float2(127.1, 311.7))) * 43758.5);<br>    float ry = frac(sin(dot(cellID, float2(269.5, 183.3))) * 43758.5);<br><br>    if (rx &gt; 0.5) cellUV.x = 1.0 - cellUV.x;<br>    if (ry &gt; 0.5) cellUV.y = 1.0 - cellUV.y;<br><br>    return cellUV;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="方法三：Wang-Tiles（完美无缝拼接）"><a href="#方法三：Wang-Tiles（完美无缝拼接）" class="headerlink" title="方法三：Wang Tiles（完美无缝拼接）"></a>方法三：Wang Tiles（完美无缝拼接）</h3><p>使用预制的 Wang Tile 集（4 色边缘编码的多张瓷砖），确保相邻单元格边缘颜色匹配，实现真正无缝无重复：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 需要一张 Wang Tile 贴图集（2×2 或 4×4 排列的变体瓷砖）<br>float2 WangTileUV(float2 uv, TEXTURE2D(tileAtlas), float tileSize, int atlasSize)<br>&#123;<br>    float2 cellID  = floor(uv / tileSize);<br>    float2 cellUV  = frac(uv / tileSize);<br><br>    // 四个角的哈希值决定选择哪块瓷砖<br>    float2 hash  = float2(<br>        frac(sin(dot(cellID, float2(127.1, 311.7))) * 43758.5),<br>        frac(sin(dot(cellID, float2(269.5, 183.3))) * 43758.5)<br>    );<br><br>    // 选取图集中的哪个瓷砖（atlasSize × atlasSize 的网格）<br>    float2 tileIndex = floor(hash * float(atlasSize));<br>    float2 atlasUV   = (tileIndex + cellUV) / float(atlasSize);<br>    return atlasUV;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整示例：URP-无限地板-Shader"><a href="#完整示例：URP-无限地板-Shader" class="headerlink" title="完整示例：URP 无限地板 Shader"></a>完整示例：URP 无限地板 Shader</h2><p>这个 Shader 实现了使用域重复的高质量无限地板：每格随机翻转 + 多尺度细节叠加 + 视距随机化消除重复感。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/InfiniteFloor&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex (&quot;地面主纹理&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _NormalMap (&quot;法线贴图&quot;, 2D) = &quot;bump&quot; &#123;&#125;<br>        _DetailTex (&quot;细节纹理（小尺度）&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _TileSize (&quot;瓷砖大小（世界单位）&quot;, Float) = 2.0<br>        _DetailTileSize (&quot;细节瓷砖大小&quot;, Float) = 0.25<br>        _NormalStrength (&quot;法线强度&quot;, Range(0, 3)) = 1.0<br>        _Roughness (&quot;粗糙度&quot;, Range(0, 1)) = 0.8<br>        _Metallic (&quot;金属度&quot;, Range(0, 1)) = 0.0<br><br>        // 视距渐变（避免远处重复感）<br>        _FarBlendStart (&quot;远距渐变开始&quot;, Float) = 20.0<br>        _FarBlendEnd (&quot;远距渐变结束&quot;, Float) = 50.0<br>        _FarColor (&quot;远处颜色&quot;, Color) = (0.5, 0.5, 0.5, 1)<br><br>        // 随机化强度<br>        _RandomColorVariation (&quot;颜色随机变化强度&quot;, Range(0, 0.3)) = 0.05<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;ForwardLit&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _SHADOWS_SOFT<br>            #pragma multi_compile _ _ADDITIONAL_LIGHTS<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            TEXTURE2D(_MainTex);    SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_NormalMap);  SAMPLER(sampler_NormalMap);<br>            TEXTURE2D(_DetailTex);  SAMPLER(sampler_DetailTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float4 _NormalMap_ST;<br>                float4 _DetailTex_ST;<br>                float  _TileSize;<br>                float  _DetailTileSize;<br>                float  _NormalStrength;<br>                float  _Roughness;<br>                float  _Metallic;<br>                float  _FarBlendStart;<br>                float  _FarBlendEnd;<br>                float4 _FarColor;<br>                float  _RandomColorVariation;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float4 tangentOS  : TANGENT;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 worldPos    : TEXCOORD0;<br>                float3 worldNormal : TEXCOORD1;<br>                float3 worldTangent : TEXCOORD2;<br>                float3 worldBitangent : TEXCOORD3;<br>                float4 shadowCoord : TEXCOORD4;<br>            &#125;;<br><br>            // 无 sin 快速哈希<br>            float Hash(float2 p)<br>            &#123;<br>                p = frac(p * float2(0.1031, 0.1030));<br>                p += dot(p, p.yx + 33.33);<br>                return frac((p.x + p.y) * p.x);<br>            &#125;<br><br>            // 域重复：基于世界位置的随机翻转瓷砖 UV<br>            float2 RepeatTileUV(float2 worldXZ, float tileSize)<br>            &#123;<br>                float2 cellID = floor(worldXZ / tileSize);<br>                float2 cellUV = frac(worldXZ / tileSize);<br><br>                // 随机翻转（每个单元格独立）<br>                float rx = Hash(cellID * 1.731);<br>                float ry = Hash(cellID * 2.537 + 5.0);<br><br>                if (rx &gt; 0.5) cellUV.x = 1.0 - cellUV.x;<br>                if (ry &gt; 0.5) cellUV.y = 1.0 - cellUV.y;<br><br>                return cellUV;<br>            &#125;<br><br>            // 每个瓷砖的随机颜色偏移（轻微颜色变化打破单调感）<br>            float3 GetTileColorVariation(float2 worldXZ, float tileSize)<br>            &#123;<br>                float2 cellID = floor(worldXZ / tileSize);<br>                float rand = Hash(cellID + 100.0);<br>                // 在中性灰周围随机扰动<br>                return float3(rand, Hash(cellID + 200.0), Hash(cellID + 300.0)) * 2.0 - 1.0;<br>            &#125;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);<br>                VertexNormalInputs   norInputs = GetVertexNormalInputs(input.normalOS, input.tangentOS);<br><br>                output.positionHCS    = posInputs.positionCS;<br>                output.worldPos       = posInputs.positionWS;<br>                output.worldNormal    = norInputs.normalWS;<br>                output.worldTangent   = norInputs.tangentWS;<br>                output.worldBitangent = norInputs.bitangentWS;<br>                output.shadowCoord    = GetShadowCoord(posInputs);<br>                return output;<br>            &#125;<br><br>            half4 frag(Varyings input) : SV_Target<br>            &#123;<br>                float3 worldPos = input.worldPos;<br>                float2 worldXZ  = worldPos.xz;<br><br>                // ---- 域重复 UV（大瓷砖）----<br>                float2 tileUV   = RepeatTileUV(worldXZ, _TileSize);<br><br>                // ---- 域重复 UV（细节层，更小的瓷砖）----<br>                float2 detailUV = RepeatTileUV(worldXZ, _DetailTileSize);<br><br>                // ---- 采样主纹理和细节纹理 ----<br>                float3 mainColor   = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, tileUV).rgb;<br>                float3 detailColor = SAMPLE_TEXTURE2D(_DetailTex, sampler_DetailTex, detailUV).rgb;<br><br>                // 细节叠加（overlay 混合：增强细节而不改变整体色调）<br>                float3 albedo = mainColor * (detailColor * 2.0);<br><br>                // 每格轻微颜色变化（在视觉敏感的中距离特别有效）<br>                float3 colorVar = GetTileColorVariation(worldXZ, _TileSize);<br>                albedo += colorVar * _RandomColorVariation;<br>                albedo = saturate(albedo);<br><br>                // ---- 法线贴图 ----<br>                float4 normalSample = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, tileUV);<br>                float3 normalTS     = UnpackNormalScale(normalSample, _NormalStrength);<br><br>                float3x3 TBN = float3x3(<br>                    normalize(input.worldTangent),<br>                    normalize(input.worldBitangent),<br>                    normalize(input.worldNormal)<br>                );<br>                float3 worldNormal = normalize(mul(normalTS, TBN));<br><br>                // ---- 与相机的距离（用于远距离 LOD 渐变）----<br>                float camDist = length(worldPos - GetCameraPositionWS());<br>                float farBlend = smoothstep(_FarBlendStart, _FarBlendEnd, camDist);<br><br>                // 远处渐变到纯色（避免远处纹理噪点和重复感）<br>                albedo = lerp(albedo, _FarColor.rgb, farBlend);<br>                worldNormal = lerp(worldNormal, normalize(input.worldNormal), farBlend);<br><br>                // ---- URP 标准 PBR 光照 ----<br>                InputData lightingInput;<br>                lightingInput.positionWS            = worldPos;<br>                lightingInput.normalWS              = worldNormal;<br>                lightingInput.viewDirectionWS       = normalize(GetCameraPositionWS() - worldPos);<br>                lightingInput.shadowCoord           = input.shadowCoord;<br>                lightingInput.fogCoord              = 0;<br>                lightingInput.vertexLighting        = half3(0, 0, 0);<br>                lightingInput.bakedGI               = SampleSH(worldNormal);<br>                lightingInput.normalizedScreenSpaceUV = float2(0, 0);<br>                lightingInput.shadowMask            = unity_ProbesOcclusion;<br><br>                SurfaceData surfaceData;<br>                surfaceData.albedo              = albedo;<br>                surfaceData.metallic            = _Metallic;<br>                surfaceData.specular            = 0;<br>                surfaceData.smoothness          = 1.0 - _Roughness;<br>                surfaceData.normalTS            = normalTS;<br>                surfaceData.emission            = 0;<br>                surfaceData.occlusion           = 1.0;<br>                surfaceData.alpha               = 1.0;<br>                surfaceData.clearCoatMask       = 0;<br>                surfaceData.clearCoatSmoothness = 0;<br><br>                return UniversalFragmentPBR(lightingInput, surfaceData);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // ShadowCaster Pass（标准，无特殊处理）<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="域重复减少-Draw-Call：替代大量-GameObject-实例"><a href="#域重复减少-Draw-Call：替代大量-GameObject-实例" class="headerlink" title="域重复减少 Draw Call：替代大量 GameObject 实例"></a>域重复减少 Draw Call：替代大量 GameObject 实例</h2><p>这是域重复最强大的实际应用之一。考虑这个场景：一个地下城地面需要显示数百个刻痕、污渍、金属嵌片等细节。</p>
+<p><strong>传统方案</strong>：创建数百个 Decal GameObject 或手动摆放的小 Mesh，产生大量 Draw Call。</p>
+<p><strong>域重复方案</strong>：在地面 Shader 内用程序化逻辑生成这些细节，完全在 GPU 中计算，零额外 Draw Call：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 在地面 Shader 的 frag 中添加：<br>// 程序化金属嵌片（每隔 3 个单元格出现一次）<br>float2 metalCellID = floor(worldXZ / (_TileSize * 3.0));<br>float  metalRand   = Hash(metalCellID * 7.31);<br><br>if (metalRand &gt; 0.7) // 30% 的单元格有金属嵌片<br>&#123;<br>    float2 metalLocalUV = frac(worldXZ / (_TileSize * 3.0));<br>    float  metalDist    = length(metalLocalUV - 0.5);<br><br>    if (metalDist &lt; 0.15) // 圆形金属嵌片<br>    &#123;<br>        // 混合金属质感<br>        albedo  = lerp(albedo, float3(0.8, 0.75, 0.7), 0.8);<br>        _Metallic = 0.9;<br>        surfaceData.smoothness = 0.7;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="与-GPU-Instancing-的实际配合"><a href="#与-GPU-Instancing-的实际配合" class="headerlink" title="与 GPU Instancing 的实际配合"></a>与 GPU Instancing 的实际配合</h2><p>在开放世界游戏中，地面使用域重复渲染表面细节，地面上的植被使用 GPU Instancing。两者之间有一个关键的性能边界：</p>
+<ul>
+<li><strong>密度极高（每平方米超过 10 株）的草地</strong>：使用 Geometry Shader 或 Compute Shader 驱动的草叶，通过域重复计算每根草的随机偏移和朝向</li>
+<li><strong>中等密度的树木&#x2F;石头</strong>：GPU Instancing，通过 <code>DrawMeshInstanced</code> 批量提交</li>
+<li><strong>地面纹理细节</strong>：域重复 Shader，零额外 Draw Call</li>
+</ul>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// 通过 Material Property Block 为 Instancing 传递域重复参数</span><br><span class="hljs-comment">// 不同实例可以有不同的 TileSize，而无需为每个实例单独创建 Material</span><br>MaterialPropertyBlock mpb = <span class="hljs-keyword">new</span> MaterialPropertyBlock();<br><span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; groundMeshes.Length; i++)<br>&#123;<br>    mpb.SetFloat(<span class="hljs-string">&quot;_TileSize&quot;</span>, tileSizes[i]);   <span class="hljs-comment">// 每块地面独立瓷砖尺寸</span><br>    mpb.SetFloat(<span class="hljs-string">&quot;_FarBlendStart&quot;</span>, farStarts[i]);<br>    groundRenderers[i].SetPropertyBlock(mpb);   <span class="hljs-comment">// 不破坏 Instancing 合批</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-对应实现思路"><a href="#ShaderGraph-对应实现思路" class="headerlink" title="ShaderGraph 对应实现思路"></a>ShaderGraph 对应实现思路</h2><p>在 ShaderGraph 中实现随机翻转瓷砖：</p>
+<ol>
+<li><code>Position</code> 节点（World Space）提取 xz 分量</li>
+<li><code>Divide</code> + <code>Floor</code> 计算单元格 ID</li>
+<li><code>Fraction</code> 计算单元格内 UV</li>
+<li>自定义 <code>Custom Function</code> 节点嵌入哈希函数（ShaderGraph 的内置节点无法轻松实现）</li>
+<li><code>Branch</code> 节点根据哈希值决定是否翻转</li>
+<li>最终 UV 输入到 <code>Sample Texture 2D</code> 节点</li>
+</ol>
+<p>ShaderGraph 的限制：复杂的域重复逻辑（尤其是 Wang Tiles）难以只用节点表达，建议通过 Custom Function 节点嵌入 HLSL 代码。</p>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>平台</th>
+<th>优化建议</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PC&#x2F;主机</td>
+<td>完整的双层域重复 + Wang Tiles，视觉质量优先</td>
+</tr>
+<tr>
+<td>移动端高端</td>
+<td>单层域重复 + 随机翻转，去掉细节层</td>
+</tr>
+<tr>
+<td>移动端低端</td>
+<td>关闭法线贴图，只保留随机翻转 UV</td>
+</tr>
+<tr>
+<td>VR</td>
+<td>注意双眼渲染开销翻倍，减少纹理采样次数</td>
+</tr>
+</tbody></table>
+<p><strong>GPU 采样次数</strong>：本 Shader 每片段有 3 次纹理采样（主纹理 + 细节 + 法线）。移动端限制在 2 次以内，PC&#x2F;主机可以扩展到 5-6 次（增加 Wang Tiles、湿度图等）。</p>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><p><strong>坑1：<code>frac()</code> 与 <code>fmod()</code> 在负数上的行为不同</strong><br>HLSL 中 <code>frac(-0.1) = 0.9</code>（正确），而 <code>fmod(-0.1, 1.0) = -0.1</code>（对负值不符合预期）。当相机进入负坐标区域时，用 <code>fmod</code> 实现域重复会在坐标轴负侧产生错误的 UV，必须使用 <code>frac</code>。</p>
+<p><strong>坑2：法线贴图的切线空间不一致</strong><br>地面 Mesh 的切线方向（Tangent）会影响法线贴图的效果。如果 Mesh 是程序化生成的或者从 DCC 工具导入但未计算切线，法线贴图会出现方向错误。使用 <code>CalculateTangentSpace</code> 或在 Import Settings 中勾选 <code>Calculate</code> 选项。</p>
+<p><strong>坑3：远距离渐变与雾的交互</strong><br>场景中同时有 Unity 场景雾和 Shader 内的 <code>farBlend</code> 渐变，两者应该使用相同的起止距离，否则地面会出现两次不连续的颜色过渡。</p>
+<p><strong>坑4：Shader Stripping 导致变体丢失</strong><br>在 Build 时，Unity 的 Shader Stripping 可能删除某些 multi_compile 变体。如果发现 Build 后阴影不正确，检查 Project Settings → Graphics → Shader Stripping 的设置，确保需要的光照关键字变体被保留。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/SDF-%E6%8A%80%E6%9C%AF/" class="category-chain-item">SDF 技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E5%9F%9F%E9%87%8D%E5%A4%8D/" class="print-no-link">#域重复</a>
+      
+        <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BA%B9%E7%90%86/" class="print-no-link">#程序化纹理</a>
+      
+        <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" class="print-no-link">#性能优化</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化</div>
+      <div>https://alex-rachel.github.io/2026/04/01/14-domain-repetition/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/15-domain-warping/" title="Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（十五）：域扭曲：传送门与熔岩流动特效</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/13-csg-boolean-operations/" title="Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效">
+                        <span class="hidden-mobile">Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '01733c25cb25370fd1eacbfdb5e26199'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

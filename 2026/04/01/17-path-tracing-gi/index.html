@@ -1,0 +1,996 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="全局光照（Global Illumination，GI）是让 3D 场景看起来真实的最重要因素——间接光、环境反射、颜色溢出，这些物理现象使场景有了深度和质感。Unity 提供了一套完整的 GI 系统，从静态光照烘焙到实时动态 GI，从 Light Probe 到自适应探针体（APV）。理解如何在 URP Shader 中正确读取和使用这些 GI 数据，是让自定义 Shader 融入真实感场景的关">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（十七）：Unity 全局光照系统深度指南">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/17-path-tracing-gi/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="全局光照（Global Illumination，GI）是让 3D 场景看起来真实的最重要因素——间接光、环境反射、颜色溢出，这些物理现象使场景有了深度和质感。Unity 提供了一套完整的 GI 系统，从静态光照烘焙到实时动态 GI，从 Light Probe 到自适应探针体（APV）。理解如何在 URP Shader 中正确读取和使用这些 GI 数据，是让自定义 Shader 融入真实感场景的关">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T03:40:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.721Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="光照烘焙">
+<meta property="article:tag" content="全局光照">
+<meta property="article:tag" content="GI">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（十七）：Unity 全局光照系统深度指南 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（十七）：Unity 全局光照系统深度指南"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 11:40" pubdate>
+          2026年4月1日 中午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          96 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（十七）：Unity 全局光照系统深度指南</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>全局光照（Global Illumination，GI）是让 3D 场景看起来真实的最重要因素——间接光、环境反射、颜色溢出，这些物理现象使场景有了深度和质感。Unity 提供了一套完整的 GI 系统，从静态光照烘焙到实时动态 GI，从 Light Probe 到自适应探针体（APV）。理解如何在 URP Shader 中正确读取和使用这些 GI 数据，是让自定义 Shader 融入真实感场景的关键。</p>
+<h2 id="Unity-GI-系统全景"><a href="#Unity-GI-系统全景" class="headerlink" title="Unity GI 系统全景"></a>Unity GI 系统全景</h2><p>Unity 的 GI 分为几个层次，选择哪种方案取决于项目的动态性要求和性能预算：</p>
+<table>
+<thead>
+<tr>
+<th>GI 方案</th>
+<th>适用对象</th>
+<th>更新频率</th>
+<th>主要开销</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Baked Lightmap</td>
+<td>静态物体</td>
+<td>构建时烘焙</td>
+<td>内存（纹理）</td>
+</tr>
+<tr>
+<td>Light Probes</td>
+<td>动态物体（小型）</td>
+<td>实时插值</td>
+<td>CPU（插值）</td>
+</tr>
+<tr>
+<td>Probe Volumes (APV)</td>
+<td>所有物体</td>
+<td>实时&#x2F;烘焙</td>
+<td>内存 + GPU</td>
+</tr>
+<tr>
+<td>DDGI (动态 GI)</td>
+<td>所有物体</td>
+<td>实时更新</td>
+<td>GPU 计算</td>
+</tr>
+<tr>
+<td>Unity DXR Ray Tracing</td>
+<td>PC&#x2F;主机</td>
+<td>实时光追</td>
+<td>GPU 极高</td>
+</tr>
+</tbody></table>
+<h2 id="Baked-GI：Enlighten-vs-Progressive-Lightmapper"><a href="#Baked-GI：Enlighten-vs-Progressive-Lightmapper" class="headerlink" title="Baked GI：Enlighten vs Progressive Lightmapper"></a>Baked GI：Enlighten vs Progressive Lightmapper</h2><p><strong>选择指南</strong>：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs nestedtext"><span class="hljs-attribute">Enlighten Baked GI（已弃用但仍可用）</span><span class="hljs-punctuation">:</span><br>  <span class="hljs-attribute">适合</span><span class="hljs-punctuation">:</span> <span class="hljs-string">快速迭代，实时模式下可用</span><br>  <span class="hljs-attribute">缺点</span><span class="hljs-punctuation">:</span> <span class="hljs-string">精度较低，不支持自发光烘焙的精细控制</span><br><br><span class="hljs-attribute">Progressive Lightmapper（当前推荐）</span><span class="hljs-punctuation">:</span><br>  <span class="hljs-attribute">优点</span><span class="hljs-punctuation">:</span> <span class="hljs-string">基于路径追踪，精确的软阴影、环境光遮蔽</span><br>  <span class="hljs-attribute">两种后端</span><span class="hljs-punctuation">:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">CPU Progressive: 速度慢，所有 GPU 都支持</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">GPU Progressive: 速度快（10-50x），需要 CUDA 支持</span><br>  <br><span class="hljs-attribute">实际项目建议</span><span class="hljs-punctuation">:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">开发阶段用低质量快速烘焙（Low Quality preset）</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">发布前用 High Quality preset 进行最终烘焙</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">启用 Prioritize View 让视野内的区域优先烘焙</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>重要的 Lightmap UV 设置</strong>：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs nestedtext"><span class="hljs-attribute">Mesh Import Settings → Lightmap UVs</span><span class="hljs-punctuation">:</span><br>  ✓ Generate Lightmap UVs（Unity 自动生成，适合大多数情况）<br>  <br>  如果自动生成效果不好：<br>  <span class="hljs-bullet">-</span> <span class="hljs-string">在 DCC 工具（Maya/Blender）中手动展开 UV2</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">确保 UV2 没有重叠（使用 UV Checker 纹理验证）</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">留出足够的 Texel 间距（建议 3-5 像素）</span><br></code></pre></td></tr></table></figure>
+
+<h2 id="在-URP-Shader-中集成-GI"><a href="#在-URP-Shader-中集成-GI" class="headerlink" title="在 URP Shader 中集成 GI"></a>在 URP Shader 中集成 GI</h2><p>要让自定义 URP Shader 正确接受 GI，需要在顶点和片段着色器中包含特定的 GI 相关代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/GI_Integrated_Shader&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _BaseColor (&quot;基础颜色&quot;, Color) = (1, 1, 1, 1)<br>        _MainTex (&quot;主纹理&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _Roughness (&quot;粗糙度&quot;, Range(0, 1)) = 0.5<br>        _Metallic (&quot;金属度&quot;, Range(0, 1)) = 0.0<br>        _OcclusionMap (&quot;遮蔽贴图&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _OcclusionStrength (&quot;遮蔽强度&quot;, Range(0, 1)) = 1.0<br>        _EmissionMap (&quot;自发光贴图&quot;, 2D) = &quot;black&quot; &#123;&#125;<br>        [HDR] _EmissionColor (&quot;自发光颜色&quot;, Color) = (0, 0, 0, 0)<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;ForwardLit&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br><br>            // GI 相关的编译宏（这些宏控制是否使用光照贴图、Light Probe 等）<br>            #pragma multi_compile _ LIGHTMAP_ON                          // 静态光照贴图<br>            #pragma multi_compile _ DYNAMICLIGHTMAP_ON                  // 动态光照贴图<br>            #pragma multi_compile _ DIRLIGHTMAP_COMBINED                // 方向性光照贴图<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS                 // 主光源阴影<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE         // 级联阴影<br>            #pragma multi_compile _ _ADDITIONAL_LIGHTS                  // 额外光源<br>            #pragma multi_compile _ _SHADOWS_SOFT                       // 软阴影<br>            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING              // 光照贴图阴影混合<br>            #pragma multi_compile _ SHADOWS_SHADOWMASK                  // 阴影遮罩<br>            #pragma multi_compile_fog                                   // 场景雾<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br>            // 包含 GI 采样相关函数（SampleSH, SAMPLE_GI 等）<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl&quot;<br><br>            TEXTURE2D(_MainTex);       SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_OcclusionMap);  SAMPLER(sampler_OcclusionMap);<br>            TEXTURE2D(_EmissionMap);   SAMPLER(sampler_EmissionMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float4 _BaseColor;<br>                float  _Roughness;<br>                float  _Metallic;<br>                float4 _OcclusionMap_ST;<br>                float  _OcclusionStrength;<br>                float4 _EmissionMap_ST;<br>                float4 _EmissionColor;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS   : POSITION;<br>                float3 normalOS     : NORMAL;<br>                float4 tangentOS    : TANGENT;<br>                float2 uv           : TEXCOORD0;<br>                float2 lightmapUV   : TEXCOORD1;  // 光照贴图 UV（第二套 UV）<br>                UNITY_VERTEX_INPUT_INSTANCE_ID<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS      : SV_POSITION;<br>                float3 worldPos         : TEXCOORD0;<br>                float3 worldNormal      : TEXCOORD1;<br>                float3 worldTangent     : TEXCOORD2;<br>                float3 worldBitangent   : TEXCOORD3;<br>                float2 uv               : TEXCOORD4;<br>                // 光照贴图 UV（使用 URP 的宏处理平台差异）<br>                DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 5);<br>                float4 shadowCoord      : TEXCOORD6;<br>                half4  fogFactor        : TEXCOORD7;<br>                UNITY_VERTEX_OUTPUT_STEREO  // VR 支持<br>            &#125;;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                UNITY_SETUP_INSTANCE_ID(input);<br>                UNITY_TRANSFER_INSTANCE_ID(input, output);<br>                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);<br><br>                VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);<br>                VertexNormalInputs   norInputs = GetVertexNormalInputs(input.normalOS, input.tangentOS);<br><br>                output.positionHCS   = posInputs.positionCS;<br>                output.worldPos      = posInputs.positionWS;<br>                output.worldNormal   = norInputs.normalWS;<br>                output.worldTangent  = norInputs.tangentWS;<br>                output.worldBitangent = norInputs.bitangentWS;<br>                output.uv            = TRANSFORM_TEX(input.uv, _MainTex);<br>                output.shadowCoord   = GetShadowCoord(posInputs);<br><br>                // 关键：根据是否使用光照贴图，存储光照贴图 UV 或 SH 系数<br>                // OUTPUT_LIGHTMAP_UV：变换光照贴图 UV（考虑 Lightmap Scale/Offset）<br>                // OUTPUT_SH：预计算 SH 系数到顶点（减少片段着色器开销）<br>                OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, output.lightmapUV);<br>                OUTPUT_SH(norInputs.normalWS, output.vertexSH);<br><br>                output.fogFactor = ComputeFogFactor(posInputs.positionCS.z);<br>                return output;<br>            &#125;<br><br>            half4 frag(Varyings input) : SV_Target<br>            &#123;<br>                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);<br><br>                float2 uv = input.uv;<br>                float3 worldPos = input.worldPos;<br><br>                // ---- 基础材质数据 ----<br>                half4 albedoAlpha = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv) * _BaseColor;<br>                half  occlusion   = lerp(1.0h, SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).r,<br>                                        _OcclusionStrength);<br><br>                // ---- 法线（使用 TBN 矩阵转换到世界空间）----<br>                float3 worldNormal = normalize(input.worldNormal);<br>                // 此处可以接入法线贴图采样...<br><br>                // ---- 视线方向 ----<br>                float3 viewDir = normalize(GetCameraPositionWS() - worldPos);<br><br>                // ---- 关键：SAMPLE_GI 采样全局光照 ----<br>                // 这个宏会根据编译关键字自动选择：<br>                // - LIGHTMAP_ON：读取烘焙光照贴图<br>                // - 否则：读取 Light Probe SH（用顶点插值的 SH 系数）<br>                half3 bakedGI = SAMPLE_GI(input.lightmapUV, input.vertexSH, worldNormal);<br><br>                // ---- 间接光漫反射（GI 的漫反射部分）----<br>                // MixRealtimeAndBakedGI：混合实时 GI 和烘焙 GI，并处理阴影遮罩<br>                Light mainLight = GetMainLight(input.shadowCoord);<br>                MixRealtimeAndBakedGI(mainLight, worldNormal, bakedGI);<br>                half3 indirectDiffuse = bakedGI * albedoAlpha.rgb * (1.0h - _Metallic) * occlusion;<br><br>                // ---- 间接光镜面反射（GI 的镜面部分，读取反射探针）----<br>                half  perceptualRoughness = _Roughness;<br>                half3 reflectVector = reflect(-viewDir, worldNormal);<br>                // GlossyEnvironmentReflection：采样反射探针（考虑 roughness 的 mip 级别）<br>                half3 indirectSpecular = GlossyEnvironmentReflection(<br>                    reflectVector,<br>                    worldPos,<br>                    perceptualRoughness,<br>                    occlusion<br>                );<br><br>                // ---- 直接光 ----<br>                float NdotL = saturate(dot(worldNormal, mainLight.direction));<br>                half3 directDiffuse = albedoAlpha.rgb * mainLight.color * NdotL<br>                                    * mainLight.shadowAttenuation * (1.0h - _Metallic);<br><br>                // ---- 自发光（用于 GI 贡献烘焙时自动被识别）----<br>                half3 emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb<br>                               * _EmissionColor.rgb;<br><br>                // ---- 组合所有光照 ----<br>                half3 finalColor = indirectDiffuse + indirectSpecular + directDiffuse + emission;<br><br>                // ---- 额外光源（点光、聚光）----<br>                #ifdef _ADDITIONAL_LIGHTS<br>                uint additionalLightCount = GetAdditionalLightsCount();<br>                for (uint i = 0u; i &lt; additionalLightCount; i++)<br>                &#123;<br>                    Light light = GetAdditionalLight(i, worldPos, half4(1, 1, 1, 1));<br>                    half NdotLAdd = saturate(dot(worldNormal, light.direction));<br>                    finalColor += albedoAlpha.rgb * light.color * NdotLAdd<br>                                * light.shadowAttenuation * light.distanceAttenuation;<br>                &#125;<br>                #endif<br><br>                // ---- 场景雾 ----<br>                finalColor = MixFog(finalColor, input.fogFactor.x);<br><br>                return half4(finalColor, albedoAlpha.a);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // 标准 ShadowCaster 和 DepthOnly Pass（复用 URP 内置）<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>        UsePass &quot;Universal Render Pipeline/Lit/DepthOnly&quot;<br><br>        // 自发光 GI 贡献 Pass（让 Unity 知道此 Shader 有自发光，用于 Realtime GI）<br>        Pass<br>        &#123;<br>            Name &quot;Meta&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;Meta&quot; &#125;<br>            Cull Off<br><br>            HLSLPROGRAM<br>            #pragma vertex MetaPassVertex<br>            #pragma fragment MetaPassFragment<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/MetaInput.hlsl&quot;<br><br>            TEXTURE2D(_MainTex);    SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_EmissionMap); SAMPLER(sampler_EmissionMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float4 _BaseColor;<br>                float4 _EmissionMap_ST;<br>                float4 _EmissionColor;<br>                float  _Metallic;<br>            CBUFFER_END<br><br>            struct AttributesMeta &#123; float4 positionOS : POSITION; float2 uv0 : TEXCOORD0; float2 uv1 : TEXCOORD1; &#125;;<br>            struct VaryingsMeta   &#123; float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            VaryingsMeta MetaPassVertex(AttributesMeta input)<br>            &#123;<br>                VaryingsMeta output;<br>                output.positionCS = MetaVertexPosition(input.positionOS, input.uv1, input.uv1,<br>                                                       unity_LightmapST, unity_DynamicLightmapST);<br>                output.uv = TRANSFORM_TEX(input.uv0, _MainTex);<br>                return output;<br>            &#125;<br><br>            half4 MetaPassFragment(VaryingsMeta input) : SV_Target<br>            &#123;<br>                MetaInput meta;<br>                meta.Albedo   = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb * _BaseColor.rgb;<br>                meta.Emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, input.uv).rgb<br>                              * _EmissionColor.rgb;<br>                return MetaFragment(meta);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Light-Probes-与-Probe-Volumes-APV"><a href="#Light-Probes-与-Probe-Volumes-APV" class="headerlink" title="Light Probes 与 Probe Volumes (APV)"></a>Light Probes 与 Probe Volumes (APV)</h2><p><strong>Light Probes</strong> 是为动态物体（角色、车辆、可拾取道具）提供间接光的传统方案：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// C# 中手动查询 Light Probe（用于自定义组件）</span><br>SphericalHarmonicsL2 sh;<br>LightProbes.GetInterpolatedProbe(transform.position, GetComponent&lt;Renderer&gt;(), <span class="hljs-keyword">out</span> sh);<br><br><span class="hljs-comment">// 将 SH 系数传递给 Shader（低于 Unity 8.x，需要手动上传）</span><br><span class="hljs-comment">// Unity 内置的 Renderer 组件会自动处理这些，无需手动操作</span><br></code></pre></td></tr></table></figure>
+
+<p>**Adaptive Probe Volumes (APV)**（Unity 2022.2+ URP 支持）：相比 Light Probes，APV 的优势是：</p>
+<ul>
+<li>探针密度自动根据场景复杂度调整</li>
+<li>无需手动放置探针</li>
+<li>支持流式加载（大型开放世界）</li>
+</ul>
+<p>在 Shader 中读取 APV 数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 启用 APV 的 Shader 只需包含相同的 SAMPLE_GI 宏，Unity 内部会自动切换数据源<br>// 但需要确保项目设置中启用了 APV（URP Asset → Lighting → Probe System → Adaptive Probe Volumes）<br><br>// 在高质量需求时，可以使用更详细的 SH 采样：<br>float3 SampleProbeVolumeAmbient(float3 worldPos, float3 worldNormal)<br>&#123;<br>    #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)<br>        // APV 采样（自动处理探针插值）<br>        return SampleProbeVolumeSH4(<br>            TEXTURE3D_ARGS(apv_L0_L1Rx, apv_sampler),<br>            worldPos, worldNormal, <br>            GetSHCoefficients()<br>        );<br>    #else<br>        // 回退到标准 SH<br>        return SampleSH(worldNormal);<br>    #endif<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="Unity-DXR-URP-Ray-Tracing"><a href="#Unity-DXR-URP-Ray-Tracing" class="headerlink" title="Unity DXR + URP Ray Tracing"></a>Unity DXR + URP Ray Tracing</h2><p>Unity 2020+ 支持硬件光线追踪（需要 DXR 兼容 GPU，即 NVIDIA RTX 系列或 AMD RX 6000+）：</p>
+<p>在 URP 中开启 Ray Tracing 需要：</p>
+<ol>
+<li>Project Settings → Graphics → Enable Ray Tracing</li>
+<li>在场景中添加 <code>RayTracingAccelerationStructure</code></li>
+<li>在 URP Asset 中启用 Ray Tracing 特性</li>
+</ol>
+<p>自定义 Shader 需要添加 Ray Tracing 相关的 Pass：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// Ray Tracing Hit Shader（基础示例）<br>Pass<br>&#123;<br>    Name &quot;RayTracing&quot;<br>    Tags &#123; &quot;LightMode&quot; = &quot;RayTracing&quot; &#125;<br><br>    HLSLPROGRAM<br>    #pragma raytracing surface_shader<br><br>    #include &quot;UnityRayTracingMeshUtils.cginc&quot;<br><br>    // 射线命中时调用<br>    [shader(&quot;closesthit&quot;)]<br>    void ClosestHitShader(inout RayIntersection rayIntersection : SV_RayPayload,<br>                          AttributeData attribs : SV_IntersectionAttributes)<br>    &#123;<br>        // 获取命中点信息<br>        float3 barycentricCoords = float3(<br>            1.0 - attribs.barycentrics.x - attribs.barycentrics.y,<br>            attribs.barycentrics.x,<br>            attribs.barycentrics.y<br>        );<br>        <br>        uint3 triangleIndices = UnityRayTracingFetchTriangleIndices(PrimitiveIndex());<br>        float2 uv0 = UnityRayTracingFetchVertexAttribute2(triangleIndices.x, kVertexAttributeTexCoord0);<br>        // ... 计算着色并写入 rayIntersection.color<br>        rayIntersection.color = half4(1, 0, 0, 1);<br>    &#125;<br>    ENDHLSL<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="GI-调试技巧"><a href="#GI-调试技巧" class="headerlink" title="GI 调试技巧"></a>GI 调试技巧</h2><p>在 Unity 编辑器中调试 GI 问题：</p>
+<ol>
+<li><strong>Scene 视图 → Lighting Mode</strong>：切换到 <code>Baked Lightmap</code>、<code>Light Probes</code> 等叠加层，直观查看 GI 数据分布</li>
+<li><strong>Frame Debugger</strong>：查看 <code>DrawOpaqueObjects</code> 步骤中是否正确绑定了光照贴图纹理</li>
+<li><strong>Lighting 窗口 → Stats</strong>：查看烘焙的纹素数量、探针数量</li>
+<li><strong>Scene 视图 → GI Contribution</strong>：检查每个对象的 GI 贡献程度</li>
+</ol>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>GI 方案</th>
+<th>运行时 CPU</th>
+<th>运行时 GPU</th>
+<th>内存占用</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Baked Lightmap</td>
+<td>极低</td>
+<td>低（纹理采样）</td>
+<td>中高（贴图）</td>
+<td>静态场景，移动端</td>
+</tr>
+<tr>
+<td>Light Probes</td>
+<td>低（插值）</td>
+<td>极低</td>
+<td>低</td>
+<td>动态物体</td>
+</tr>
+<tr>
+<td>APV</td>
+<td>低（流式）</td>
+<td>低（3D 纹理）</td>
+<td>中</td>
+<td>大型开放世界</td>
+</tr>
+<tr>
+<td>DDGI</td>
+<td>无</td>
+<td>高（Compute）</td>
+<td>中</td>
+<td>PC&#x2F;主机实时 GI</td>
+</tr>
+<tr>
+<td>DXR</td>
+<td>无</td>
+<td>极高</td>
+<td>低</td>
+<td>RTX 硬件专用</td>
+</tr>
+</tbody></table>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><p><strong>坑1：光照贴图 UV 覆盖问题</strong><br>如果多个 Mesh Renderer 共用同一个 Mesh，它们的光照贴图 UV 会重叠，导致 GI 信息混乱。每个需要独立烘焙 GI 的物体必须有唯一的光照贴图 UV。使用 <code>Mesh.uv2</code> 或 Import Settings 中的 <code>Generate Lightmap UVs</code>。</p>
+<p><strong>坑2：<code>SAMPLE_GI</code> 宏的使用前提</strong><br><code>SAMPLE_GI</code> 宏只有在包含了正确的头文件（<code>GlobalIllumination.hlsl</code>）并且 Attributes 结构体中有 <code>lightmapUV</code> 时才能正常工作。在自定义 Shader 中遗漏这些导致 GI 数据为黑色是非常常见的错误。</p>
+<p><strong>坑3：Static Batching 和光照贴图的冲突</strong><br>开启 Static Batching 后，合批的物体共用同一份 VBO，光照贴图 UV 会被 Unity 自动重新打包。这通常是正确的，但如果你在 Shader 中手动计算光照贴图 UV（不使用 <code>OUTPUT_LIGHTMAP_UV</code> 宏），可能会出现光照错位。</p>
+<p><strong>坑4：Realtime GI 更新频率</strong><br>Unity 的 Realtime GI（Enlighten 实时模式）不是每帧更新，而是分时更新（Indirect Update Rate）。对于快速移动的光源，GI 会有明显的延迟。可以通过 <code>DynamicGI.UpdateEnvironment()</code> 强制立即更新，但这有较高的 CPU 开销。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%85%89%E7%85%A7%E4%B8%8E%E9%98%B4%E5%BD%B1/" class="category-chain-item">光照与阴影</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E5%85%89%E7%85%A7%E7%83%98%E7%84%99/" class="print-no-link">#光照烘焙</a>
+      
+        <a href="/tags/%E5%85%A8%E5%B1%80%E5%85%89%E7%85%A7/" class="print-no-link">#全局光照</a>
+      
+        <a href="/tags/GI/" class="print-no-link">#GI</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（十七）：Unity 全局光照系统深度指南</div>
+      <div>https://alex-rachel.github.io/2026/04/01/17-path-tracing-gi/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/18-volumetric-rendering/" title="Unity Shader 系列（十八）：URP 体积效果实战：体积光与程序化云朵">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（十八）：URP 体积效果实战：体积光与程序化云朵</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/16-sdf-tricks/" title="Unity Shader 系列（十六）：URP Shader 性能优化实战">
+                        <span class="hidden-mobile">Unity Shader 系列（十六）：URP Shader 性能优化实战</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '313c83c75dc7e3ef40bd53fb9928d5b4'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

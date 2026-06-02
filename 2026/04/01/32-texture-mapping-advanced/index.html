@@ -1,0 +1,952 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="为什么普通 UV 不够用？传统 UV 展开在静态网格上工作良好，但游戏开发中经常遇到以下困境：  程序化地形：运行时生成的地形网格没有预制 UV，或 UV 拉伸严重 任意朝向的岩石&#x2F;树干：UV 展开无法避免拉伸，角落处纹理变形 大面积地表：简单平铺会产生明显重复感，玩家一眼就能看出图案规律 多层地形混合：草地、泥土、岩石等多种材质需要按高度&#x2F;法线权重混合  本篇介绍三种解决方案">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/32-texture-mapping-advanced/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="为什么普通 UV 不够用？传统 UV 展开在静态网格上工作良好，但游戏开发中经常遇到以下困境：  程序化地形：运行时生成的地形网格没有预制 UV，或 UV 拉伸严重 任意朝向的岩石&#x2F;树干：UV 展开无法避免拉伸，角落处纹理变形 大面积地表：简单平铺会产生明显重复感，玩家一眼就能看出图案规律 多层地形混合：草地、泥土、岩石等多种材质需要按高度&#x2F;法线权重混合  本篇介绍三种解决方案">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T06:10:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.723Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="三面投影">
+<meta property="article:tag" content="Triplanar">
+<meta property="article:tag" content="无缝纹理">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 14:10" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          14k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          118 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="为什么普通-UV-不够用？"><a href="#为什么普通-UV-不够用？" class="headerlink" title="为什么普通 UV 不够用？"></a>为什么普通 UV 不够用？</h2><p>传统 UV 展开在静态网格上工作良好，但游戏开发中经常遇到以下困境：</p>
+<ul>
+<li><strong>程序化地形</strong>：运行时生成的地形网格没有预制 UV，或 UV 拉伸严重</li>
+<li><strong>任意朝向的岩石&#x2F;树干</strong>：UV 展开无法避免拉伸，角落处纹理变形</li>
+<li><strong>大面积地表</strong>：简单平铺会产生明显重复感，玩家一眼就能看出图案规律</li>
+<li><strong>多层地形混合</strong>：草地、泥土、岩石等多种材质需要按高度&#x2F;法线权重混合</li>
+</ul>
+<p>本篇介绍三种解决方案：<strong>Triplanar Mapping（三面投影）</strong>、<strong>Texture Array（纹理数组）</strong> 和 <strong>Stochastic Sampling（随机化采样）</strong>，每种方案都给出完整可用的 URP Shader。</p>
+<h2 id="核心技术一：Triplanar-Mapping"><a href="#核心技术一：Triplanar-Mapping" class="headerlink" title="核心技术一：Triplanar Mapping"></a>核心技术一：Triplanar Mapping</h2><h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>从世界空间的 X、Y、Z 三个轴方向分别投影纹理，然后按法线方向权重混合三个采样结果。法线朝向哪个轴，就主要采用那个轴的投影。</p>
+<figure class="highlight arcade"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs arcade">混合权重 = <span class="hljs-built_in">pow</span>(<span class="hljs-built_in">abs</span>(worldNormal), _Blend)<br>混合权重 = 归一化（使三个分量之和为 <span class="hljs-number">1</span>）<br></code></pre></td></tr></table></figure>
+
+<h3 id="完整-URP-Triplanar-Shader"><a href="#完整-URP-Triplanar-Shader" class="headerlink" title="完整 URP Triplanar Shader"></a>完整 URP Triplanar Shader</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/TriplanarMapping&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex        (&quot;Albedo Texture&quot;,      2D)     = &quot;white&quot; &#123;&#125;<br>        _NormalMap      (&quot;Normal Map&quot;,          2D)     = &quot;bump&quot;  &#123;&#125;<br>        _NormalStrength (&quot;Normal Strength&quot;,     Range(0, 2)) = 1.0<br>        _Tiling         (&quot;World Space Tiling&quot;,  Float)  = 1.0<br>        _Blend          (&quot;Blend Sharpness&quot;,     Range(1, 8)) = 4.0<br>        _Smoothness     (&quot;Smoothness&quot;,          Range(0, 1)) = 0.3<br>        _Metallic       (&quot;Metallic&quot;,            Range(0, 1)) = 0.0<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot;       = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot;   = &quot;UniversalPipeline&quot;<br>            &quot;Queue&quot;            = &quot;Geometry&quot;<br>        &#125;<br><br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _SHADOWS_SOFT<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float4 tangentOS  : TANGENT;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS  : SV_POSITION;<br>                float3 positionWS   : TEXCOORD0;   // 世界空间位置（用于 triplanar 投影）<br>                float3 normalWS     : TEXCOORD1;<br>                float3 tangentWS    : TEXCOORD2;<br>                float3 bitangentWS  : TEXCOORD3;<br>            &#125;;<br><br>            TEXTURE2D(_MainTex);   SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_NormalMap); SAMPLER(sampler_NormalMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float  _Tiling;<br>                float  _Blend;<br>                float  _NormalStrength;<br>                float  _Smoothness;<br>                float  _Metallic;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                VertexPositionInputs posInputs = GetVertexPositionInputs(IN.positionOS.xyz);<br>                VertexNormalInputs   norInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);<br><br>                OUT.positionHCS = posInputs.positionCS;<br>                OUT.positionWS  = posInputs.positionWS;<br>                OUT.normalWS    = norInputs.normalWS;<br>                OUT.tangentWS   = norInputs.tangentWS;<br>                OUT.bitangentWS = norInputs.bitangentWS;<br>                return OUT;<br>            &#125;<br><br>            // ===== Triplanar 采样核心函数 =====<br>            // 返回三个轴方向的混合权重（已归一化）<br>            float3 TriplanarWeights(float3 worldNormal, float blend)<br>            &#123;<br>                float3 w = pow(abs(worldNormal), blend);<br>                // 归一化，防止混合权重之和不为 1<br>                return w / (w.x + w.y + w.z + 1e-6);<br>            &#125;<br><br>            // 三面投影采样颜色纹理<br>            half4 SampleTriplanar(TEXTURE2D_PARAM(tex, smp), float3 worldPos, float3 weights, float tiling)<br>            &#123;<br>                // 三个轴的 UV（世界坐标直接用作纹理坐标）<br>                half4 xProj = SAMPLE_TEXTURE2D(tex, smp, worldPos.zy * tiling); // YZ 面<br>                half4 yProj = SAMPLE_TEXTURE2D(tex, smp, worldPos.xz * tiling); // XZ 面（地面）<br>                half4 zProj = SAMPLE_TEXTURE2D(tex, smp, worldPos.xy * tiling); // XY 面<br><br>                return xProj * weights.x + yProj * weights.y + zProj * weights.z;<br>            &#125;<br><br>            // 三面投影采样法线贴图（需要在各轴的切线空间中重建法线）<br>            float3 SampleTriplanarNormal(TEXTURE2D_PARAM(tex, smp),<br>                                         float3 worldPos, float3 worldNormal,<br>                                         float3 weights, float tiling, float strength)<br>            &#123;<br>                // 分别采样三个面的法线<br>                half4 xN = SAMPLE_TEXTURE2D(tex, smp, worldPos.zy * tiling);<br>                half4 yN = SAMPLE_TEXTURE2D(tex, smp, worldPos.xz * tiling);<br>                half4 zN = SAMPLE_TEXTURE2D(tex, smp, worldPos.xy * tiling);<br><br>                // 解包法线（DXT5nm 格式：.ag 通道，或标准 .rgb 格式）<br>                float3 nX = UnpackNormal(xN);<br>                float3 nY = UnpackNormal(yN);<br>                float3 nZ = UnpackNormal(zN);<br><br>                // 法线强度控制<br>                nX.xy *= strength;<br>                nY.xy *= strength;<br>                nZ.xy *= strength;<br><br>                // 各轴的法线变换到世界空间<br>                // X 面：tangent=Z, bitangent=Y<br>                // Y 面：tangent=X, bitangent=Z<br>                // Z 面：tangent=X, bitangent=Y<br>                float3 nXWS = float3(nX.z * sign(worldNormal.x), nX.y, nX.x * sign(worldNormal.x));<br>                float3 nYWS = float3(nY.x, nY.z * sign(worldNormal.y), nY.y * sign(worldNormal.y));<br>                float3 nZWS = float3(nZ.x, nZ.y, nZ.z * sign(worldNormal.z));<br><br>                return normalize(nXWS * weights.x + nYWS * weights.y + nZWS * weights.z + worldNormal);<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                float3 worldNormal = normalize(IN.normalWS);<br>                float3 weights = TriplanarWeights(worldNormal, _Blend);<br><br>                // 三面投影采样颜色和法线<br>                half4 albedo = SampleTriplanar(TEXTURE2D_ARGS(_MainTex, sampler_MainTex),<br>                                               IN.positionWS, weights, _Tiling);<br>                float3 normal = SampleTriplanarNormal(TEXTURE2D_ARGS(_NormalMap, sampler_NormalMap),<br>                                                      IN.positionWS, worldNormal, weights,<br>                                                      _Tiling, _NormalStrength);<br><br>                // URP 标准光照<br>                InputData inputData = (InputData)0;<br>                inputData.positionWS = IN.positionWS;<br>                inputData.normalWS   = normal;<br>                inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(IN.positionWS);<br>                inputData.shadowCoord = TransformWorldToShadowCoord(IN.positionWS);<br><br>                SurfaceData surfaceData = (SurfaceData)0;<br>                surfaceData.albedo      = albedo.rgb;<br>                surfaceData.alpha       = 1.0;<br>                surfaceData.smoothness  = _Smoothness;<br>                surfaceData.metallic    = _Metallic;<br>                surfaceData.normalTS    = float3(0, 0, 1); // 法线已在世界空间处理<br><br>                return UniversalFragmentPBR(inputData, surfaceData);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // 阴影投射 Pass（必须包含，否则物体不产生阴影）<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>踩坑提示</strong>：<code>_Blend</code> 参数越高，三个轴的混合边界越锐利。地形一般用 4，岩石&#x2F;鹅卵石用 6-8。过低（&lt;2）会导致边缘模糊，看起来像故障纹理。</p>
+<h2 id="核心技术二：多套-UV-通道"><a href="#核心技术二：多套-UV-通道" class="headerlink" title="核心技术二：多套 UV 通道"></a>核心技术二：多套 UV 通道</h2><p>Unity 的网格最多支持 4 套 UV（UV0 到 UV3），在 Shader 中分别用 <code>TEXCOORD0</code> 到 <code>TEXCOORD3</code> 访问。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">struct Attributes<br>&#123;<br>    float4 positionOS : POSITION;<br>    float2 uv0        : TEXCOORD0;  // 主纹理 UV（通常是 UV0）<br>    float2 uv1        : TEXCOORD1;  // 光照贴图 UV（Lightmap 用 UV1）<br>    float2 uv2        : TEXCOORD2;  // 细节贴图 UV 或特殊用途<br>    float2 uv3        : TEXCOORD3;  // 遮罩/混合贴图 UV<br>&#125;;<br><br>// 在顶点 Shader 中传递<br>struct Varyings<br>&#123;<br>    float4 positionHCS : SV_POSITION;<br>    float2 uv0         : TEXCOORD0;<br>    float2 uv1         : TEXCOORD1;<br>    float4 uv23        : TEXCOORD2;  // 打包 uv2.xy + uv3.xy<br>&#125;;<br><br>Varyings vert(Attributes IN)<br>&#123;<br>    Varyings OUT;<br>    OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>    OUT.uv0  = TRANSFORM_TEX(IN.uv0, _MainTex);<br>    OUT.uv1  = IN.uv1;    // Lightmap UV 不做 Transform<br>    OUT.uv23 = float4(IN.uv2, IN.uv3);<br>    return OUT;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="核心技术三：Texture-Array-地形多层混合"><a href="#核心技术三：Texture-Array-地形多层混合" class="headerlink" title="核心技术三：Texture Array 地形多层混合"></a>核心技术三：Texture Array 地形多层混合</h2><p><code>TEXTURE2D_ARRAY</code> 将多张相同尺寸的纹理打包成一个资源，通过整数索引访问，避免多次纹理绑定切换。</p>
+<h3 id="C-创建-Texture2DArray"><a href="#C-创建-Texture2DArray" class="headerlink" title="C# 创建 Texture2DArray"></a>C# 创建 Texture2DArray</h3><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">TerrainTextureArrayBuilder</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;按顺序放置：草地、泥土、岩石、雪地&quot;</span>)</span>]<br>    <span class="hljs-keyword">public</span> Texture2D[] terrainTextures;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> Texture2DArray <span class="hljs-title">BuildArray</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (terrainTextures == <span class="hljs-literal">null</span> || terrainTextures.Length == <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;<br><br>        <span class="hljs-built_in">int</span> width  = terrainTextures[<span class="hljs-number">0</span>].width;<br>        <span class="hljs-built_in">int</span> height = terrainTextures[<span class="hljs-number">0</span>].height;<br>        <span class="hljs-built_in">int</span> count  = terrainTextures.Length;<br><br>        <span class="hljs-comment">// 注意：所有纹理必须相同尺寸和格式</span><br>        <span class="hljs-keyword">var</span> array = <span class="hljs-keyword">new</span> Texture2DArray(width, height, count,<br>                                       terrainTextures[<span class="hljs-number">0</span>].format,<br>                                       <span class="hljs-literal">true</span>, <span class="hljs-comment">// 生成 Mipmap</span><br>                                       <span class="hljs-literal">false</span>); <span class="hljs-comment">// 非线性颜色空间</span><br><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; count; i++)<br>        &#123;<br>            <span class="hljs-comment">// 逐 mip 级别复制数据</span><br>            <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> mip = <span class="hljs-number">0</span>; mip &lt; terrainTextures[i].mipmapCount; mip++)<br>            &#123;<br>                Graphics.CopyTexture(terrainTextures[i], <span class="hljs-number">0</span>, mip, array, i, mip);<br>            &#125;<br>        &#125;<br><br>        array.Apply(<span class="hljs-literal">false</span>, <span class="hljs-literal">true</span>); <span class="hljs-comment">// makeNoLongerReadable=true 节省内存</span><br>        <span class="hljs-keyword">return</span> array;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="Texture-Array-地形-Shader"><a href="#Texture-Array-地形-Shader" class="headerlink" title="Texture Array 地形 Shader"></a>Texture Array 地形 Shader</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/TerrainTextureArray&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _TerrainArray  (&quot;Terrain Texture Array&quot;, 2DArray) = &quot;&quot; &#123;&#125;<br>        _SplatMap      (&quot;Splat Map (RGBA=4 layers)&quot;, 2D) = &quot;red&quot; &#123;&#125;<br>        _Tiling        (&quot;Texture Tiling&quot;, Float) = 4.0<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #pragma require  2darray   // 声明需要 Texture2DArray 支持<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 positionWS  : TEXCOORD0;<br>                float3 normalWS    : TEXCOORD1;<br>                float2 uv          : TEXCOORD2;<br>            &#125;;<br><br>            TEXTURE2D_ARRAY(_TerrainArray); SAMPLER(sampler_TerrainArray);<br>            TEXTURE2D(_SplatMap);           SAMPLER(sampler_SplatMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _SplatMap_ST;<br>                float  _Tiling;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                VertexPositionInputs posInputs = GetVertexPositionInputs(IN.positionOS.xyz);<br>                OUT.positionHCS = posInputs.positionCS;<br>                OUT.positionWS  = posInputs.positionWS;<br>                OUT.normalWS    = TransformObjectToWorldNormal(IN.normalOS);<br>                OUT.uv = TRANSFORM_TEX(IN.uv, _SplatMap);<br>                return OUT;<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                // 读取混合权重（RGBA 对应 4 层材质的权重）<br>                half4 splat = SAMPLE_TEXTURE2D(_SplatMap, sampler_SplatMap, IN.uv);<br><br>                // 世界空间 UV 用于纹理采样（平铺）<br>                float2 worldUV = IN.positionWS.xz * _Tiling;<br><br>                // 分别采样 4 层地形纹理<br>                // SAMPLE_TEXTURE2D_ARRAY 第三个参数是数组索引（必须是 float）<br>                half4 layer0 = SAMPLE_TEXTURE2D_ARRAY(_TerrainArray, sampler_TerrainArray, worldUV, 0.0); // 草地<br>                half4 layer1 = SAMPLE_TEXTURE2D_ARRAY(_TerrainArray, sampler_TerrainArray, worldUV, 1.0); // 泥土<br>                half4 layer2 = SAMPLE_TEXTURE2D_ARRAY(_TerrainArray, sampler_TerrainArray, worldUV, 2.0); // 岩石<br>                half4 layer3 = SAMPLE_TEXTURE2D_ARRAY(_TerrainArray, sampler_TerrainArray, worldUV, 3.0); // 雪地<br><br>                // 按权重混合（splat.r + splat.g + splat.b + splat.a 应约等于 1）<br>                half4 albedo = layer0 * splat.r<br>                             + layer1 * splat.g<br>                             + layer2 * splat.b<br>                             + layer3 * splat.a;<br><br>                // 简单漫反射光照<br>                float3 normalWS = normalize(IN.normalWS);<br>                Light mainLight = GetMainLight(TransformWorldToShadowCoord(IN.positionWS));<br>                float NdotL = saturate(dot(normalWS, mainLight.direction));<br>                half3 lighting = mainLight.color * (NdotL * mainLight.shadowAttenuation + 0.2);<br><br>                return half4(albedo.rgb * lighting, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>        UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="核心技术四：消除纹理重复——Stochastic-Sampling"><a href="#核心技术四：消除纹理重复——Stochastic-Sampling" class="headerlink" title="核心技术四：消除纹理重复——Stochastic Sampling"></a>核心技术四：消除纹理重复——Stochastic Sampling</h2><p>大地形或大面积墙面如果直接平铺纹理，人眼会立刻识别出重复图案。<strong>Stochastic Sampling（随机偏移采样）</strong>通过对每个纹理格子施加随机 UV 偏移来打破重复感。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/StochasticTexture&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex    (&quot;Main Texture&quot;,        2D)    = &quot;white&quot; &#123;&#125;<br>        _NormalMap  (&quot;Normal Map&quot;,          2D)    = &quot;bump&quot;  &#123;&#125;<br>        _Tiling     (&quot;Tiling&quot;,              Float) = 4.0<br>        _UseStoch   (&quot;Use Stochastic&quot;,      Float) = 1.0<br>    &#125;<br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br>        Pass<br>        &#123;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br>            HLSLPROGRAM<br>            #pragma vertex   vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 positionWS  : TEXCOORD0;<br>                float3 normalWS    : TEXCOORD1;<br>                float2 uv          : TEXCOORD2;<br>            &#125;;<br><br>            TEXTURE2D(_MainTex);   SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_NormalMap); SAMPLER(sampler_NormalMap);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float  _Tiling;<br>                float  _UseStoch;<br>            CBUFFER_END<br><br>            Varyings vert(Attributes IN)<br>            &#123;<br>                Varyings OUT;<br>                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);<br>                OUT.positionWS  = TransformObjectToWorld(IN.positionOS.xyz);<br>                OUT.normalWS    = TransformObjectToWorldNormal(IN.normalOS);<br>                OUT.uv = IN.uv * _Tiling;<br>                return OUT;<br>            &#125;<br><br>            // 哈希函数：输入 2D 格子坐标，输出随机 4D 偏移<br>            float4 Hash4(float2 p)<br>            &#123;<br>                float4 p4 = frac(float4(p.xyxy) * float4(0.1031, 0.1030, 0.0973, 0.1099));<br>                p4 += dot(p4, p4.wzxy + 33.33);<br>                return frac((p4.xxyz + p4.yzzw) * p4.zywx);<br>            &#125;<br><br>            // Stochastic 采样：对每个格子施加随机偏移，消除平铺感<br>            // 相比普通 tex.Sample，增加约 4x 采样次数，但对视觉质量提升显著<br>            half4 SampleStochastic(TEXTURE2D_PARAM(tex, smp), float2 uv)<br>            &#123;<br>                float2 iuv = floor(uv);<br>                float2 fuv = frac(uv);<br><br>                // 四角格子的随机偏移<br>                float4 ofa = Hash4(iuv + float2(0, 0));<br>                float4 ofb = Hash4(iuv + float2(1, 0));<br>                float4 ofc = Hash4(iuv + float2(0, 1));<br>                float4 ofd = Hash4(iuv + float2(1, 1));<br><br>                // 平滑混合曲线（避免在格子边界处产生硬接缝）<br>                float2 b = smoothstep(0.25, 0.75, fuv);<br><br>                // 四次采样，每个格子用自己的随机偏移<br>                half4 cola = SAMPLE_TEXTURE2D(tex, smp, uv + ofa.xy);<br>                half4 colb = SAMPLE_TEXTURE2D(tex, smp, uv + ofb.xy);<br>                half4 colc = SAMPLE_TEXTURE2D(tex, smp, uv + ofc.xy);<br>                half4 cold = SAMPLE_TEXTURE2D(tex, smp, uv + ofd.xy);<br><br>                return lerp(lerp(cola, colb, b.x),<br>                            lerp(colc, cold, b.x), b.y);<br>            &#125;<br><br>            // 快速版本：仅 2 次采样，使用低频噪声贴图驱动插值<br>            // 适合移动端，效果略差但性能好<br>            half4 SampleStochasticCheap(TEXTURE2D_PARAM(tex, smp), float2 uv)<br>            &#123;<br>                // 用低频自噪声（基于 UV 本身生成）<br>                float k = frac(sin(dot(floor(uv * 0.1), float2(127.1, 311.7))) * 43758.5453);<br>                float index  = k * 8.0;<br>                float fi     = floor(index);<br>                float ff     = frac(index);<br><br>                float2 offA = sin(float2(3.0, 7.0) * (fi + 0.0));<br>                float2 offB = sin(float2(3.0, 7.0) * (fi + 1.0));<br><br>                return lerp(<br>                    SAMPLE_TEXTURE2D(tex, smp, uv + offA),<br>                    SAMPLE_TEXTURE2D(tex, smp, uv + offB),<br>                    smoothstep(0.2, 0.8, ff)<br>                );<br>            &#125;<br><br>            half4 frag(Varyings IN) : SV_Target<br>            &#123;<br>                half4 albedo;<br>                if (_UseStoch &gt; 0.5)<br>                    albedo = SampleStochastic(TEXTURE2D_ARGS(_MainTex, sampler_MainTex), IN.uv);<br>                else<br>                    albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);<br><br>                half4 normalSample = _UseStoch &gt; 0.5<br>                    ? SampleStochastic(TEXTURE2D_ARGS(_NormalMap, sampler_NormalMap), IN.uv)<br>                    : SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, IN.uv);<br><br>                // 简单光照<br>                float3 normalWS = normalize(IN.normalWS);<br>                Light mainLight = GetMainLight();<br>                float NdotL = saturate(dot(normalWS, mainLight.direction));<br><br>                return half4(albedo.rgb * (NdotL * mainLight.color + 0.2), 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="ShaderGraph-实现思路"><a href="#ShaderGraph-实现思路" class="headerlink" title="ShaderGraph 实现思路"></a>ShaderGraph 实现思路</h2><p>ShaderGraph 中有内置的 <strong>Triplanar</strong> 节点（搜索 “Triplanar”），可直接使用：</p>
+<ol>
+<li>添加 <code>Triplanar</code> 节点，连接 Texture 和 Tiling 输入</li>
+<li><code>Blend</code> 参数控制混合锐利度（对应 HLSL 中的 <code>pow(abs(normal), blend)</code>）</li>
+<li>法线贴图需要单独 Triplanar 节点 + Normal Strength 节点</li>
+</ol>
+<p><strong>ShaderGraph 没有内置 Stochastic Sampling 节点</strong>——需要用 Custom Function 节点引入上述 <code>SampleStochastic</code> 函数。</p>
+<h2 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h2><table>
+<thead>
+<tr>
+<th>技术</th>
+<th>GPU 采样次数</th>
+<th>适用场景</th>
+<th>移动端建议</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>普通 UV 采样</td>
+<td>1</td>
+<td>静态网格，有 UV</td>
+<td>推荐</td>
+</tr>
+<tr>
+<td>Triplanar（三面）</td>
+<td>3</td>
+<td>无 UV 地形&#x2F;岩石</td>
+<td>慎用，改 Biplanar</td>
+</tr>
+<tr>
+<td>Biplanar（双面）</td>
+<td>2</td>
+<td>三面投影的优化版</td>
+<td>可用</td>
+</tr>
+<tr>
+<td>Texture Array</td>
+<td>4（4 层）</td>
+<td>多层地形混合</td>
+<td>可用</td>
+</tr>
+<tr>
+<td>Stochastic（标准）</td>
+<td>4</td>
+<td>消除平铺感</td>
+<td>改为 Cheap 版</td>
+</tr>
+<tr>
+<td>Stochastic（Cheap）</td>
+<td>2</td>
+<td>移动端无平铺</td>
+<td>推荐</td>
+</tr>
+</tbody></table>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><ol>
+<li><strong>Triplanar 法线接缝</strong>：三个轴边界处法线混合必须在世界空间计算，不能在切线空间混合，否则产生可见接缝</li>
+<li><strong>Texture2DArray 所有纹理必须同尺寸</strong>：格式和大小不一致会导致导入失败，建议统一 2048×2048 或 1024×1024</li>
+<li><strong>Stochastic 采样产生模糊</strong>：<code>smoothstep(0.25, 0.75, fuv)</code> 的区间决定混合范围，区间过宽会导致边缘模糊，过窄会有硬接缝，0.25~0.75 是经验最优值</li>
+<li><strong><code>_Tiling</code> 参数与 Texture Import 设置冲突</strong>：如果纹理导入时设置了 Repeat 且 Shader 中 _Tiling 很大，移动端可能遇到 UV 精度问题，建议 <code>_Tiling</code> 不超过 20</li>
+<li><strong>ShadowCaster Pass</strong>：自定义 Shader 必须包含 <code>UsePass &quot;Universal Render Pipeline/Lit/ShadowCaster&quot;</code>，否则物体不产生阴影</li>
+</ol>
+<p>掌握这三种高级纹理映射技术，就能应对游戏项目中几乎所有的复杂贴图需求——无论是程序化地形、怪物皮肤还是大型环境场景。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E7%BA%B9%E7%90%86%E4%B8%8E%E9%A2%9C%E8%89%B2/" class="category-chain-item">纹理与颜色</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E4%B8%89%E9%9D%A2%E6%8A%95%E5%BD%B1/" class="print-no-link">#三面投影</a>
+      
+        <a href="/tags/Triplanar/" class="print-no-link">#Triplanar</a>
+      
+        <a href="/tags/%E6%97%A0%E7%BC%9D%E7%BA%B9%E7%90%86/" class="print-no-link">#无缝纹理</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（三十二）：高级纹理映射——Triplanar、纹理数组与无缝采样</div>
+      <div>https://alex-rachel.github.io/2026/04/01/32-texture-mapping-advanced/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/33-polar-uv-manipulation/" title="Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/31-multipass-buffer/" title="Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术">
+                        <span class="hidden-mobile">Unity Shader 系列（三十一）：多通道渲染与 RenderTexture Ping-Pong 技术</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'b4c2c11b524e4e390c1706e91f642e96'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

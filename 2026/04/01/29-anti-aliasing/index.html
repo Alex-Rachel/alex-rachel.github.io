@@ -1,0 +1,991 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="锯齿是游戏画质的重要负面因素，但不同类型的游戏和平台需要截然不同的抗锯齿方案。本文系统比较 URP 中所有可用的 AA 方案，包括 MSAA、FXAA、TAA、DLSS&#x2F;FSR 集成，以及自定义 Shader 中的解析抗锯齿技术。 URP 中的抗锯齿方案概览Unity URP 提供了多层抗锯齿选项，配置分布在不同位置： 配置位置说明：  MSAA：URP Asset → Quality">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/29-anti-aliasing/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="锯齿是游戏画质的重要负面因素，但不同类型的游戏和平台需要截然不同的抗锯齿方案。本文系统比较 URP 中所有可用的 AA 方案，包括 MSAA、FXAA、TAA、DLSS&#x2F;FSR 集成，以及自定义 Shader 中的解析抗锯齿技术。 URP 中的抗锯齿方案概览Unity URP 提供了多层抗锯齿选项，配置分布在不同位置： 配置位置说明：  MSAA：URP Asset → Quality">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T05:40:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.723Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="抗锯齿">
+<meta property="article:tag" content="TAA">
+<meta property="article:tag" content="FXAA">
+<meta property="article:tag" content="MSAA">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 13:40" pubdate>
+          2026年4月1日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          61 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>锯齿是游戏画质的重要负面因素，但不同类型的游戏和平台需要截然不同的抗锯齿方案。本文系统比较 URP 中所有可用的 AA 方案，包括 MSAA、FXAA、TAA、DLSS&#x2F;FSR 集成，以及自定义 Shader 中的解析抗锯齿技术。</p>
+<h2 id="URP-中的抗锯齿方案概览"><a href="#URP-中的抗锯齿方案概览" class="headerlink" title="URP 中的抗锯齿方案概览"></a>URP 中的抗锯齿方案概览</h2><p>Unity URP 提供了多层抗锯齿选项，配置分布在不同位置：</p>
+<p><strong>配置位置说明</strong>：</p>
+<ul>
+<li><strong>MSAA</strong>：URP Asset → <code>Quality</code> → <code>Anti Aliasing (MSAA)</code></li>
+<li><strong>FXAA &#x2F; TAA &#x2F; SMAA</strong>：Camera 组件 → <code>Additional Camera Data</code> → <code>Anti-aliasing</code></li>
+<li><strong>DLSS&#x2F;FSR</strong>：需要安装对应的 Unity 扩展包</li>
+</ul>
+<h2 id="MSAA：硬件多重采样"><a href="#MSAA：硬件多重采样" class="headerlink" title="MSAA：硬件多重采样"></a>MSAA：硬件多重采样</h2><p>MSAA 是传统光栅化管线的标配 AA 方案，直接在 GPU 硬件层面对三角形边缘进行多重采样。</p>
+<p><strong>配置</strong>：</p>
+<figure class="highlight gml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs gml">URP Asset → Quality → Anti Aliasing (MSAA)<br>可选：Disabled / <span class="hljs-number">2</span><span class="hljs-variable language_">x</span> / <span class="hljs-number">4</span><span class="hljs-variable language_">x</span> / <span class="hljs-number">8</span><span class="hljs-variable language_">x</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>原理</strong>：每个像素内有多个子采样点，三角形覆盖率越高，该像素的最终颜色越准确。</p>
+<p><strong>局限性（URP 特有问题）</strong>：</p>
+<ul>
+<li>MSAA 只对几何体光栅化边缘有效，对 Fragment Shader 内部产生的锯齿（如程序化纹理、法线高频变化）无效</li>
+<li>URP 的延迟渲染（Deferred Rendering Path）不支持 MSAA</li>
+<li>半透明物体不受 MSAA 影响</li>
+</ul>
+<p><strong>移动端性能</strong>：4x MSAA 在 Mali&#x2F;Adreno 上开销约为 20-40%，但许多移动 GPU 支持 MSAA 的 Framebuffer Compression（AFBC），实际开销可能更低。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// C# 动态修改 MSAA（根据帧率动态调整）</span><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">UpdateMSAAQuality</span>(<span class="hljs-params"><span class="hljs-built_in">float</span> currentFPS</span>)</span><br>&#123;<br>    <span class="hljs-keyword">var</span> urpAsset = GraphicsSettings.renderPipelineAsset <span class="hljs-keyword">as</span> UniversalRenderPipelineAsset;<br>    <span class="hljs-keyword">if</span> (urpAsset == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span>;<br><br>    <span class="hljs-keyword">if</span> (currentFPS &lt; <span class="hljs-number">30f</span>)<br>        urpAsset.msaaSampleCount = <span class="hljs-number">1</span>; <span class="hljs-comment">// 关闭</span><br>    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (currentFPS &lt; <span class="hljs-number">55f</span>)<br>        urpAsset.msaaSampleCount = <span class="hljs-number">2</span>; <span class="hljs-comment">// 2x</span><br>    <span class="hljs-keyword">else</span><br>        urpAsset.msaaSampleCount = <span class="hljs-number">4</span>; <span class="hljs-comment">// 4x</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="FXAA：快速近似抗锯齿"><a href="#FXAA：快速近似抗锯齿" class="headerlink" title="FXAA：快速近似抗锯齿"></a>FXAA：快速近似抗锯齿</h2><p>FXAA 是全屏后处理 AA 方案，通过分析亮度梯度检测边缘，沿边缘方向混合相邻像素。</p>
+<p><strong>URP 配置</strong>：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">Camera</span> → Additional Camera Data → Anti-aliasing → FXAA<br><span class="hljs-attribute">Fast</span> Mode：勾选时使用 <span class="hljs-number">5</span> 点采样（质量略降，性能提升约 <span class="hljs-number">30</span>%）<br></code></pre></td></tr></table></figure>
+
+<p><strong>手动实现 FXAA（移动端轻量替代版）</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// 在 URP 自定义 Renderer Feature 中实现轻量 FXAA<br>half3 LiteFXAA(TEXTURE2D_PARAM(screenTex, sampler_screenTex), float2 uv, float2 texelSize)<br>&#123;<br>    // 采样中心 + 4 个正交邻居<br>    half3 rgbM = SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv).rgb;<br>    half3 rgbN = SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + float2( 0,  texelSize.y)).rgb;<br>    half3 rgbS = SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + float2( 0, -texelSize.y)).rgb;<br>    half3 rgbE = SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + float2( texelSize.x, 0)).rgb;<br>    half3 rgbW = SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + float2(-texelSize.x, 0)).rgb;<br><br>    // 亮度值<br>    float3 lumaCoeff = float3(0.299, 0.587, 0.114);<br>    float lumaM = dot(rgbM, lumaCoeff);<br>    float lumaN = dot(rgbN, lumaCoeff);<br>    float lumaS = dot(rgbS, lumaCoeff);<br>    float lumaE = dot(rgbE, lumaCoeff);<br>    float lumaW = dot(rgbW, lumaCoeff);<br><br>    float lumaMin = min(lumaM, min(min(lumaN, lumaS), min(lumaE, lumaW)));<br>    float lumaMax = max(lumaM, max(max(lumaN, lumaS), max(lumaE, lumaW)));<br>    float lumaRange = lumaMax - lumaMin;<br><br>    // 对比度低的区域跳过（不是边缘）<br>    if (lumaRange &lt; max(0.0312, lumaMax * 0.125))<br>        return rgbM;<br><br>    // 计算边缘方向<br>    float2 dir;<br>    dir.x = -((lumaN + lumaS) - 2.0 * lumaM);<br>    dir.y =  ((lumaE + lumaW) - 2.0 * lumaM);<br><br>    float dirReduce = max(lumaRange * 0.25, 1.0 / 128.0);<br>    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);<br>    dir = clamp(dir * rcpDirMin, -8.0, 8.0) * texelSize;<br><br>    // 沿边缘方向混合（两个采样点的平均）<br>    half3 rgbA = 0.5 * (<br>        SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + dir * (1.0/3.0 - 0.5)).rgb +<br>        SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + dir * (2.0/3.0 - 0.5)).rgb<br>    );<br><br>    // 扩大范围进行验证（FXAA 1.0 原版第二次采样）<br>    half3 rgbB = rgbA * 0.5 + 0.25 * (<br>        SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + dir * -0.5).rgb +<br>        SAMPLE_TEXTURE2D(screenTex, sampler_screenTex, uv + dir *  0.5).rgb<br>    );<br><br>    float lumaB = dot(rgbB, lumaCoeff);<br>    // 如果扩大范围后亮度超出范围，使用 A 结果<br>    return (lumaB &lt; lumaMin || lumaB &gt; lumaMax) ? rgbA : rgbB;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="TAA：时域抗锯齿"><a href="#TAA：时域抗锯齿" class="headerlink" title="TAA：时域抗锯齿"></a>TAA：时域抗锯齿</h2><p>TAA 是当前 AAA 游戏最常用的 AA 方案，通过每帧亚像素级抖动 + 历史帧混合来积累超采样效果。</p>
+<p><strong>URP 2022+ 配置</strong>：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">Camera</span> → Additional Camera Data → Anti-aliasing → TAA<br><span class="hljs-attribute">Quality</span>：Low/Medium/High/Very High<br><span class="hljs-attribute">Jitter</span> Spread：抖动幅度（默认 <span class="hljs-number">1</span>.<span class="hljs-number">0</span>，降低可减少 Ghost）<br><span class="hljs-attribute">Sharpness</span>：后处理锐化强度（TAA 会轻微模糊，锐化补偿）<br><span class="hljs-attribute">History</span> Sharpness：历史帧锐化<br></code></pre></td></tr></table></figure>
+
+<p><strong>TAA 的核心：Jitter 矩阵原理</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// URP 内部的 Jitter 实现（在 Vertex Shader 中应用）<br>// 每帧将投影矩阵偏移 0.5~1.0 个像素的亚像素量<br>float2 GetJitterOffset(int frameIndex, float2 screenSize)<br>&#123;<br>    // Halton 序列（比随机更均匀的分布）<br>    float2 jitter;<br>    // Halton(2, frameIndex) — 以 2 为基数的 Halton 序列<br>    float f = 0.5; float r = 0.0;<br>    int i = frameIndex;<br>    while (i &gt; 0) &#123; r += f * (float)(i &amp; 1); f *= 0.5; i &gt;&gt;= 1; &#125;<br>    jitter.x = r;<br><br>    // Halton(3, frameIndex) — 以 3 为基数的 Halton 序列<br>    f = 1.0 / 3.0; r = 0.0; i = frameIndex;<br>    while (i &gt; 0) &#123; r += f * (float)(i % 3); f /= 3.0; i /= 3; &#125;<br>    jitter.y = r;<br><br>    // 将 [0,1) 映射到 [-0.5, 0.5) 并归一化到屏幕空间<br>    return (jitter - 0.5) / screenSize;<br>&#125;<br><br>// 在投影矩阵中应用 Jitter<br>Matrix4x4 ApplyJitter(Matrix4x4 proj, float2 jitter)<br>&#123;<br>    proj[0][2] += jitter.x * 2.0; // 修改投影矩阵的 X 偏移<br>    proj[1][2] += jitter.y * 2.0; // 修改投影矩阵的 Y 偏移<br>    return proj;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>TAA Ghost（鬼影）问题</strong>：快速运动物体会在历史帧位置留下残影。解决方案是邻域颜色箝制（Color Clamp）——将历史帧颜色限制在当前帧 3×3 邻域的颜色范围内：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// TAA 历史帧混合（含邻域箝制）<br>half3 TAABlend(<br>    TEXTURE2D_PARAM(currentTex, sampler_current),<br>    TEXTURE2D_PARAM(historyTex, sampler_history),<br>    float2 uv, float2 texelSize, float blendFactor)<br>&#123;<br>    half3 current = SAMPLE_TEXTURE2D(currentTex, sampler_current, uv).rgb;<br><br>    // 计算当前帧 3×3 邻域的 Min/Max（用于箝制历史帧）<br>    half3 vMin = current, vMax = current;<br>    for (int dy = -1; dy &lt;= 1; dy++)<br>    for (int dx = -1; dx &lt;= 1; dx++)<br>    &#123;<br>        if (dx == 0 &amp;&amp; dy == 0) continue;<br>        half3 neighbor = SAMPLE_TEXTURE2D(currentTex, sampler_current,<br>            uv + float2(dx, dy) * texelSize).rgb;<br>        vMin = min(vMin, neighbor);<br>        vMax = max(vMax, neighbor);<br>    &#125;<br><br>    // 读取历史帧（需要上一帧的运动向量重投影 UV）<br>    // float2 motionVec = SAMPLE_TEXTURE2D(_MotionVectorTex, ..., uv).rg;<br>    // float2 prevUV = uv - motionVec; // 简化：静态场景直接用当前 UV<br>    half3 history = SAMPLE_TEXTURE2D(historyTex, sampler_history, uv).rgb;<br><br>    // 将历史帧颜色箝制在当前帧邻域范围内（消除 Ghost）<br>    history = clamp(history, vMin, vMax);<br><br>    // 指数移动平均混合<br>    return lerp(current, history, blendFactor);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="DLSS-AMD-FSR-集成"><a href="#DLSS-AMD-FSR-集成" class="headerlink" title="DLSS &#x2F; AMD FSR 集成"></a>DLSS &#x2F; AMD FSR 集成</h2><p><strong>DLSS 2（NVIDIA Deep Learning Super Sampling）</strong>：</p>
+<ul>
+<li>Unity 官方包：<code>com.unity.render-pipelines.core</code> + DLSS Plugin</li>
+<li>在 Project Settings → NVIDIA → DLSS 中启用</li>
+<li>在 Camera 的 <code>Additional Camera Data</code> 中选择 DLSS 质量模式</li>
+<li>性能模式（Performance）渲染分辨率降至目标的 50%，但输出接近原生质量</li>
+</ul>
+<p><strong>AMD FSR（FidelityFX Super Resolution）</strong>：</p>
+<ul>
+<li>Unity 通过 <code>com.unity.render-pipelines.universal</code> 2022.2+ 内置支持 FSR 1.0</li>
+<li>配置位置：URP Asset → Quality → Upscaling Filter → FSR</li>
+<li>FSR 2.0+ 需要通过 AMD GPUOpen 的 Unity 扩展包</li>
+</ul>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// C# 运行时切换升频模式</span><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">SetUpscalingMode</span>(<span class="hljs-params"><span class="hljs-built_in">bool</span> useDLSS, <span class="hljs-built_in">float</span> quality</span>)</span><br>&#123;<br>    Camera cam = Camera.main;<br>    <span class="hljs-keyword">var</span> camData = cam.GetComponent&lt;UniversalAdditionalCameraData&gt;();<br><br>    <span class="hljs-keyword">if</span> (useDLSS &amp;&amp; SystemInfo.deviceName.Contains(<span class="hljs-string">&quot;NVIDIA&quot;</span>))<br>    &#123;<br>        <span class="hljs-comment">// DLSS 需要 NVIDIA Plugin</span><br>        <span class="hljs-comment">// camData.antialiasing = AntialiasingMode.None; // DLSS 自带 AA</span><br>    &#125;<br>    <span class="hljs-keyword">else</span><br>    &#123;<br>        <span class="hljs-comment">// 使用 URP 内置 FSR</span><br>        <span class="hljs-keyword">var</span> urpAsset = GraphicsSettings.renderPipelineAsset <span class="hljs-keyword">as</span> UniversalRenderPipelineAsset;<br>        urpAsset.upscalingFilter = UpscalingFilterSelection.FSR;<br><br>        <span class="hljs-comment">// 降低渲染分辨率（FSR 在较低分辨率上升频）</span><br>        cam.allowDynamicResolution = <span class="hljs-literal">true</span>;<br>        ScalableBufferManager.ResizeBuffers(quality, quality); <span class="hljs-comment">// quality: 0.5~1.0</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="SDF-渲染的解析抗锯齿"><a href="#SDF-渲染的解析抗锯齿" class="headerlink" title="SDF 渲染的解析抗锯齿"></a>SDF 渲染的解析抗锯齿</h2><p>对于使用 SDF 绘制的形状（圆形 UI、程序化图案、HUD 元素），<code>ddx/ddy</code>（或 <code>fwidth</code>）提供了近乎零开销的精确抗锯齿。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// URP HLSL 中的 fwidth 用法<br>// fwidth(x) = abs(ddx(x)) + abs(ddy(x))，等价于 GLSL 中的 fwidth<br><br>float CircleSDF(float2 uv, float radius)<br>&#123;<br>    return length(uv) - radius;<br>&#125;<br><br>half4 frag(Varyings IN) : SV_Target<br>&#123;<br>    float2 uv = IN.uv * 2.0 - 1.0;<br><br>    float d = CircleSDF(uv, 0.5);<br><br>    // 方法一：使用 fwidth（自动计算屏幕空间导数）<br>    float fw = fwidth(d);<br>    float alpha = smoothstep(fw, -fw, d); // 1像素宽的平滑过渡<br><br>    // 方法二：手动指定过渡宽度（适合需要精确控制的场景）<br>    float pixelWidth = length(float2(ddx(d), ddy(d))); // 等价于 fwidth / sqrt(2)<br>    float alpha2 = smoothstep(pixelWidth, -pixelWidth, d);<br><br>    return half4(_Color.rgb, alpha);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong><code>fwidth</code> 注意事项</strong>：</p>
+<ul>
+<li>在 <code>discard</code> 后使用会导致导数计算错误（梯度信息在 2×2 像素块中共享）</li>
+<li>在 Fragment Shader 的条件分支内使用可能不稳定，建议在分支前计算</li>
+<li>移动端 TBDR 架构上 <code>ddx/ddy</code> 开销极低，PC 上略高</li>
+</ul>
+<h2 id="各方案适用平台选择指南"><a href="#各方案适用平台选择指南" class="headerlink" title="各方案适用平台选择指南"></a>各方案适用平台选择指南</h2><table>
+<thead>
+<tr>
+<th>平台</th>
+<th>首选方案</th>
+<th>备选方案</th>
+<th>避免</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PC（中端及以上）</td>
+<td>TAA 或 DLSS</td>
+<td>FXAA</td>
+<td>高倍 MSAA</td>
+</tr>
+<tr>
+<td>PC（NVIDIA 卡）</td>
+<td>DLSS 2&#x2F;3</td>
+<td>TAA</td>
+<td>-</td>
+</tr>
+<tr>
+<td>主机（PS5&#x2F;XSX）</td>
+<td>TAA</td>
+<td>FSR 2</td>
+<td>-</td>
+</tr>
+<tr>
+<td>移动高端</td>
+<td>FXAA</td>
+<td>2x MSAA</td>
+<td>TAA（Ghost 问题在移动端更明显）</td>
+</tr>
+<tr>
+<td>移动低端</td>
+<td>FXAA Fast Mode</td>
+<td>关闭 AA</td>
+<td>MSAA、TAA</td>
+</tr>
+<tr>
+<td>VR</td>
+<td>MSAA 4x</td>
+<td>FXAA</td>
+<td>TAA（会加剧晕动症）</td>
+</tr>
+</tbody></table>
+<p><strong>选择决策</strong>：</p>
+<ol>
+<li>是否有 NVIDIA GPU？→ DLSS，效果最好</li>
+<li>是否是运动较少的场景（策略、解谜）？→ FXAA，轻量且无 Ghost</li>
+<li>是否是动作游戏，画质优先？→ TAA，启用运动向量消除 Ghost</li>
+<li>是否是 VR 或移动端？→ MSAA 或 FXAA，TAA 会加重晕动症</li>
+<li>是否是 2D SDF UI 元素？→ fwidth 解析抗锯齿，零开销最优质</li>
+</ol>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><p><strong>MSAA 不生效</strong>：检查 URP Asset 中是否已设置 MSAA，同时相机的 Rendering Path 不能是 Deferred（Deferred 不支持 MSAA）。</p>
+<p><strong>TAA 造成文字模糊</strong>：将 UI 相机的 AA 模式设置为 FXAA 或关闭，避免 TAA 对高频文字内容造成模糊。TAA 更适合 3D 场景相机。</p>
+<p><strong>FXAA 对粒子无效</strong>：FXAA 基于亮度梯度检测边缘，对半透明粒子的边缘效果有限。粒子抗锯齿应使用软粒子（深度淡化）而非 FXAA。</p>
+<p><strong>fwidth 在 if 分支内失效</strong>：GLSL&#x2F;HLSL 的 <code>dFdx/dFdy/fwidth</code> 在条件分支内计算结果未定义，务必在分支外提前计算。</p>
+<p>抗锯齿不是”开了就好”的黑盒特性，理解每种方案的原理和局限性，才能在不同平台和游戏类型中做出正确的权衡。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E5%90%8E%E5%A4%84%E7%90%86%E4%B8%8E%E7%9B%B8%E6%9C%BA/" class="category-chain-item">后处理与相机</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/%E6%8A%97%E9%94%AF%E9%BD%BF/" class="print-no-link">#抗锯齿</a>
+      
+        <a href="/tags/TAA/" class="print-no-link">#TAA</a>
+      
+        <a href="/tags/FXAA/" class="print-no-link">#FXAA</a>
+      
+        <a href="/tags/MSAA/" class="print-no-link">#MSAA</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（二十九）：Unity URP 抗锯齿方案全比较</div>
+      <div>https://alex-rachel.github.io/2026/04/01/29-anti-aliasing/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/30-camera-effects/" title="Unity Shader 系列（三十）：URP 相机特效实战">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（三十）：URP 相机特效实战</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/28-post-processing/" title="Unity Shader 系列（二十八）：URP 后处理完整指南">
+                        <span class="hidden-mobile">Unity Shader 系列（二十八）：URP 后处理完整指南</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '98fd525456f5ea5da2624ef6d6f6575b'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

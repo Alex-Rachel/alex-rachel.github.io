@@ -1,0 +1,934 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="GPU 流体模拟是 Unity 开发中技术深度最高的方向之一，也是游戏中实现交互式水面、墨水扩散、烟雾流动的核心技术。与 ShaderToy 的帧缓冲反馈不同，Unity 中的 GPU 流体模拟使用 Compute Shader + RenderTexture Ping-Pong：一个 Compute Shader 读取上一帧的流体状态，计算新状态写入另一张 RenderTexture，然后通过">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/20-fluid-simulation/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="GPU 流体模拟是 Unity 开发中技术深度最高的方向之一，也是游戏中实现交互式水面、墨水扩散、烟雾流动的核心技术。与 ShaderToy 的帧缓冲反馈不同，Unity 中的 GPU 流体模拟使用 Compute Shader + RenderTexture Ping-Pong：一个 Compute Shader 读取上一帧的流体状态，计算新状态写入另一张 RenderTexture，然后通过">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T04:10:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.721Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="Compute Shader">
+<meta property="article:tag" content="流体模拟">
+<meta property="article:tag" content="GPU物理">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 12:10" pubdate>
+          2026年4月1日 中午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          18k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          148 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>GPU 流体模拟是 Unity 开发中技术深度最高的方向之一，也是游戏中实现交互式水面、墨水扩散、烟雾流动的核心技术。与 ShaderToy 的帧缓冲反馈不同，Unity 中的 GPU 流体模拟使用 <strong>Compute Shader</strong> + <strong>RenderTexture Ping-Pong</strong>：一个 Compute Shader 读取上一帧的流体状态，计算新状态写入另一张 RenderTexture，然后通过 URP Renderer Feature 将结果可视化。本文提供完整的可交互 2D 流体模拟实现，包括 Compute Shader、C# 控制脚本和 URP 可视化 Shader。</p>
+<h2 id="Unity-Compute-Shader-基础"><a href="#Unity-Compute-Shader-基础" class="headerlink" title="Unity Compute Shader 基础"></a>Unity Compute Shader 基础</h2><p>Compute Shader 是在 GPU 上并行运行的通用计算程序，不依附于渲染流程。在 Unity 中：</p>
+<ul>
+<li>文件扩展名：<code>.compute</code></li>
+<li>着色器类型：不是渲染着色器，是 GPGPU（通用 GPU 计算）</li>
+<li>主要数据类型：<code>RWTexture2D</code>（可读写纹理）、<code>RWStructuredBuffer</code>（可读写结构体缓冲）</li>
+<li>调用方式：<code>computeShader.Dispatch(kernelIndex, threadGroupsX, threadGroupsY, threadGroupsZ)</code></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// Compute Shader 基本结构<br>#pragma kernel CSMain  // 声明一个 Compute Kernel（入口函数）<br><br>// 可读写纹理（类似 RWTexture2D 的格式必须与 C# 侧的 RenderTextureFormat 匹配）<br>RWTexture2D&lt;float4&gt; _Result;   // 写入缓冲<br>Texture2D&lt;float4&gt;   _Source;   // 只读源缓冲<br><br>uint2 _Resolution;  // 纹理分辨率<br><br>// 每个线程组 8×8 个线程（可根据 GPU 特性调整，通常 8×8 或 16×16）<br>[numthreads(8, 8, 1)]<br>void CSMain(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    // id.xy：当前线程的全局坐标（像素坐标）<br>    if (id.x &gt;= _Resolution.x || id.y &gt;= _Resolution.y) return;<br><br>    float4 current = _Source[id.xy];<br>    // ...处理 current...<br>    _Result[id.xy] = current;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="双缓冲（Ping-Pong）架构"><a href="#双缓冲（Ping-Pong）架构" class="headerlink" title="双缓冲（Ping-Pong）架构"></a>双缓冲（Ping-Pong）架构</h2><p>流体模拟需要同时读取上一帧状态和写入新状态，这在同一张纹理上无法实现（读写冲突）。<strong>Ping-Pong 双缓冲</strong>使用两张交替的 RenderTexture 解决这个问题：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-comment">// C# 中创建双缓冲 RenderTexture</span><br><span class="hljs-keyword">private</span> RenderTexture[] _pingPongBuffer = <span class="hljs-keyword">new</span> RenderTexture[<span class="hljs-number">2</span>];<br><span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _currentBuffer = <span class="hljs-number">0</span>;<br><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">CreateBuffers</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> width, <span class="hljs-built_in">int</span> height</span>)</span><br>&#123;<br>    <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++)<br>    &#123;<br>        _pingPongBuffer[i] = <span class="hljs-keyword">new</span> RenderTexture(width, height, <span class="hljs-number">0</span>,<br>            RenderTextureFormat.ARGBFloat,  <span class="hljs-comment">// 32位浮点（存储速度和密度）</span><br>            RenderTextureReadWrite.Linear<br>        );<br>        _pingPongBuffer[i].enableRandomWrite = <span class="hljs-literal">true</span>;  <span class="hljs-comment">// 允许 Compute Shader 写入</span><br>        _pingPongBuffer[i].filterMode = FilterMode.Bilinear;<br>        _pingPongBuffer[i].wrapMode   = TextureWrapMode.Clamp;<br>        _pingPongBuffer[i].Create();<br>    &#125;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">SimulateStep</span>()</span><br>&#123;<br>    <span class="hljs-built_in">int</span> read  = _currentBuffer;<br>    <span class="hljs-built_in">int</span> write = <span class="hljs-number">1</span> - _currentBuffer;<br><br>    <span class="hljs-comment">// 读取 read 缓冲，写入 write 缓冲</span><br>    _computeShader.SetTexture(kernelID, <span class="hljs-string">&quot;_Source&quot;</span>, _pingPongBuffer[read]);<br>    _computeShader.SetTexture(kernelID, <span class="hljs-string">&quot;_Result&quot;</span>, _pingPongBuffer[write]);<br>    _computeShader.Dispatch(kernelID, ...);<br><br>    <span class="hljs-comment">// 交换缓冲</span><br>    _currentBuffer = write;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="完整流体模拟-Compute-Shader"><a href="#完整流体模拟-Compute-Shader" class="headerlink" title="完整流体模拟 Compute Shader"></a>完整流体模拟 Compute Shader</h2><p>这是核心的流体计算 Shader，实现 2D 欧拉流体模拟（Navier-Stokes 方程的简化实现）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">// FluidSimulation.compute<br><br>#pragma kernel InitFluid      // 初始化<br>#pragma kernel AdvectVelocity  // 速度平流<br>#pragma kernel DiffuseVelocity // 速度扩散<br>#pragma kernel PressureSolve   // 压力求解<br>#pragma kernel ProjectVelocity // 速度投影（确保不可压缩）<br>#pragma kernel AdvectDye       // 染料（可视化用）平流<br>#pragma kernel AddForce        // 外力注入<br><br>// ---- 数据布局 ----<br>// velocity: .xy = 速度 (vx, vy), .z = 压力, .w = 染料浓度<br><br>RWTexture2D&lt;float4&gt; _Result;<br>Texture2D&lt;float4&gt;   _Source;<br>Texture2D&lt;float4&gt;   _PressureField;  // 独立的压力缓冲（Jacobi 迭代用）<br><br>uint2   _Resolution;<br>float   _DeltaTime;<br>float   _Viscosity;       // 运动黏度<br>float   _DyeDiffusion;   // 染料扩散系数<br>float   _VorticityStr;   // 涡旋限制强度<br><br>// 外力参数（由 C# 每帧传入）<br>float2  _ForcePos;        // 外力作用位置（像素坐标）<br>float2  _ForceDir;        // 外力方向和强度<br>float   _ForceRadius;     // 外力影响半径<br>float2  _DyeSource;       // 染料注入位置<br>float   _DyeAmount;       // 染料注入量<br><br>SamplerState sampler_linear_clamp;  // 双线性采样，钳制边界<br><br>// 安全的纹理采样（带边界检测）<br>float4 SampleField(Texture2D&lt;float4&gt; field, float2 pos)<br>&#123;<br>    float2 uv = (pos + 0.5) / float2(_Resolution);<br>    return field.SampleLevel(sampler_linear_clamp, uv, 0);<br>&#125;<br><br>// 从像素坐标获取场值（整数寻址）<br>float4 GetField(Texture2D&lt;float4&gt; field, int2 pos)<br>&#123;<br>    // 边界处理：速度为零（无滑边界条件）<br>    int2 clamped = clamp(pos, int2(0, 0), int2(_Resolution) - 1);<br>    return field[clamped];<br>&#125;<br><br>// ---- 初始化 ----<br>[numthreads(8, 8, 1)]<br>void InitFluid(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br>    // 初始状态：极小噪声（打破对称性）<br>    float noise = frac(sin(dot(float2(id.xy), float2(12.9898, 78.233))) * 43758.5);<br>    _Result[id.xy] = float4(0, 0, 1.0, 0) + float4(noise, noise, 0, 0) * 0.0001;<br>&#125;<br><br>// ---- 半拉格朗日平流（速度）----<br>// 逆向追踪：从当前位置沿负速度方向采样上一帧的值<br>// 无条件稳定，即使 dt 较大也不会发散<br>[numthreads(8, 8, 1)]<br>void AdvectVelocity(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br><br>    float2 pos = float2(id.xy);<br>    float4 curr = _Source[id.xy];<br><br>    // 逆向追踪位置（从当前位置沿速度方向回溯）<br>    float2 prevPos = pos - _DeltaTime * curr.xy;<br><br>    // 在上游位置插值采样<br>    float4 advected = SampleField(_Source, prevPos);<br>    _Result[id.xy] = float4(advected.xy, curr.z, curr.w);  // 更新速度，保留压力<br>&#125;<br><br>// ---- 黏性扩散（显式差分，速度扩散）----<br>[numthreads(8, 8, 1)]<br>void DiffuseVelocity(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br><br>    int2  p = int2(id.xy);<br>    float4 c = _Source[p];<br>    float4 n = GetField(_Source, p + int2(0, 1));<br>    float4 s = GetField(_Source, p - int2(0, 1));<br>    float4 e = GetField(_Source, p + int2(1, 0));<br>    float4 w = GetField(_Source, p - int2(1, 0));<br><br>    // Laplacian（中心差分）<br>    float4 laplacian = n + s + e + w - 4.0 * c;<br><br>    // 显式黏性扩散<br>    float2 newVel = c.xy + _DeltaTime * _Viscosity * laplacian.xy;<br><br>    _Result[p] = float4(newVel, c.z, c.w);<br>&#125;<br><br>// ---- 压力 Jacobi 迭代（一次迭代，需要多次 Dispatch 调用收敛）----<br>[numthreads(8, 8, 1)]<br>void PressureSolve(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br><br>    int2  p   = int2(id.xy);<br>    float4 c  = _Source[p];<br>    float4 n  = GetField(_Source, p + int2(0, 1));<br>    float4 s  = GetField(_Source, p - int2(0, 1));<br>    float4 e  = GetField(_Source, p + int2(1, 0));<br>    float4 w  = GetField(_Source, p - int2(1, 0));<br><br>    // 速度散度（不可压缩约束）<br>    float divV = 0.5 * ((e.x - w.x) + (n.y - s.y));<br><br>    // Jacobi 迭代：p_new = (p_n + p_s + p_e + p_w - divV) / 4<br>    float newPressure = (n.z + s.z + e.z + w.z - divV) * 0.25;<br><br>    _Result[p] = float4(c.xy, newPressure, c.w);<br>&#125;<br><br>// ---- 速度投影（减去压力梯度，确保 div(v)=0）----<br>[numthreads(8, 8, 1)]<br>void ProjectVelocity(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br><br>    int2  p = int2(id.xy);<br>    float4 c = _Source[p];<br>    float4 n = GetField(_Source, p + int2(0, 1));<br>    float4 s = GetField(_Source, p - int2(0, 1));<br>    float4 e = GetField(_Source, p + int2(1, 0));<br>    float4 w = GetField(_Source, p - int2(1, 0));<br><br>    // 压力梯度<br>    float gradPx = 0.5 * (e.z - w.z);<br>    float gradPy = 0.5 * (n.z - s.z);<br><br>    // 从速度中减去压力梯度<br>    float2 projectedVel = c.xy - float2(gradPx, gradPy);<br><br>    // 涡旋限制（Vorticity Confinement）<br>    // 旋度场：curl = dVy/dx - dVx/dy<br>    float curlC = 0.5 * ((e.y - w.y) - (n.x - s.x));<br>    float curlN = 0.5 * ((GetField(_Source, p + int2(1,1)).y - GetField(_Source, p + int2(-1,1)).y)<br>                         - (GetField(_Source, p + int2(0,2)).x - c.x));<br>    float curlS = 0.5 * ((GetField(_Source, p + int2(1,-1)).y - GetField(_Source, p + int2(-1,-1)).y)<br>                         - (c.x - GetField(_Source, p + int2(0,-2)).x));<br>    float curlE = 0.5 * ((GetField(_Source, p + int2(2,0)).y - c.y)<br>                         - (GetField(_Source, p + int2(1,1)).x - GetField(_Source, p + int2(1,-1)).x));<br>    float curlW = 0.5 * ((c.y - GetField(_Source, p + int2(-2,0)).y)<br>                         - (GetField(_Source, p + int2(-1,1)).x - GetField(_Source, p + int2(-1,-1)).x));<br><br>    // 涡旋力方向（梯度指向旋度最大的方向）<br>    float2 eta = normalize(float2(abs(curlE) - abs(curlW), abs(curlN) - abs(curlS)) + 1e-5);<br>    projectedVel += _DeltaTime * _VorticityStr * float2(eta.y, -eta.x) * curlC;<br><br>    // 无滑边界（边缘速度为零）<br>    if (p.x == 0 || p.y == 0 || p.x == (int)_Resolution.x - 1 || p.y == (int)_Resolution.y - 1)<br>        projectedVel = float2(0, 0);<br><br>    _Result[p] = float4(projectedVel, c.z, c.w);<br>&#125;<br><br>// ---- 染料平流（可视化用）----<br>[numthreads(8, 8, 1)]<br>void AdvectDye(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br><br>    float2 pos  = float2(id.xy);<br>    float4 curr = _Source[id.xy];<br>    float2 prevPos = pos - _DeltaTime * curr.xy;<br>    float  advDye  = SampleField(_Source, prevPos).w;<br><br>    // 染料扩散衰减<br>    advDye *= exp(-_DeltaTime * _DyeDiffusion);<br><br>    // 染料注入（自动发射源）<br>    float2 diff = pos - _DyeSource;<br>    float  inject = exp(-dot(diff, diff) / (_ForceRadius * _ForceRadius)) * _DyeAmount;<br>    advDye += inject;<br><br>    _Result[id.xy] = float4(curr.xy, curr.z, saturate(advDye));<br>&#125;<br><br>// ---- 外力注入（鼠标交互或自动发射）----<br>[numthreads(8, 8, 1)]<br>void AddForce(uint3 id : SV_DispatchThreadID)<br>&#123;<br>    if (any(id.xy &gt;= _Resolution)) return;<br><br>    float4 curr = _Source[id.xy];<br>    float2 pos  = float2(id.xy);<br><br>    // 高斯衰减的力场<br>    float2 diff     = pos - _ForcePos;<br>    float  influence = exp(-dot(diff, diff) / (_ForceRadius * _ForceRadius));<br><br>    float2 newVel = curr.xy + influence * _ForceDir * _DeltaTime;<br><br>    _Result[id.xy] = float4(newVel, curr.z, curr.w);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="C-流体模拟控制器"><a href="#C-流体模拟控制器" class="headerlink" title="C# 流体模拟控制器"></a>C# 流体模拟控制器</h2><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><span class="hljs-keyword">using</span> System.Collections.Generic;<br><br>[<span class="hljs-meta">RequireComponent(typeof(Renderer))</span>]<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">FluidSimulator</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;模拟参数&quot;</span>)</span>]<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> resolution = <span class="hljs-number">512</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> viscosity = <span class="hljs-number">0.5f</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> dyeDiffusion = <span class="hljs-number">0.1f</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> vorticityStrength = <span class="hljs-number">0.035f</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> pressureIterations = <span class="hljs-number">20</span>;  <span class="hljs-comment">// Jacobi 迭代次数</span><br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> timeStep = <span class="hljs-number">0.15f</span>;<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;Compute Shader&quot;</span>)</span>]<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> ComputeShader fluidCompute;<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;可视化&quot;</span>)</span>]<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> Material visualizeMaterial;<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;交互&quot;</span>)</span>]<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> forceRadius = <span class="hljs-number">30f</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> forceStrength = <span class="hljs-number">3.0f</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> dyeInjectAmount = <span class="hljs-number">2.0f</span>;<br><br>    <span class="hljs-comment">// 双缓冲</span><br>    <span class="hljs-keyword">private</span> RenderTexture[] _pingPong = <span class="hljs-keyword">new</span> RenderTexture[<span class="hljs-number">2</span>];<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _current = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-comment">// Kernel 索引</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelInit;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelAdvectVel;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelDiffuseVel;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelPressure;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelProject;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelAdvectDye;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _kernelAddForce;<br><br>    <span class="hljs-comment">// 线程组数量</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">int</span> _threadGroupsX, _threadGroupsY;<br><br>    <span class="hljs-comment">// 自动发射源（无鼠标交互时也有流动）</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> _autoSourceTimer = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">private</span> Vector2 _autoSourcePos;<br>    <span class="hljs-keyword">private</span> Vector2 _autoSourceVel;<br><br>    <span class="hljs-comment">// Property IDs</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> SourceID       = Shader.PropertyToID(<span class="hljs-string">&quot;_Source&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ResultID       = Shader.PropertyToID(<span class="hljs-string">&quot;_Result&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ResolutionID   = Shader.PropertyToID(<span class="hljs-string">&quot;_Resolution&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> DeltaTimeID    = Shader.PropertyToID(<span class="hljs-string">&quot;_DeltaTime&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ViscosityID    = Shader.PropertyToID(<span class="hljs-string">&quot;_Viscosity&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> DyeDiffID      = Shader.PropertyToID(<span class="hljs-string">&quot;_DyeDiffusion&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> VortStrID      = Shader.PropertyToID(<span class="hljs-string">&quot;_VorticityStr&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ForcePosID     = Shader.PropertyToID(<span class="hljs-string">&quot;_ForcePos&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ForceDirID     = Shader.PropertyToID(<span class="hljs-string">&quot;_ForceDir&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> ForceRadID     = Shader.PropertyToID(<span class="hljs-string">&quot;_ForceRadius&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> DyeSourceID    = Shader.PropertyToID(<span class="hljs-string">&quot;_DyeSource&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> DyeAmountID    = Shader.PropertyToID(<span class="hljs-string">&quot;_DyeAmount&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> FluidTexID     = Shader.PropertyToID(<span class="hljs-string">&quot;_FluidTex&quot;</span>);<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 获取 Kernel 索引</span><br>        _kernelInit      = fluidCompute.FindKernel(<span class="hljs-string">&quot;InitFluid&quot;</span>);<br>        _kernelAdvectVel = fluidCompute.FindKernel(<span class="hljs-string">&quot;AdvectVelocity&quot;</span>);<br>        _kernelDiffuseVel = fluidCompute.FindKernel(<span class="hljs-string">&quot;DiffuseVelocity&quot;</span>);<br>        _kernelPressure  = fluidCompute.FindKernel(<span class="hljs-string">&quot;PressureSolve&quot;</span>);<br>        _kernelProject   = fluidCompute.FindKernel(<span class="hljs-string">&quot;ProjectVelocity&quot;</span>);<br>        _kernelAdvectDye = fluidCompute.FindKernel(<span class="hljs-string">&quot;AdvectDye&quot;</span>);<br>        _kernelAddForce  = fluidCompute.FindKernel(<span class="hljs-string">&quot;AddForce&quot;</span>);<br><br>        <span class="hljs-comment">// 线程组数量（每个线程组 8×8 个线程）</span><br>        _threadGroupsX = Mathf.CeilToInt(resolution / <span class="hljs-number">8.0f</span>);<br>        _threadGroupsY = Mathf.CeilToInt(resolution / <span class="hljs-number">8.0f</span>);<br><br>        <span class="hljs-comment">// 创建 RenderTexture</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++)<br>        &#123;<br>            _pingPong[i] = <span class="hljs-keyword">new</span> RenderTexture(resolution, resolution, <span class="hljs-number">0</span>,<br>                RenderTextureFormat.ARGBFloat);<br>            _pingPong[i].enableRandomWrite = <span class="hljs-literal">true</span>;<br>            _pingPong[i].filterMode = FilterMode.Bilinear;<br>            _pingPong[i].Create();<br>        &#125;<br><br>        <span class="hljs-comment">// 初始化</span><br>        SetCommonUniforms();<br>        fluidCompute.SetTexture(_kernelInit, ResultID, _pingPong[_current]);<br>        fluidCompute.Dispatch(_kernelInit, _threadGroupsX, _threadGroupsY, <span class="hljs-number">1</span>);<br><br>        <span class="hljs-comment">// 设置可视化材质</span><br>        <span class="hljs-keyword">if</span> (visualizeMaterial != <span class="hljs-literal">null</span>)<br>            visualizeMaterial.SetTexture(FluidTexID, _pingPong[_current]);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">SetCommonUniforms</span>()</span><br>    &#123;<br>        fluidCompute.SetInts(ResolutionID, resolution, resolution);<br>        fluidCompute.SetFloat(DeltaTimeID, timeStep);<br>        fluidCompute.SetFloat(ViscosityID, viscosity);<br>        fluidCompute.SetFloat(DyeDiffID, dyeDiffusion);<br>        fluidCompute.SetFloat(VortStrID, vorticityStrength);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">FixedUpdate</span>()</span><br>    &#123;<br>        SetCommonUniforms();<br>        UpdateAutoSource();<br><br>        <span class="hljs-comment">// ---- 外力注入 ----</span><br>        AddForceStep();<br><br>        <span class="hljs-comment">// ---- 速度平流 ----</span><br>        Swap();<br>        Dispatch(_kernelAdvectVel);<br><br>        <span class="hljs-comment">// ---- 速度扩散 ----</span><br>        Swap();<br>        Dispatch(_kernelDiffuseVel);<br><br>        <span class="hljs-comment">// ---- 压力求解（Jacobi 迭代多次）----</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; pressureIterations; i++)<br>        &#123;<br>            Swap();<br>            Dispatch(_kernelPressure);<br>        &#125;<br><br>        <span class="hljs-comment">// ---- 速度投影 ----</span><br>        Swap();<br>        Dispatch(_kernelProject);<br><br>        <span class="hljs-comment">// ---- 染料平流 ----</span><br>        Swap();<br>        fluidCompute.SetFloats(DyeSourceID, _autoSourcePos.x, _autoSourcePos.y);<br>        fluidCompute.SetFloat(DyeAmountID, dyeInjectAmount * Time.fixedDeltaTime);<br>        Dispatch(_kernelAdvectDye);<br><br>        <span class="hljs-comment">// 更新可视化材质</span><br>        <span class="hljs-keyword">if</span> (visualizeMaterial != <span class="hljs-literal">null</span>)<br>            visualizeMaterial.SetTexture(FluidTexID, _pingPong[_current]);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">AddForceStep</span>()</span><br>    &#123;<br>        Vector2 forcePos = _autoSourcePos;<br>        Vector2 forceDir = _autoSourceVel * forceStrength;<br><br>        <span class="hljs-comment">// 鼠标/触摸交互（如果有）</span><br>        <span class="hljs-keyword">if</span> (Input.GetMouseButton(<span class="hljs-number">0</span>))<br>        &#123;<br>            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);<br>            Plane plane = <span class="hljs-keyword">new</span> Plane(transform.forward, transform.position);<br>            <span class="hljs-keyword">if</span> (plane.Raycast(ray, <span class="hljs-keyword">out</span> <span class="hljs-built_in">float</span> enter))<br>            &#123;<br>                Vector3 hitLocal = transform.InverseTransformPoint(ray.GetPoint(enter));<br>                <span class="hljs-comment">// 将本地坐标映射到纹理坐标</span><br>                forcePos = <span class="hljs-keyword">new</span> Vector2(<br>                    (hitLocal.x + <span class="hljs-number">0.5f</span>) * resolution,<br>                    (hitLocal.y + <span class="hljs-number">0.5f</span>) * resolution<br>                );<br>                forceDir = Vector2.zero; <span class="hljs-comment">// 鼠标按下时只注入染料，不施加速度</span><br>            &#125;<br>        &#125;<br><br>        fluidCompute.SetTexture(_kernelAddForce, SourceID, _pingPong[_current]);<br>        fluidCompute.SetTexture(_kernelAddForce, ResultID, _pingPong[<span class="hljs-number">1</span> - _current]);<br>        fluidCompute.SetFloats(ForcePosID, forcePos.x, forcePos.y);<br>        fluidCompute.SetFloats(ForceDirID, forceDir.x, forceDir.y);<br>        fluidCompute.SetFloat(ForceRadID, forceRadius);<br>        fluidCompute.Dispatch(_kernelAddForce, _threadGroupsX, _threadGroupsY, <span class="hljs-number">1</span>);<br>        _current = <span class="hljs-number">1</span> - _current;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">UpdateAutoSource</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 在屏幕上随机游走的自动力源（无鼠标时也有流动）</span><br>        _autoSourceTimer += Time.fixedDeltaTime;<br>        <span class="hljs-built_in">float</span> t = _autoSourceTimer;<br>        _autoSourcePos = <span class="hljs-keyword">new</span> Vector2(<br>            resolution * (<span class="hljs-number">0.5f</span> + <span class="hljs-number">0.3f</span> * Mathf.Sin(t * <span class="hljs-number">0.7f</span>)),<br>            resolution * (<span class="hljs-number">0.5f</span> + <span class="hljs-number">0.3f</span> * Mathf.Cos(t * <span class="hljs-number">0.9f</span>))<br>        );<br>        _autoSourceVel = <span class="hljs-keyword">new</span> Vector2(Mathf.Cos(t), Mathf.Sin(t * <span class="hljs-number">1.3f</span>));<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Swap</span>()</span><br>    &#123;<br>        <span class="hljs-built_in">int</span> read  = _current;<br>        <span class="hljs-built_in">int</span> write = <span class="hljs-number">1</span> - _current;<br>        _current  = write; <span class="hljs-comment">// 切换当前缓冲</span><br>        <span class="hljs-comment">// 调用 Dispatch 时再设置 Source 和 Result</span><br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Dispatch</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> kernel</span>)</span><br>    &#123;<br>        <span class="hljs-built_in">int</span> read  = <span class="hljs-number">1</span> - _current; <span class="hljs-comment">// Swap 后，当前写缓冲是 _current，读缓冲是另一个</span><br>        fluidCompute.SetTexture(kernel, SourceID, _pingPong[read]);<br>        fluidCompute.SetTexture(kernel, ResultID, _pingPong[_current]);<br>        fluidCompute.Dispatch(kernel, _threadGroupsX, _threadGroupsY, <span class="hljs-number">1</span>);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDestroy</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">foreach</span> (<span class="hljs-keyword">var</span> rt <span class="hljs-keyword">in</span> _pingPong)<br>            <span class="hljs-keyword">if</span> (rt != <span class="hljs-literal">null</span>) rt.Release();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="URP-可视化-Shader"><a href="#URP-可视化-Shader" class="headerlink" title="URP 可视化 Shader"></a>URP 可视化 Shader</h2><p>将流体数据渲染为彩色染料效果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/FluidVisualize&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _FluidTex (&quot;流体数据纹理&quot;, 2D) = &quot;black&quot; &#123;&#125;<br>        _VelocityColorA (&quot;速度颜色A&quot;, Color) = (0.8, 0.2, 0.5, 1)<br>        _VelocityColorB (&quot;速度颜色B&quot;, Color) = (0.2, 0.6, 1.0, 1)<br>        _DyeColor (&quot;染料颜色&quot;, Color) = (1, 0.5, 0.1, 1)<br>        _Background (&quot;背景颜色&quot;, Color) = (0.02, 0.02, 0.04, 1)<br>        _VelScale (&quot;速度可视化缩放&quot;, Range(0.1, 5)) = 1.0<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags &#123; &quot;RenderType&quot;=&quot;Opaque&quot; &quot;RenderPipeline&quot;=&quot;UniversalPipeline&quot; &#125;<br><br>        Pass<br>        &#123;<br>            Name &quot;FluidVis&quot;<br>            Tags &#123; &quot;LightMode&quot;=&quot;UniversalForward&quot; &#125;<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            TEXTURE2D(_FluidTex); SAMPLER(sampler_FluidTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _FluidTex_ST;<br>                float4 _VelocityColorA;<br>                float4 _VelocityColorB;<br>                float4 _DyeColor;<br>                float4 _Background;<br>                float  _VelScale;<br>            CBUFFER_END<br><br>            struct Attributes &#123; float4 positionOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings   &#123; float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; &#125;;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);<br>                output.uv          = TRANSFORM_TEX(input.uv, _FluidTex);<br>                return output;<br>            &#125;<br><br>            half4 frag(Varyings input) : SV_Target<br>            &#123;<br>                float4 fluid = SAMPLE_TEXTURE2D(_FluidTex, sampler_FluidTex, input.uv);<br><br>                // 速度方向映射为色相<br>                float  velAngle = atan2(fluid.y, fluid.x);  // -π 到 π<br>                float3 velColor = 0.5 + 0.5 * cos(velAngle + float3(0, 2.094, 4.189));  // RGB 色轮<br>                velColor        = lerp(_VelocityColorA.rgb, _VelocityColorB.rgb,<br>                                      velAngle / (2.0 * 3.14159) + 0.5);<br><br>                // 速度大小<br>                float velMag = length(fluid.xy) * _VelScale;<br><br>                // 染料浓度<br>                float ink = smoothstep(0.0, 2.0, fluid.w);<br><br>                // 混合：背景 -&gt; 速度颜色（由染料显示）<br>                float3 finalColor = lerp(_Background.rgb, velColor, ink);<br><br>                // 压力高光<br>                finalColor += float3(0.05, 0.05, 0.05) * saturate(fluid.z - 1.0);<br><br>                // 背景不能全黑（否则用户以为程序出错）<br>                finalColor = max(finalColor, _Background.rgb);<br><br>                return half4(finalColor, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="AsyncGPUReadback：CPU-GPU-数据同步"><a href="#AsyncGPUReadback：CPU-GPU-数据同步" class="headerlink" title="AsyncGPUReadback：CPU-GPU 数据同步"></a>AsyncGPUReadback：CPU-GPU 数据同步</h2><p>流体模拟有时需要在 CPU 端读取流体数据（例如：检测流体是否到达某个位置，触发游戏事件）。使用 <code>AsyncGPUReadback</code> 避免阻塞 GPU：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine.Rendering;<br><br><span class="hljs-comment">// 异步读取流体数据（不阻塞 GPU）</span><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">ReadFluidData</span>()</span><br>&#123;<br>    AsyncGPUReadback.Request(_pingPong[_current], <span class="hljs-number">0</span>, TextureFormat.RGBAFloat,<br>        (AsyncGPUReadbackRequest request) =&gt;<br>        &#123;<br>            <span class="hljs-keyword">if</span> (request.hasError)<br>            &#123;<br>                Debug.LogError(<span class="hljs-string">&quot;AsyncGPUReadback 失败&quot;</span>);<br>                <span class="hljs-keyword">return</span>;<br>            &#125;<br><br>            <span class="hljs-comment">// 在回调中处理数据（在主线程中调用）</span><br>            <span class="hljs-keyword">var</span> data = request.GetData&lt;Color&gt;();<br><br>            <span class="hljs-comment">// 示例：检测某位置的染料浓度</span><br>            <span class="hljs-built_in">int</span> checkX = resolution / <span class="hljs-number">2</span>, checkY = resolution / <span class="hljs-number">4</span>;<br>            <span class="hljs-built_in">float</span> inkAtPoint = data[checkY * resolution + checkX].a;<br><br>            <span class="hljs-keyword">if</span> (inkAtPoint &gt; <span class="hljs-number">0.5f</span>)<br>            &#123;<br>                Debug.Log(<span class="hljs-string">&quot;检测到流体到达目标位置！&quot;</span>);<br>                <span class="hljs-comment">// 触发游戏事件...</span><br>            &#125;<br>        &#125;<br>    );<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>分辨率</th>
+<th>GPU 内存</th>
+<th>每帧时间（RTX 3060）</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>128×128</td>
+<td>~0.3MB</td>
+<td>~0.1ms</td>
+<td>移动端</td>
+</tr>
+<tr>
+<td>256×256</td>
+<td>~1MB</td>
+<td>~0.3ms</td>
+<td>移动端高端&#x2F;PC</td>
+</tr>
+<tr>
+<td>512×512</td>
+<td>~4MB</td>
+<td>~1ms</td>
+<td>PC 标准</td>
+</tr>
+<tr>
+<td>1024×1024</td>
+<td>~16MB</td>
+<td>~4ms</td>
+<td>PC 高质量</td>
+</tr>
+</tbody></table>
+<p><strong>移动端注意</strong>：</p>
+<ul>
+<li>使用 <code>RenderTextureFormat.RGHalf</code>（16位双通道）代替 <code>ARGBFloat</code>，节省 75% 内存和带宽</li>
+<li>将 pressureIterations 减少到 5-10</li>
+<li>使用 64×64 或 128×128 分辨率</li>
+</ul>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><p><strong>坑1：RenderTexture.enableRandomWrite 必须在 Create() 之前设置</strong><br>如果先调用 <code>rt.Create()</code> 再设置 <code>rt.enableRandomWrite = true</code>，RenderTexture 不会启用随机写入，Compute Shader 的 <code>RWTexture2D</code> 无法正常工作，报错 “Texture is not set”。</p>
+<p><strong>坑2：Compute Shader 的线程组大小与分辨率</strong><br><code>[numthreads(8, 8, 1)]</code> 意味着每个线程组处理 8×8&#x3D;64 个像素。Dispatch 的参数 <code>(threadGroupsX, threadGroupsY, 1)</code> 中，<code>threadGroupsX = ceil(width / 8)</code>。如果分辨率不是 8 的整数倍，需要在 Compute Shader 开头检查 <code>if (any(id.xy &gt;= _Resolution)) return</code>，防止越界写入。</p>
+<p><strong>坑3：ARGBFloat vs ARGBHalf 的兼容性</strong><br>在 iOS（Metal）上，Compute Shader 的 <code>RWTexture2D&lt;float4&gt;</code> 对应 <code>ARGBFloat</code>，而 <code>ARGBHalf</code> 格式的 RenderTexture 在某些设备上不支持随机写入。如果需要跨平台，使用 <code>ARGBFloat</code> 更安全，或通过 <code>SystemInfo.SupportsRenderTextureFormat</code> 在运行时检测。</p>
+<p><strong>坑4：Jacobi 迭代次数与稳定性</strong><br>压力求解的 Jacobi 迭代次数（pressureIterations）越多，流体不可压缩性越好，但性能越差。20 次迭代通常是质量&#x2F;性能的合理平衡点。如果流体出现爆炸性发散（速度值变为 NaN），先检查 <code>clamp</code> 是否正确限制了速度范围。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/GPU-%E8%AE%A1%E7%AE%97%E4%B8%8E%E6%A8%A1%E6%8B%9F/" class="category-chain-item">GPU 计算与模拟</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/Compute-Shader/" class="print-no-link">#Compute Shader</a>
+      
+        <a href="/tags/%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F/" class="print-no-link">#流体模拟</a>
+      
+        <a href="/tags/GPU%E7%89%A9%E7%90%86/" class="print-no-link">#GPU物理</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（二十）：Unity GPU 流体模拟实战：Compute Shader 与双缓冲</div>
+      <div>https://alex-rachel.github.io/2026/04/01/20-fluid-simulation/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/21-particle-system/" title="Unity Shader 系列（二十一）：粒子系统与 Shader 深度整合">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（二十一）：粒子系统与 Shader 深度整合</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/19-atmospheric-scattering/" title="Unity Shader 系列（十九）：Unity 天空系统深度指南：从 Skybox 到程序化大气散射">
+                        <span class="hidden-mobile">Unity Shader 系列（十九）：Unity 天空系统深度指南：从 Skybox 到程序化大气散射</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '790acf738d22b84a7b645c7c3d412839'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

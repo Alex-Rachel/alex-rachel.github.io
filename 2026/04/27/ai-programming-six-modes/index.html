@@ -1,0 +1,1255 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发 “你简历上写精通 AI 编程？””不就是 Vibe Coding？”——如果 2025 年这个答案还能唬住面试官，2026 年已经远远不够了。AI 编程早已不是”跟 AI 聊天写代码”这么简单，它演化出了一套完整的工程体系。本文全面拆解当前主流的 6 种 AI 编程模式，帮你搞清楚它们是什么、有什么区别、各自适合什">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/27/ai-programming-six-modes/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发 “你简历上写精通 AI 编程？””不就是 Vibe Coding？”——如果 2025 年这个答案还能唬住面试官，2026 年已经远远不够了。AI 编程早已不是”跟 AI 聊天写代码”这么简单，它演化出了一套完整的工程体系。本文全面拆解当前主流的 6 种 AI 编程模式，帮你搞清楚它们是什么、有什么区别、各自适合什">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-27T12:30:00.000Z">
+<meta property="article:modified_time" content="2026-04-27T12:34:04.009Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="AI编程">
+<meta property="article:tag" content="Vibe Coding">
+<meta property="article:tag" content="Agentic Engineering">
+<meta property="article:tag" content="Harness Engineering">
+<meta property="article:tag" content="SDD">
+<meta property="article:tag" content="BMAD">
+<meta property="article:tag" content="软件工程">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-27 20:30" pubdate>
+          2026年4月27日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6.7k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          56 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="2026-年-AI-编程六大模式全解析：从-Vibe-Coding-到规范驱动开发"><a href="#2026-年-AI-编程六大模式全解析：从-Vibe-Coding-到规范驱动开发" class="headerlink" title="2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发"></a>2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发</h1><blockquote>
+<p>“你简历上写精通 AI 编程？””不就是 Vibe Coding？”——如果 2025 年这个答案还能唬住面试官，2026 年已经远远不够了。AI 编程早已不是”跟 AI 聊天写代码”这么简单，它演化出了一套完整的工程体系。本文全面拆解当前主流的 6 种 AI 编程模式，帮你搞清楚它们是什么、有什么区别、各自适合什么场景，以及如何组合使用。</p>
+</blockquote>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E4%B8%80%E4%B8%BA%E4%BB%80%E4%B9%88-ai-%E7%BC%96%E7%A8%8B--vibe-coding">一、为什么 AI 编程 ≠ Vibe Coding</a></li>
+<li><a href="#%E4%BA%8Cvibe-coding-%E6%B0%9B%E5%9B%B4%E7%BC%96%E7%A8%8B">二、Vibe Coding 氛围编程</a></li>
+<li><a href="#%E4%B8%89agentic-engineering-%E6%99%BA%E8%83%BD%E4%BD%93%E5%B7%A5%E7%A8%8B">三、Agentic Engineering 智能体工程</a></li>
+<li><a href="#%E5%9B%9Bharness-engineering-%E9%A9%BE%E9%A9%AD%E5%B7%A5%E7%A8%8B">四、Harness Engineering 驾驭工程</a></li>
+<li><a href="#%E4%BA%94ralph-wiggum-loop-%E5%BE%AA%E7%8E%AF%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%BC%8F">五、Ralph Wiggum Loop 循环执行模式</a></li>
+<li><a href="#%E5%85%ADbmad-%E6%95%8F%E6%8D%B7-ai-%E5%BC%80%E5%8F%91%E6%96%B9%E6%B3%95">六、BMAD 敏捷 AI 开发方法</a></li>
+<li><a href="#%E4%B8%83sdd-%E8%A7%84%E8%8C%83%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91">七、SDD 规范驱动开发</a></li>
+<li><a href="#%E5%85%AB%E5%85%AD%E5%A4%A7%E6%A8%A1%E5%BC%8F%E6%A8%AA%E5%90%91%E5%AF%B9%E6%AF%94">八、六大模式横向对比</a></li>
+<li><a href="#%E4%B9%9D%E6%A8%A1%E5%BC%8F%E7%BB%84%E5%90%8811-2-%E7%9A%84%E5%AE%9E%E8%B7%B5%E7%AD%96%E7%95%A5">九、模式组合：1+1&gt;2 的实践策略</a></li>
+<li><a href="#%E5%8D%81%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E9%80%82%E5%90%88%E8%87%AA%E5%B7%B1%E7%9A%84%E6%A8%A1%E5%BC%8F">十、如何选择适合自己的模式</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+<hr>
+<h2 id="一、为什么-AI-编程-≠-Vibe-Coding"><a href="#一、为什么-AI-编程-≠-Vibe-Coding" class="headerlink" title="一、为什么 AI 编程 ≠ Vibe Coding"></a>一、为什么 AI 编程 ≠ Vibe Coding</h2><p>2025 年初，Andrej Karpathy 提出 Vibe Coding 这个概念时，它确实抓住了 AI 编程最直觉的一面：跟 AI 对话，让 AI 写代码。一时间，”AI 编程”几乎成了 Vibe Coding 的同义词。</p>
+<p>但仅仅一年多后，AI 编程的版图已经发生了根本性变化：</p>
+<ul>
+<li><strong>从个人到团队</strong>：Vibe Coding 适合一个人折腾，但企业级项目需要流程和规范</li>
+<li><strong>从随意到可控</strong>：AI 生成的代码质量参差不齐，需要约束机制来保障可靠性</li>
+<li><strong>从一次性到可持续</strong>：项目需要长期维护，AI 不能只管写不管修</li>
+<li><strong>从单点到体系</strong>：不同规模、不同阶段的项目需要不同的方法论</li>
+</ul>
+<p>于是，从 Vibe Coding 出发，AI 编程演化出了多种模式，每种都在解决特定场景下的核心问题。下面逐一拆解。</p>
+<hr>
+<h2 id="二、Vibe-Coding-氛围编程"><a href="#二、Vibe-Coding-氛围编程" class="headerlink" title="二、Vibe Coding 氛围编程"></a>二、Vibe Coding 氛围编程</h2><h3 id="起源"><a href="#起源" class="headerlink" title="起源"></a>起源</h3><p>2025 年 2 月，计算机科学家 Andrej Karpathy 提出 Vibe Coding 概念，描述了一种全新的编程方式：通过自然语言与 AI 对话，让 AI 帮你写代码，你只需要描述需求、测试结果和方向。</p>
+<h3 id="核心理念"><a href="#核心理念" class="headerlink" title="核心理念"></a>核心理念</h3><p>Vibe Coding 的重点不是写代码，而是<strong>明确需求并清晰表达</strong>。你描述得越清楚，AI 给你的结果就越靠谱。</p>
+<p>打个比方：就像点外卖，你告诉平台想吃什么，餐厅帮你做好送到手上。你不需要会做饭，但要知道自己想吃什么。</p>
+<h3 id="工作方式"><a href="#工作方式" class="headerlink" title="工作方式"></a>工作方式</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs makefile"><span class="hljs-section">人类: &quot;帮我写一个 TODO 应用，支持增删改查&quot;</span><br>  ↓<br><span class="hljs-section">AI: 生成代码</span><br>  ↓<br><span class="hljs-section">人类: 运行，发现 bug，把报错粘回去</span><br>  ↓<br><span class="hljs-section">AI: 修复代码</span><br>  ↓<br>重复直到能跑<br></code></pre></td></tr></table></figure>
+
+<h3 id="优势"><a href="#优势" class="headerlink" title="优势"></a>优势</h3><ul>
+<li><strong>上手门槛最低</strong>：不需要精通编程语法，自然语言即可</li>
+<li><strong>速度极快</strong>：小工具、原型验证几分钟搞定</li>
+<li><strong>探索性强</strong>：适合快速试错，验证想法可行性</li>
+</ul>
+<h3 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h3><ul>
+<li><strong>项目一大就翻车</strong>：没有架构规划，代码容易变成意大利面条</li>
+<li><strong>质量不可控</strong>：AI 可能生成看似正确但有隐患的代码</li>
+<li><strong>难以维护</strong>：缺乏文档和规范，后续修改成本高</li>
+<li><strong>上下文窗口限制</strong>：长对话中 AI 容易”断片儿”</li>
+</ul>
+<h3 id="适合场景"><a href="#适合场景" class="headerlink" title="适合场景"></a>适合场景</h3><ul>
+<li>个人小工具、脚本</li>
+<li>快速原型验证</li>
+<li>非程序员想快速做出产品</li>
+<li>学习和实验</li>
+</ul>
+<hr>
+<h2 id="三、Agentic-Engineering-智能体工程"><a href="#三、Agentic-Engineering-智能体工程" class="headerlink" title="三、Agentic Engineering 智能体工程"></a>三、Agentic Engineering 智能体工程</h2><h3 id="起源-1"><a href="#起源-1" class="headerlink" title="起源"></a>起源</h3><p>2026 年 2 月，同样是 Andrej Karpathy，提出了 Agentic Engineering 概念——可以理解为 Vibe Coding 的规范版。</p>
+<h3 id="核心理念-1"><a href="#核心理念-1" class="headerlink" title="核心理念"></a>核心理念</h3><p>Vibe Coding 是 DJ 模式——放什么歌全凭感觉；Agentic Engineering 是包工头模式——流程、质量、验收都得你说了算。</p>
+<p>核心区别在于<strong>先规划再执行</strong>：</p>
+<ul>
+<li>Vibe Coding：给 AI 一句话 → AI 吐出代码 → 能跑就行</li>
+<li>Agentic Engineering：想清楚要干嘛 → 写好方案 → 拆好任务 → AI 执行 → 验收 → 不行打回去重做</li>
+</ul>
+<h3 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs markdown"><span class="hljs-bullet">1.</span> 需求分析 → 明确要做什么、为什么做<br><span class="hljs-bullet">2.</span> 方案设计 → 确定技术路线和架构<br><span class="hljs-bullet">3.</span> 任务拆解 → 把大任务拆成可执行的小任务<br><span class="hljs-bullet">4.</span> AI 执行 → 逐个任务交给 AI 完成<br><span class="hljs-bullet">5.</span> 验收检查 → 人类审核 AI 产出质量<br><span class="hljs-bullet">6.</span> 迭代修正 → 质量不达标则打回重做<br></code></pre></td></tr></table></figure>
+
+<h3 id="与-Vibe-Coding-的关系"><a href="#与-Vibe-Coding-的关系" class="headerlink" title="与 Vibe Coding 的关系"></a>与 Vibe Coding 的关系</h3><p>二者不是替代关系，而是互补：</p>
+<ul>
+<li>Vibe Coding 负责让你<strong>看到可能性</strong>（快速验证）</li>
+<li>Agentic Engineering 负责把可能性<strong>变成真正能用的东西</strong>（工程化）</li>
+</ul>
+<h3 id="优势-1"><a href="#优势-1" class="headerlink" title="优势"></a>优势</h3><ul>
+<li><strong>质量可控</strong>：有规划、有验收，产出更可靠</li>
+<li><strong>适合协作</strong>：流程清晰，团队成员可以各司其职</li>
+<li><strong>可持续维护</strong>：架构和文档让后续迭代有据可依</li>
+</ul>
+<h3 id="局限-1"><a href="#局限-1" class="headerlink" title="局限"></a>局限</h3><ul>
+<li><strong>上手门槛中等</strong>：需要一定的工程思维</li>
+<li><strong>前期投入更多</strong>：规划和拆解需要时间</li>
+<li><strong>灵活性降低</strong>：流程约束意味着不能完全”跟着感觉走”</li>
+</ul>
+<h3 id="适合场景-1"><a href="#适合场景-1" class="headerlink" title="适合场景"></a>适合场景</h3><ul>
+<li>中大型项目</li>
+<li>团队协作开发</li>
+<li>需要长期维护的正式产品</li>
+<li>对代码质量有要求的项目</li>
+</ul>
+<hr>
+<h2 id="四、Harness-Engineering-驾驭工程"><a href="#四、Harness-Engineering-驾驭工程" class="headerlink" title="四、Harness Engineering 驾驭工程"></a>四、Harness Engineering 驾驭工程</h2><h3 id="起源-2"><a href="#起源-2" class="headerlink" title="起源"></a>起源</h3><p>2026 年兴起的 AI 工程新范式，核心理念是<strong>人类掌舵 + 智能体执行</strong>。</p>
+<h3 id="核心理念-2"><a href="#核心理念-2" class="headerlink" title="核心理念"></a>核心理念</h3><p>Harness 这个词本意是”马具”——缰绳和马鞍用来引导强大但难以预测的马匹。Harness Engineering 就是围绕 AI 编程智能体搭建的整套”运行环境”，确保 AI 按照你的预期工作。</p>
+<p>它不是优化 AI 模型本身，而是<strong>围绕模型搭建工程体系</strong>。同一个大模型，在不同的 Harness 环境下，代码质量可能天差地别。</p>
+<h3 id="三大核心支柱"><a href="#三大核心支柱" class="headerlink" title="三大核心支柱"></a>三大核心支柱</h3><h4 id="1-上下文工程（Context-Engineering）"><a href="#1-上下文工程（Context-Engineering）" class="headerlink" title="1. 上下文工程（Context Engineering）"></a>1. 上下文工程（Context Engineering）</h4><p>确保 AI 在正确的时间获得正确的信息：</p>
+<ul>
+<li>代码库文档和架构规范</li>
+<li><code>AGENTS.md</code> 文件（项目级 AI 指南）</li>
+<li>测试结果和 CI&#x2F;CD 反馈</li>
+<li>相关代码片段和依赖关系</li>
+</ul>
+<blockquote>
+<p>关键洞察：AI 生成代码的质量直接取决于上下文的清晰度，而不仅仅是提示词技巧。</p>
+</blockquote>
+<h4 id="2-架构约束（Architecture-Constraints）"><a href="#2-架构约束（Architecture-Constraints）" class="headerlink" title="2. 架构约束（Architecture Constraints）"></a>2. 架构约束（Architecture Constraints）</h4><p>通过机制强制规定 AI 必须遵守的规则：</p>
+<ul>
+<li>代码规范检查器（Lint、Formatter）</li>
+<li>自动化测试（单元测试、集成测试）</li>
+<li>类型系统（TypeScript、Rust 类型等）</li>
+<li>代码审查流程</li>
+</ul>
+<blockquote>
+<p>明确的边界能让 AI 更快地收敛到正确的解决方案。</p>
+</blockquote>
+<h4 id="3-熵管理（Entropy-Management）"><a href="#3-熵管理（Entropy-Management）" class="headerlink" title="3. 熵管理（Entropy Management）"></a>3. 熵管理（Entropy Management）</h4><p>定期清理 AI 生成代码中积累的问题：</p>
+<ul>
+<li>过时文档和注释</li>
+<li>命名偏差和不一致</li>
+<li>死代码和未使用的依赖</li>
+<li>逐渐偏移的架构设计</li>
+</ul>
+<blockquote>
+<p>就像花园需要定期除草，AI 生成的代码库也需要定期”减熵”。</p>
+</blockquote>
+<h3 id="程序员角色的转变"><a href="#程序员角色的转变" class="headerlink" title="程序员角色的转变"></a>程序员角色的转变</h3><p>Harness Engineering 标志着一个重要转变：程序员的角色从”自己写代码”转变为”设计让 AI 可靠写代码的系统”。你不是在写代码，你是在设计一个让 AI 能稳定产出高质量代码的环境。</p>
+<h3 id="优势-2"><a href="#优势-2" class="headerlink" title="优势"></a>优势</h3><ul>
+<li><strong>可靠性最高</strong>：多重约束确保 AI 产出符合预期</li>
+<li><strong>可复现</strong>：相同的环境和输入，得到相似的输出</li>
+<li><strong>适合规模化</strong>：约束机制可以跨项目复用</li>
+</ul>
+<h3 id="局限-2"><a href="#局限-2" class="headerlink" title="局限"></a>局限</h3><ul>
+<li><strong>搭建成本高</strong>：需要投入大量精力构建 Harness 环境</li>
+<li><strong>灵活性受限</strong>：强约束可能限制 AI 的创造性解决方案</li>
+<li><strong>维护成本</strong>：约束规则本身也需要持续更新</li>
+</ul>
+<h3 id="适合场景-2"><a href="#适合场景-2" class="headerlink" title="适合场景"></a>适合场景</h3><ul>
+<li>企业级 AI 开发</li>
+<li>对代码质量和稳定性要求极高的项目</li>
+<li>需要多人协作的长期项目</li>
+<li>金融、医疗等高可靠性领域</li>
+</ul>
+<hr>
+<h2 id="五、Ralph-Wiggum-Loop-循环执行模式"><a href="#五、Ralph-Wiggum-Loop-循环执行模式" class="headerlink" title="五、Ralph Wiggum Loop 循环执行模式"></a>五、Ralph Wiggum Loop 循环执行模式</h2><h3 id="起源-3"><a href="#起源-3" class="headerlink" title="起源"></a>起源</h3><p>名字来源于《辛普森一家》中那个执着不放弃的角色 Ralph Wiggum。目前已有多个开源实现，如 <code>wiggumdev/ralph</code>。</p>
+<h3 id="核心理念-3"><a href="#核心理念-3" class="headerlink" title="核心理念"></a>核心理念</h3><p>把 AI 放在循环中反复执行，直到需求文档中的所有检查项全部完成。核心巧妙之处在于：<strong>每轮循环都以干净的上下文开始</strong>，通过 Git 和文件持久化进度，避免了长对话中 AI 容易断片儿的问题。</p>
+<h3 id="工作流程-1"><a href="#工作流程-1" class="headerlink" title="工作流程"></a>工作流程</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs markdown"><span class="hljs-bullet">1.</span> 编写 PRD（产品需求文档）<br>   └─ 把功能拆解成清晰的检查项（Checklist）<br>   <br><span class="hljs-bullet">2.</span> AI 智能体启动<br>   └─ 从检查清单中取出未完成的任务<br>   <br><span class="hljs-bullet">3.</span> AI 执行任务<br>   └─ 完成后通过 Git 提交代码并记录进度<br>   <br><span class="hljs-bullet">4.</span> 全新上下文开始新一轮迭代<br>   └─ 继续处理剩余任务<br>   <br><span class="hljs-bullet">5.</span> 循环直到所有检查项完成 ✅<br></code></pre></td></tr></table></figure>
+
+<h3 id="关键设计决策"><a href="#关键设计决策" class="headerlink" title="关键设计决策"></a>关键设计决策</h3><ul>
+<li><strong>干净上下文</strong>：每轮循环重新开始，避免上下文污染</li>
+<li><strong>Git 持久化</strong>：进度通过 Git 提交记录，不依赖对话历史</li>
+<li><strong>无人值守</strong>：写好 PRD 就可以去睡觉，第二天检查成果</li>
+</ul>
+<h3 id="安全机制"><a href="#安全机制" class="headerlink" title="安全机制"></a>安全机制</h3><p>⚠️ 必须设置：</p>
+<ul>
+<li><strong>循环次数限制</strong>：防止 AI 陷入无限循环</li>
+<li><strong>Token 预算</strong>：防止疯狂烧钱</li>
+<li><strong>质量门禁</strong>：每轮产出的最低质量标准</li>
+</ul>
+<h3 id="优势-3"><a href="#优势-3" class="headerlink" title="优势"></a>优势</h3><ul>
+<li><strong>无人值守</strong>：真正实现”写好需求就等着收货”</li>
+<li><strong>避免上下文污染</strong>：每轮干净上下文，AI 不会”断片儿”</li>
+<li><strong>进度可视化</strong>：Git 提交记录就是天然的进度报告</li>
+</ul>
+<h3 id="局限-3"><a href="#局限-3" class="headerlink" title="局限"></a>局限</h3><ul>
+<li><strong>PRD 质量决定一切</strong>：需求不清晰，AI 就会反复走偏</li>
+<li><strong>任务间依赖难处理</strong>：如果任务 A 依赖任务 B 的输出，循环模式处理起来比较笨拙</li>
+<li><strong>成本不可预测</strong>：如果没有好的预算控制，可能烧掉大量 Token</li>
+</ul>
+<h3 id="适合场景-3"><a href="#适合场景-3" class="headerlink" title="适合场景"></a>适合场景</h3><ul>
+<li>功能明确且可独立拆解的项目</li>
+<li>想让 AI 无人值守地干活</li>
+<li>任务量大但单个任务相对独立</li>
+<li>有清晰验收标准的开发任务</li>
+</ul>
+<hr>
+<h2 id="六、BMAD-敏捷-AI-开发方法"><a href="#六、BMAD-敏捷-AI-开发方法" class="headerlink" title="六、BMAD 敏捷 AI 开发方法"></a>六、BMAD 敏捷 AI 开发方法</h2><h3 id="起源-4"><a href="#起源-4" class="headerlink" title="起源"></a>起源</h3><p>BMAD-METHOD（Breakthrough Method of Agile AI-Driven Development，突破性敏捷 AI 驱动开发方法）是一套系统化的 AI 智能体开发框架，在 GitHub 上获得了数万 Star。</p>
+<h3 id="核心理念-4"><a href="#核心理念-4" class="headerlink" title="核心理念"></a>核心理念</h3><p>使用<strong>角色化智能体</strong>组织开发流程，每个智能体扮演特定角色，模拟真实团队协作：</p>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>职责</th>
+<th>产出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Analyst Agent 分析师</strong></td>
+<td>市场分析、用户画像</td>
+<td>项目简报</td>
+</tr>
+<tr>
+<td><strong>PM Agent 产品经理</strong></td>
+<td>需求细化、优先级排序</td>
+<td>产品需求文档（PRD）</td>
+</tr>
+<tr>
+<td><strong>Architect Agent 架构师</strong></td>
+<td>技术方案、系统设计</td>
+<td>架构设计文档</td>
+</tr>
+</tbody></table>
+<h3 id="智能体类型"><a href="#智能体类型" class="headerlink" title="智能体类型"></a>智能体类型</h3><h4 id="Simple-Agents-简单智能体"><a href="#Simple-Agents-简单智能体" class="headerlink" title="Simple Agents 简单智能体"></a>Simple Agents 简单智能体</h4><ul>
+<li>单文件、自包含</li>
+<li>适合聚焦任务：代码审查、文档生成、单功能开发</li>
+<li>轻量级，启动快</li>
+</ul>
+<h4 id="Expert-Agents-专家智能体"><a href="#Expert-Agents-专家智能体" class="headerlink" title="Expert Agents 专家智能体"></a>Expert Agents 专家智能体</h4><ul>
+<li>具有跨会话持久记忆</li>
+<li>配有专属文件夹存放资源</li>
+<li>适合复杂的多步骤工作流</li>
+<li>可以积累项目上下文</li>
+</ul>
+<h3 id="智能体标准化组成"><a href="#智能体标准化组成" class="headerlink" title="智能体标准化组成"></a>智能体标准化组成</h3><p>每个智能体都有标准化的结构：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs mathematica"><span class="hljs-variable">Agent</span><br>├── <span class="hljs-variable">Persona</span>（人设）<br>│   ├── 角色定义<br>│   ├── 身份描述<br>│   ├── 沟通风格<br>│   └── 行为原则<br>├── <span class="hljs-variable">Capabilities</span>（能力列表）<br>├── <span class="hljs-variable">Interaction</span> <span class="hljs-built_in">Menu</span>（交互菜单）<br>└── <span class="hljs-built_in">Key</span> <span class="hljs-variable">Actions</span>（关键行动，可选）<br></code></pre></td></tr></table></figure>
+
+<h3 id="优势-4"><a href="#优势-4" class="headerlink" title="优势"></a>优势</h3><ul>
+<li><strong>全流程覆盖</strong>：从分析到设计到开发，一条龙</li>
+<li><strong>角色分工明确</strong>：每个智能体专注自己的领域</li>
+<li><strong>可复用</strong>：角色化智能体可以跨项目复用</li>
+<li><strong>结构化</strong>：标准化组成让流程可预测</li>
+</ul>
+<h3 id="局限-4"><a href="#局限-4" class="headerlink" title="局限"></a>局限</h3><ul>
+<li><strong>复杂度高</strong>：需要设计和管理多个智能体</li>
+<li><strong>角色间协调</strong>：不同智能体之间的信息传递需要精心设计</li>
+<li><strong>过度工程风险</strong>：小项目用 BMAD 可能杀鸡用牛刀</li>
+</ul>
+<h3 id="适合场景-4"><a href="#适合场景-4" class="headerlink" title="适合场景"></a>适合场景</h3><ul>
+<li>从零开始的完整项目</li>
+<li>需要走完分析-设计-开发全流程的产品</li>
+<li>团队想要标准化 AI 开发流程</li>
+<li>中大型项目，需要多人协作</li>
+</ul>
+<hr>
+<h2 id="七、SDD-规范驱动开发"><a href="#七、SDD-规范驱动开发" class="headerlink" title="七、SDD 规范驱动开发"></a>七、SDD 规范驱动开发</h2><h3 id="起源-5"><a href="#起源-5" class="headerlink" title="起源"></a>起源</h3><p>SDD（Spec-Driven Development，规范驱动开发）是 AI 时代的新型开发方法论。2025 年 9 月，GitHub 发布了开源的 Spec Kit 工具包，帮助开发者实践 SDD。</p>
+<h3 id="核心理念-5"><a href="#核心理念-5" class="headerlink" title="核心理念"></a>核心理念</h3><p><strong>在编码之前先创建明确的、AI 能直接理解和执行的规范文档。</strong> 把规范文档当作代码的唯一真相来源——项目的”宪法”。</p>
+<p>传统开发：想到什么写什么 → 边写边改 → 最后补文档<br>SDD 开发：先写规范文档 → AI 严格照着做 → 代码与文档始终一致</p>
+<h3 id="典型工作流程"><a href="#典型工作流程" class="headerlink" title="典型工作流程"></a>典型工作流程</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs markdown"><span class="hljs-bullet">1.</span> Constitution 制定准则<br>   └─ 定义项目基本原则、代码规范、性能标准<br>   <br><span class="hljs-bullet">2.</span> Specify 编写规范<br>   └─ 描述要做什么功能、为什么做、用户需求是什么<br>   <br><span class="hljs-bullet">3.</span> Clarify 澄清疑问<br>   └─ 让 AI 提出结构化问题，明确边界情况和错误处理<br>   <br><span class="hljs-bullet">4.</span> Plan 制定方案<br>   └─ 确定技术栈、系统架构、数据模型、API 接口<br>   <br><span class="hljs-bullet">5.</span> Tasks 拆解任务<br>   └─ 把计划拆解成可执行的任务列表，标注依赖和优先级<br>   <br><span class="hljs-bullet">6.</span> Implement 执行实现<br>   └─ AI 按照任务列表生成代码，人类验证<br></code></pre></td></tr></table></figure>
+
+<h3 id="为什么-SDD-越来越受重视？"><a href="#为什么-SDD-越来越受重视？" class="headerlink" title="为什么 SDD 越来越受重视？"></a>为什么 SDD 越来越受重视？</h3><p>AI 生成代码的质量直接取决于上下文的清晰度。一个清晰的规范文档能比任何 Prompt 黑魔法更有效地减少错误。SDD 本质上是把”人类对需求的模糊理解”转化为”AI 可以精确执行的形式化描述”。</p>
+<h3 id="Spec-Kit-工具"><a href="#Spec-Kit-工具" class="headerlink" title="Spec Kit 工具"></a>Spec Kit 工具</h3><p>GitHub 的 Spec Kit 支持主流 AI 编程工具（Claude Code、GitHub Copilot 等），通过一套斜杠命令引导你完成 SDD 流程。即使不是软件开发专家，也能在 AI 的引导下走完规范的项目开发流程。</p>
+<h3 id="优势-5"><a href="#优势-5" class="headerlink" title="优势"></a>优势</h3><ul>
+<li><strong>需求清晰</strong>：规范文档消除了模糊性</li>
+<li><strong>质量可控</strong>：AI 严格按规范执行，产出可预测</li>
+<li><strong>可追溯</strong>：每个决策都有文档记录</li>
+<li><strong>协作友好</strong>：规范文档是团队沟通的基础</li>
+</ul>
+<h3 id="局限-5"><a href="#局限-5" class="headerlink" title="局限"></a>局限</h3><ul>
+<li><strong>前期投入大</strong>：编写高质量规范需要时间和经验</li>
+<li><strong>规范可能过时</strong>：项目演进中规范需要同步更新</li>
+<li><strong>灵活性受限</strong>：过度规范可能限制创新</li>
+</ul>
+<h3 id="适合场景-5"><a href="#适合场景-5" class="headerlink" title="适合场景"></a>适合场景</h3><ul>
+<li>需求复杂且明确的项目</li>
+<li>对代码质量要求高的场景</li>
+<li>团队多人协作开发</li>
+<li>需要严格合规的项目（金融、医疗等）</li>
+</ul>
+<hr>
+<h2 id="八、六大模式横向对比"><a href="#八、六大模式横向对比" class="headerlink" title="八、六大模式横向对比"></a>八、六大模式横向对比</h2><table>
+<thead>
+<tr>
+<th>模式</th>
+<th>一句话总结</th>
+<th>上手门槛</th>
+<th>适合项目规模</th>
+<th>核心关注点</th>
+<th>可靠性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Vibe Coding</strong></td>
+<td>跟着感觉走，能跑就行</td>
+<td>最低</td>
+<td>小项目&#x2F;原型</td>
+<td>速度与探索</td>
+<td>⭐</td>
+</tr>
+<tr>
+<td><strong>Agentic Engineering</strong></td>
+<td>包工头模式，先规划再执行</td>
+<td>中等</td>
+<td>中大型项目</td>
+<td>流程与验收</td>
+<td>⭐⭐⭐</td>
+</tr>
+<tr>
+<td><strong>Harness Engineering</strong></td>
+<td>给 AI 套上缰绳，搭建可靠运行环境</td>
+<td>较高</td>
+<td>企业级项目</td>
+<td>约束与稳定</td>
+<td>⭐⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td><strong>Ralph Wiggum Loop</strong></td>
+<td>写好清单让 AI 循环干，干完为止</td>
+<td>中等</td>
+<td>功能明确的中型项目</td>
+<td>自动化与迭代</td>
+<td>⭐⭐⭐</td>
+</tr>
+<tr>
+<td><strong>BMAD</strong></td>
+<td>角色扮演式开发，分析师+产品+架构全上</td>
+<td>中等</td>
+<td>从零开始的完整产品</td>
+<td>全流程与分工</td>
+<td>⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td><strong>SDD</strong></td>
+<td>先写规范文档，再让 AI 照着做</td>
+<td>中等</td>
+<td>需求明确、质量要求高的项目</td>
+<td>规范与清晰</td>
+<td>⭐⭐⭐⭐</td>
+</tr>
+</tbody></table>
+<h3 id="演进关系"><a href="#演进关系" class="headerlink" title="演进关系"></a>演进关系</h3><figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs ada">Vibe Coding（直觉）<br>    ↓ 规范化<br>Agentic Engineering（流程）<br>    ↓ 系统化<br>Harness Engineering（体系）<br>    ↓<br>    ├── Ralph Wiggum <span class="hljs-keyword">Loop</span>（自动化执行）<br>    ├── BMAD（角色化协作）<br>    └── SDD（规范驱动）<br></code></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="九、模式组合：1-1-2-的实践策略"><a href="#九、模式组合：1-1-2-的实践策略" class="headerlink" title="九、模式组合：1+1&gt;2 的实践策略"></a>九、模式组合：1+1&gt;2 的实践策略</h2><p>这些模式之间<strong>不是互相排斥的</strong>，实际开发中完全可以混搭：</p>
+<h3 id="组合一：SDD-BMAD"><a href="#组合一：SDD-BMAD" class="headerlink" title="组合一：SDD + BMAD"></a>组合一：SDD + BMAD</h3><p>用 SDD 先把规范写好，再用 BMAD 的角色化智能体去执行。规范文档就是各角色的”工作手册”，确保每个智能体都在同一框架下工作。</p>
+<h3 id="组合二：SDD-Harness-Engineering"><a href="#组合二：SDD-Harness-Engineering" class="headerlink" title="组合二：SDD + Harness Engineering"></a>组合二：SDD + Harness Engineering</h3><p>SDD 产出的规范文档天然就是 Harness 的上下文工程素材。架构约束可以基于 SDD 中的准则来设定，熵管理则定期检查代码是否偏离规范。</p>
+<h3 id="组合三：BMAD-Harness-Engineering"><a href="#组合三：BMAD-Harness-Engineering" class="headerlink" title="组合三：BMAD + Harness Engineering"></a>组合三：BMAD + Harness Engineering</h3><p>BMAD 的角色化智能体在 Harness 环境中运行。Harness 提供约束和反馈循环，BMAD 提供角色分工和流程管理，两者互补。</p>
+<h3 id="组合四：Vibe-Coding-Agentic-Engineering"><a href="#组合四：Vibe-Coding-Agentic-Engineering" class="headerlink" title="组合四：Vibe Coding + Agentic Engineering"></a>组合四：Vibe Coding + Agentic Engineering</h3><p>项目初期用 Vibe Coding 快速探索和验证，确定方向后切换到 Agentic Engineering 进行工程化开发。这是最实用的组合之一。</p>
+<h3 id="组合五：SDD-Ralph-Wiggum-Loop"><a href="#组合五：SDD-Ralph-Wiggum-Loop" class="headerlink" title="组合五：SDD + Ralph Wiggum Loop"></a>组合五：SDD + Ralph Wiggum Loop</h3><p>SDD 产出的任务列表直接作为 Ralph Wiggum Loop 的检查清单，实现从规范到自动执行的闭环。</p>
+<hr>
+<h2 id="十、如何选择适合自己的模式"><a href="#十、如何选择适合自己的模式" class="headerlink" title="十、如何选择适合自己的模式"></a>十、如何选择适合自己的模式</h2><h3 id="按项目阶段选择"><a href="#按项目阶段选择" class="headerlink" title="按项目阶段选择"></a>按项目阶段选择</h3><figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs nix">想法阶段 → Vibe Coding（快速验证可行性）<br>    ↓<br>原型阶段 → Vibe Coding <span class="hljs-symbol">/</span> Agentic Engineering（做出 MVP）<br>    ↓<br>产品阶段 → Agentic Engineering <span class="hljs-operator">+</span> SDD（规范化开发）<br>    ↓<br>规模化阶段 → Harness Engineering <span class="hljs-operator">+</span> BMAD（体系化运作）<br></code></pre></td></tr></table></figure>
+
+<h3 id="按团队规模选择"><a href="#按团队规模选择" class="headerlink" title="按团队规模选择"></a>按团队规模选择</h3><table>
+<thead>
+<tr>
+<th>团队规模</th>
+<th>推荐模式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>个人开发者</td>
+<td>Vibe Coding → Agentic Engineering</td>
+</tr>
+<tr>
+<td>小团队（2-5人）</td>
+<td>Agentic Engineering + SDD</td>
+</tr>
+<tr>
+<td>中型团队（5-20人）</td>
+<td>BMAD + SDD + Harness Engineering</td>
+</tr>
+<tr>
+<td>大型团队（20+人）</td>
+<td>Harness Engineering + BMAD + SDD</td>
+</tr>
+</tbody></table>
+<h3 id="按项目类型选择"><a href="#按项目类型选择" class="headerlink" title="按项目类型选择"></a>按项目类型选择</h3><table>
+<thead>
+<tr>
+<th>项目类型</th>
+<th>推荐模式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>个人工具&#x2F;脚本</td>
+<td>Vibe Coding</td>
+</tr>
+<tr>
+<td>开源项目</td>
+<td>Agentic Engineering + SDD</td>
+</tr>
+<tr>
+<td>SaaS 产品</td>
+<td>BMAD + Harness Engineering</td>
+</tr>
+<tr>
+<td>企业内部系统</td>
+<td>SDD + Harness Engineering</td>
+</tr>
+<tr>
+<td>快速 MVP</td>
+<td>Vibe Coding + Agentic Engineering</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>回到开头那个面试场景：如果你只知道 Vibe Coding，说明你还停留在 AI 编程的入门阶段。但如果你能把这 6 种模式的适用场景和优劣讲清楚，面试官大概率会对你刮目相看。</p>
+<p>最后几个关键认知：</p>
+<ol>
+<li><strong>没有银弹</strong>：每种模式都有适用场景，不存在万能方案</li>
+<li><strong>组合使用</strong>：实际项目中往往是多种模式混合</li>
+<li><strong>持续演进</strong>：AI 编程领域变化极快，保持学习比记住概念更重要</li>
+<li><strong>实践出真知</strong>：读十篇文章不如自己动手试一个项目</li>
+</ol>
+<p>AI 编程的本质不是让 AI 替你写代码，而是<strong>让 AI 在你的设计下可靠地写代码</strong>。从 Vibe Coding 到 Harness Engineering，这条进化路径的核心就是：<strong>人类从执行者变成设计者</strong>。</p>
+<hr>
+<p><em>本文写于 2026 年 4 月 27 日，基于当前 AI 编程领域的实践总结。AI 编程领域发展迅速，部分概念和工具可能已有更新，建议结合最新资料阅读。</em></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E6%9E%90/" class="category-chain-item">技术分析</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E6%9E%90/AI%E5%B7%A5%E7%A8%8B/" class="category-chain-item">AI工程</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI%E7%BC%96%E7%A8%8B/" class="print-no-link">#AI编程</a>
+      
+        <a href="/tags/Vibe-Coding/" class="print-no-link">#Vibe Coding</a>
+      
+        <a href="/tags/Agentic-Engineering/" class="print-no-link">#Agentic Engineering</a>
+      
+        <a href="/tags/Harness-Engineering/" class="print-no-link">#Harness Engineering</a>
+      
+        <a href="/tags/SDD/" class="print-no-link">#SDD</a>
+      
+        <a href="/tags/BMAD/" class="print-no-link">#BMAD</a>
+      
+        <a href="/tags/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/" class="print-no-link">#软件工程</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发</div>
+      <div>https://alex-rachel.github.io/2026/04/27/ai-programming-six-modes/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月27日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/27/tengine-sdd-harness-engineering/" title="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/03/tengine-ai-workflow/" title="TEngine 6.2.0 AI 工作流：用 OpenSpec、tengine-dev 与 Unity-MCP 把 AI 纳入生产流程">
+                        <span class="hidden-mobile">TEngine 6.2.0 AI 工作流：用 OpenSpec、tengine-dev 与 Unity-MCP 把 AI 纳入生产流程</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: '53d57021fe0f6070d0522f1cf974aad0'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

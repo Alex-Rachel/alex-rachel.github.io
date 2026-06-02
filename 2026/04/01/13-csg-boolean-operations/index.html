@@ -1,0 +1,915 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="CSG（Constructive Solid Geometry，构造实体几何）布尔运算在 Unity 游戏开发中有极高的实用价值：炸弹爆炸在地面炸出的坑洞、剑砍到敌人身上的溅血切割面、技能范围的辉光边界——这些效果如果用传统 Mesh 变形来实现，不仅复杂还开销巨大，而用 SDF 布尔运算配合 URP Renderer Feature，可以实现完全程序化、无网格变形的实时切割和溶解特效。 SDF">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/01/13-csg-boolean-operations/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="CSG（Constructive Solid Geometry，构造实体几何）布尔运算在 Unity 游戏开发中有极高的实用价值：炸弹爆炸在地面炸出的坑洞、剑砍到敌人身上的溅血切割面、技能范围的辉光边界——这些效果如果用传统 Mesh 变形来实现，不仅复杂还开销巨大，而用 SDF 布尔运算配合 URP Renderer Feature，可以实现完全程序化、无网格变形的实时切割和溶解特效。 SDF">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-01T03:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T06:40:47.720Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="HLSL">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="CSG">
+<meta property="article:tag" content="SDF布尔运算">
+<meta property="article:tag" content="程序化特效">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-01 11:00" pubdate>
+          2026年4月1日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          91 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>CSG（Constructive Solid Geometry，构造实体几何）布尔运算在 Unity 游戏开发中有极高的实用价值：炸弹爆炸在地面炸出的坑洞、剑砍到敌人身上的溅血切割面、技能范围的辉光边界——这些效果如果用传统 Mesh 变形来实现，不仅复杂还开销巨大，而用 SDF 布尔运算配合 URP Renderer Feature，可以实现完全程序化、无网格变形的实时切割和溶解特效。</p>
+<h2 id="SDF-布尔运算回顾"><a href="#SDF-布尔运算回顾" class="headerlink" title="SDF 布尔运算回顾"></a>SDF 布尔运算回顾</h2><p>在 HLSL 中，对两个距离场 d1、d2 进行布尔运算只需一行数学：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">float opUnion(float d1, float d2)        &#123; return min(d1, d2); &#125;<br>float opSubtraction(float d1, float d2)  &#123; return max(d1, -d2); &#125;    // d1 中挖掉 d2<br>float opIntersection(float d1, float d2) &#123; return max(d1, d2); &#125;<br><br>// 平滑并集（k 控制混合带宽，k=0 退化为硬布尔）<br>float smin(float a, float b, float k)<br>&#123;<br>    float h = max(k - abs(a - b), 0.0);<br>    return min(a, b) - h * h * 0.25 / k;<br>&#125;<br><br>// 平滑差集（挖洞时用这个，边缘自然圆滑）<br>float smax(float a, float b, float k)<br>&#123;<br>    float h = max(k - abs(a - b), 0.0);<br>    return max(a, b) + h * h * 0.25 / k;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>平滑差集 <code>smax(d1, -d2, k)</code> 是制作爆炸坑、子弹孔的核心</strong>：它在挖掉 d2 对应区域的同时，在边界处产生自然圆滑的过渡，而不是锐利的切割线。</p>
+<h2 id="完整示例：URP-程序化切割-Shader"><a href="#完整示例：URP-程序化切割-Shader" class="headerlink" title="完整示例：URP 程序化切割 Shader"></a>完整示例：URP 程序化切割 Shader</h2><p>这个 Shader 实现了用任意平面切割物体，切面自动显示不同颜色，可以通过脚本传入切割平面参数实现实时切割动画。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">Shader &quot;Custom/URP/SliceEffect&quot;<br>&#123;<br>    Properties<br>    &#123;<br>        _MainTex (&quot;主纹理&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _BaseColor (&quot;基础颜色&quot;, Color) = (1, 1, 1, 1)<br><br>        // 切割平面：xyz = 法线方向，w = 平面偏移<br>        // 平面方程：dot(worldPos, _SlicePlane.xyz) + _SlicePlane.w &lt; 0 的区域被切除<br>        _SlicePlane (&quot;切割平面 (xyz=法线, w=偏移)&quot;, Vector) = (0, 1, 0, -1)<br><br>        // 切面颜色和宽度<br>        _SliceColor (&quot;切面颜色&quot;, Color) = (1, 0.3, 0.1, 1)<br>        _SliceWidth (&quot;切面宽度&quot;, Range(0.001, 0.1)) = 0.02<br>        _SmoothBlend (&quot;平滑过渡宽度&quot;, Range(0, 0.1)) = 0.01<br><br>        // 溶解效果（配合噪波纹理）<br>        _NoiseTex (&quot;溶解噪波&quot;, 2D) = &quot;white&quot; &#123;&#125;<br>        _DissolveAmount (&quot;溶解程度&quot;, Range(0, 1)) = 0.0<br>        _DissolveEdgeWidth (&quot;溶解边缘宽度&quot;, Range(0, 0.1)) = 0.02<br>        _DissolveEdgeColor (&quot;溶解边缘颜色&quot;, Color) = (1, 0.5, 0, 1)<br>    &#125;<br><br>    SubShader<br>    &#123;<br>        Tags<br>        &#123;<br>            &quot;RenderType&quot; = &quot;Opaque&quot;<br>            &quot;RenderPipeline&quot; = &quot;UniversalPipeline&quot;<br>        &#125;<br><br>        // Pass 1：正面渲染<br>        Pass<br>        &#123;<br>            Name &quot;ForwardLit&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForward&quot; &#125;<br><br>            // 只渲染正面（切割后可以看到背面的切面颜色）<br>            Cull Back<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment frag<br>            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE<br>            #pragma multi_compile _ _SHADOWS_SOFT<br><br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl&quot;<br><br>            TEXTURE2D(_MainTex);<br>            SAMPLER(sampler_MainTex);<br>            TEXTURE2D(_NoiseTex);<br>            SAMPLER(sampler_NoiseTex);<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _MainTex_ST;<br>                float4 _BaseColor;<br>                float4 _SlicePlane;<br>                float4 _SliceColor;<br>                float  _SliceWidth;<br>                float  _SmoothBlend;<br>                float4 _NoiseTex_ST;<br>                float  _DissolveAmount;<br>                float  _DissolveEdgeWidth;<br>                float4 _DissolveEdgeColor;<br>            CBUFFER_END<br><br>            struct Attributes<br>            &#123;<br>                float4 positionOS : POSITION;<br>                float3 normalOS   : NORMAL;<br>                float2 uv         : TEXCOORD0;<br>            &#125;;<br><br>            struct Varyings<br>            &#123;<br>                float4 positionHCS : SV_POSITION;<br>                float3 worldPos    : TEXCOORD0;<br>                float3 worldNormal : TEXCOORD1;<br>                float2 uv          : TEXCOORD2;<br>                float4 shadowCoord : TEXCOORD3;<br>            &#125;;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);<br>                output.worldPos    = TransformObjectToWorld(input.positionOS.xyz);<br>                output.worldNormal = TransformObjectToWorldNormal(input.normalOS);<br>                output.uv          = TRANSFORM_TEX(input.uv, _MainTex);<br><br>                // 计算阴影坐标（需要 _MAIN_LIGHT_SHADOWS 宏）<br>                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);<br>                output.shadowCoord = GetShadowCoord(vertexInput);<br>                return output;<br>            &#125;<br><br>            half4 frag(Varyings input) : SV_Target<br>            &#123;<br>                float3 worldPos = input.worldPos;<br><br>                // ---- 1. 切割平面剔除 ----<br>                // 计算当前点到切割平面的有符号距离<br>                float sliceDist = dot(worldPos, _SlicePlane.xyz) + _SlicePlane.w;<br><br>                // 超出切割范围（平面正侧）：直接剔除片段<br>                if (sliceDist &gt; _SliceWidth) discard;<br><br>                // ---- 2. 溶解效果 ----<br>                float2 noiseUV = TRANSFORM_TEX(input.uv, _NoiseTex);<br>                float noiseVal = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, noiseUV).r;<br><br>                // 噪波值 &lt; 溶解程度时剔除<br>                if (noiseVal &lt; _DissolveAmount) discard;<br><br>                // ---- 3. 切面颜色区域（靠近切割平面的区域显示切面颜色）----<br>                bool isSliceFace = (sliceDist &gt; -_SliceWidth &amp;&amp; sliceDist &lt;= _SliceWidth);<br><br>                // 溶解边缘发光<br>                bool isDissolveEdge = (noiseVal &lt; _DissolveAmount + _DissolveEdgeWidth);<br><br>                // ---- 4. 标准 URP 漫反射光照 ----<br>                Light mainLight = GetMainLight(input.shadowCoord);<br>                float3 normal   = normalize(input.worldNormal);<br>                float  NdotL    = saturate(dot(normal, mainLight.direction));<br>                float3 diffuse  = mainLight.color * NdotL * mainLight.shadowAttenuation;<br><br>                // 基础颜色<br>                float3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;<br>                albedo *= _BaseColor.rgb;<br><br>                // 切面区域覆盖颜色<br>                if (isSliceFace)<br>                &#123;<br>                    // 切面内部亮色显示（使用切面颜色）<br>                    float faceFactor = smoothstep(_SliceWidth, 0.0, abs(sliceDist));<br>                    albedo = lerp(albedo, _SliceColor.rgb, faceFactor);<br>                &#125;<br><br>                // 溶解边缘发光叠加<br>                if (isDissolveEdge)<br>                &#123;<br>                    float edgeFactor = 1.0 - (noiseVal - _DissolveAmount) / _DissolveEdgeWidth;<br>                    albedo = lerp(albedo, _DissolveEdgeColor.rgb * 3.0, edgeFactor);<br>                &#125;<br><br>                float3 ambient    = SampleSH(normal) * 0.5;<br>                float3 finalColor = albedo * (ambient + diffuse);<br><br>                return half4(finalColor, 1.0);<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // Pass 2：背面（切面）渲染<br>        Pass<br>        &#123;<br>            Name &quot;SliceFaceBack&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;UniversalForwardOnly&quot; &#125;<br><br>            Cull Front  // 只渲染背面，用于显示切面内部<br><br>            HLSLPROGRAM<br>            #pragma vertex vert<br>            #pragma fragment fragBack<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _SlicePlane;<br>                float  _SliceWidth;<br>                float4 _SliceColor;<br>                float  _DissolveAmount;<br>            CBUFFER_END<br><br>            struct Attributes &#123; float4 positionOS : POSITION; float2 uv : TEXCOORD0; &#125;;<br>            struct Varyings   &#123; float4 positionHCS : SV_POSITION; float3 worldPos : TEXCOORD0; &#125;;<br><br>            TEXTURE2D(_NoiseTex); SAMPLER(sampler_NoiseTex);<br>            float4 _NoiseTex_ST;<br><br>            Varyings vert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);<br>                output.worldPos    = TransformObjectToWorld(input.positionOS.xyz);<br>                return output;<br>            &#125;<br><br>            half4 fragBack(Varyings input) : SV_Target<br>            &#123;<br>                // 背面也需要切割和溶解剔除（保持一致）<br>                float sliceDist = dot(input.worldPos, _SlicePlane.xyz) + _SlicePlane.w;<br>                if (sliceDist &gt; 0.0) discard;<br><br>                // 切面颜色（带轻微漫射感）<br>                return _SliceColor;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br><br>        // Shadow Caster Pass（支持投射阴影）<br>        Pass<br>        &#123;<br>            Name &quot;ShadowCaster&quot;<br>            Tags &#123; &quot;LightMode&quot; = &quot;ShadowCaster&quot; &#125;<br>            ColorMask 0<br>            Cull Back<br><br>            HLSLPROGRAM<br>            #pragma vertex shadowVert<br>            #pragma fragment shadowFrag<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl&quot;<br>            #include &quot;Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl&quot;<br><br>            CBUFFER_START(UnityPerMaterial)<br>                float4 _SlicePlane;<br>                float  _SliceWidth;<br>                float  _DissolveAmount;<br>            CBUFFER_END<br><br>            struct Attributes &#123; float4 positionOS : POSITION; float3 normalOS : NORMAL; &#125;;<br>            struct Varyings   &#123; float4 positionHCS : SV_POSITION; float3 worldPos : TEXCOORD0; &#125;;<br><br>            TEXTURE2D(_NoiseTex); SAMPLER(sampler_NoiseTex);<br>            float4 _NoiseTex_ST;<br><br>            Varyings shadowVert(Attributes input)<br>            &#123;<br>                Varyings output;<br>                output.worldPos = TransformObjectToWorld(input.positionOS.xyz);<br>                // 使用 URP 的阴影偏移（防止 shadow acne）<br>                float3 lightDir = _MainLightPosition.xyz;<br>                output.positionHCS = TransformWorldToHClip(<br>                    ApplyShadowBias(output.worldPos, <br>                    TransformObjectToWorldNormal(input.normalOS), lightDir)<br>                );<br>                return output;<br>            &#125;<br><br>            half4 shadowFrag(Varyings input) : SV_Target<br>            &#123;<br>                float sliceDist = dot(input.worldPos, _SlicePlane.xyz) + _SlicePlane.w;<br>                if (sliceDist &gt; _SliceWidth) discard;<br>                return 0;<br>            &#125;<br>            ENDHLSL<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="通过-C-脚本动态控制切割"><a href="#通过-C-脚本动态控制切割" class="headerlink" title="通过 C# 脚本动态控制切割"></a>通过 C# 脚本动态控制切割</h2><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">using</span> UnityEngine;<br><br><span class="hljs-comment">// 挂载到拥有 SliceEffect Material 的 GameObject 上</span><br>[<span class="hljs-meta">RequireComponent(typeof(Renderer))</span>]<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">SliceController</span> : <span class="hljs-title">MonoBehaviour</span><br>&#123;<br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;切割参数&quot;</span>)</span>]<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> Vector3 sliceNormal = Vector3.up;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> sliceOffset = <span class="hljs-number">0.0f</span>;<br><br>    [<span class="hljs-meta">Header(<span class="hljs-string">&quot;溶解动画&quot;</span>)</span>]<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">bool</span> animateDissolve = <span class="hljs-literal">false</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> dissolveSpeed = <span class="hljs-number">0.5f</span>;<br>    [<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> dissolveDelay = <span class="hljs-number">0.0f</span>;<br><br>    <span class="hljs-keyword">private</span> Material _material;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">float</span> _dissolveTimer = <span class="hljs-number">0.0f</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">bool</span> _dissolveStarted = <span class="hljs-literal">false</span>;<br><br>    <span class="hljs-comment">// 在 Inspector 中实时可见</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> SlicePlaneID      = Shader.PropertyToID(<span class="hljs-string">&quot;_SlicePlane&quot;</span>);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> <span class="hljs-built_in">int</span> DissolveAmountID  = Shader.PropertyToID(<span class="hljs-string">&quot;_DissolveAmount&quot;</span>);<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>()</span><br>    &#123;<br>        <span class="hljs-comment">// 使用 MaterialPropertyBlock 可避免 Material 实例化（性能更好）</span><br>        _material = GetComponent&lt;Renderer&gt;().material;<br>        UpdateSlicePlane();<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>()</span><br>    &#123;<br>        <span class="hljs-keyword">if</span> (animateDissolve)<br>        &#123;<br>            _dissolveTimer += Time.deltaTime;<br>            <span class="hljs-keyword">if</span> (_dissolveTimer &gt;= dissolveDelay)<br>            &#123;<br>                <span class="hljs-built_in">float</span> t = (_dissolveTimer - dissolveDelay) * dissolveSpeed;<br>                <span class="hljs-built_in">float</span> dissolve = Mathf.Clamp01(t);<br>                _material.SetFloat(DissolveAmountID, dissolve);<br><br>                <span class="hljs-keyword">if</span> (dissolve &gt;= <span class="hljs-number">1.0f</span>)<br>                    gameObject.SetActive(<span class="hljs-literal">false</span>); <span class="hljs-comment">// 完全溶解后隐藏</span><br>            &#125;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">// 根据爆炸位置动态更新切割平面</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">SetSliceByExplosion</span>(<span class="hljs-params">Vector3 explosionCenter, <span class="hljs-built_in">float</span> radius</span>)</span><br>    &#123;<br>        Vector3 toObject = (transform.position - explosionCenter).normalized;<br>        sliceNormal = toObject;<br>        sliceOffset = Vector3.Dot(explosionCenter + toObject * radius, toObject);<br>        UpdateSlicePlane();<br>        <br>        <span class="hljs-comment">// 触发溶解动画</span><br>        animateDissolve = <span class="hljs-literal">true</span>;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">UpdateSlicePlane</span>()</span><br>    &#123;<br>        Vector3 n = sliceNormal.normalized;<br>        _material.SetVector(SlicePlaneID, <span class="hljs-keyword">new</span> Vector4(n.x, n.y, n.z, sliceOffset));<br>    &#125;<br><br>    <span class="hljs-comment">// 在 Scene 视图中绘制切割平面辅助线</span><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">OnDrawGizmos</span>()</span><br>    &#123;<br>        Gizmos.color = Color.red;<br>        Vector3 center = transform.position - sliceNormal.normalized * sliceOffset;<br>        Gizmos.DrawWireCube(center, <span class="hljs-keyword">new</span> Vector3(<span class="hljs-number">2</span>, <span class="hljs-number">0.02f</span>, <span class="hljs-number">2</span>));<br>        Gizmos.DrawRay(center, sliceNormal.normalized);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="在游戏中的实际应用场景"><a href="#在游戏中的实际应用场景" class="headerlink" title="在游戏中的实际应用场景"></a>在游戏中的实际应用场景</h2><p><strong>1. 炸弹爆炸坑洞（SDF smooth subtraction）</strong><br>用球形 SDF 代表爆炸范围，在场景的 SDF 地形（或全屏 Renderer Feature）中使用 <code>smax(terrain, -explosion, k)</code> 实时挖出带圆滑边缘的坑洞，配合溅射粒子效果非常真实。</p>
+<p><strong>2. 角色被攻击溶解效果</strong><br>当角色受到特定技能（如火焰、酸液）攻击时，触发溶解动画：<code>_DissolveAmount</code> 从 0 动画到 1，同时边缘发光颜色根据技能类型变化（火&#x3D;橙红，冰&#x3D;蓝白，酸&#x3D;绿色）。</p>
+<p><strong>3. 技能范围可视化</strong><br>将 CSG 差集用于显示技能的”命中区域”：在全屏 SDF 渲染中，用球形 SDF 的外壳（<code>abs(sdf) - thickness</code>）显示技能范围边界，配合脉冲动画提示玩家躲避。</p>
+<h2 id="ShaderGraph-对应实现思路"><a href="#ShaderGraph-对应实现思路" class="headerlink" title="ShaderGraph 对应实现思路"></a>ShaderGraph 对应实现思路</h2><p>切割效果在 ShaderGraph 中的实现路径：</p>
+<ul>
+<li><strong>Plane Clip</strong>：使用 <code>Position</code> 节点（World Space）与 <code>Dot Product</code> 计算到平面的距离</li>
+<li>将距离值输入 <code>Branch</code>（或 <code>Comparison</code> + <code>Clip</code>）节点控制剔除</li>
+<li><strong>溶解</strong>：<code>Sample Texture 2D</code> 采样噪波，减去 <code>_DissolveAmount</code> 后输入 <code>Clip</code> 节点</li>
+<li><strong>边缘发光</strong>：将溶解噪波减去阈值的结果用 <code>Step</code> 和 <code>Multiply</code> 叠加发光颜色</li>
+</ul>
+<p><strong>注意</strong>：ShaderGraph 的 <code>Clip</code> 节点在移动端可能被优化为 <code>discard</code>，性能表现与手写 HLSL 相近，但无法控制双面渲染（需要改 Material 的 Render Face 设置）。</p>
+<h2 id="性能考量"><a href="#性能考量" class="headerlink" title="性能考量"></a>性能考量</h2><table>
+<thead>
+<tr>
+<th>技术要点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>discard</code> 的性能代价</td>
+<td>移动端 tile-based GPU 上 <code>discard</code> 会阻止 early-z，降低填充率效率。大面积使用时考虑替代方案</td>
+</tr>
+<tr>
+<td>双 Pass 开销</td>
+<td>切割 Shader 需要两个 Pass，draw call 数量翻倍。可以用 <code>SV_IsFrontFace</code> 语义在单 Pass 中区分前后面</td>
+</tr>
+<tr>
+<td>纹理采样数量</td>
+<td>溶解噪波纹理在每帧每个片段都采样，确保纹理分辨率合理（256×256 足够），开启 Mipmap</td>
+</tr>
+<tr>
+<td>移动端</td>
+<td>关闭阴影接收（移除 <code>_MAIN_LIGHT_SHADOWS</code>）可节省约 30% 的 fragment shader 开销</td>
+</tr>
+</tbody></table>
+<h2 id="常见踩坑"><a href="#常见踩坑" class="headerlink" title="常见踩坑"></a>常见踩坑</h2><p><strong>坑1：双面渲染的法线方向</strong><br>背面 Pass 中，URP 不会自动翻转法线。如果你在背面 Pass 中使用法线计算光照，需要手动乘以 -1 或使用 <code>SV_IsFrontFace</code> 语义判断正背面。</p>
+<p><strong>坑2：ShadowCaster Pass 必须同步剔除逻辑</strong><br>如果主 Pass 用 <code>discard</code> 剔除了某些片段，但 ShadowCaster Pass 没有相同的剔除逻辑，被切割的部分仍然会投射阴影，产生”幽灵阴影”。</p>
+<p><strong>坑3：溶解边缘发光在 HDR 中的处理</strong><br><code>_DissolveEdgeColor.rgb * 3.0</code> 这样的乘法在 HDR 管线中才能产生实际的辉光效果（配合 Bloom 后处理）。在 SDR 管线中数值会被截断到 1，看不出发光感。确保项目开启了 HDR 和 Bloom。</p>
+<p><strong>坑4：MaterialPropertyBlock vs Material.Set</strong>*<br>在大量相同 Shader 的对象上使用 <code>MaterialPropertyBlock</code> 而不是 <code>material.SetFloat</code>，可以避免 Material 实例化，保持 GPU Instancing 合批。上面的 <code>SliceController</code> 示例为了简单使用了 <code>material</code>，生产中应改用 <code>MaterialPropertyBlock</code>。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/SDF-%E6%8A%80%E6%9C%AF/" class="category-chain-item">SDF 技术</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/HLSL/" class="print-no-link">#HLSL</a>
+      
+        <a href="/tags/URP/" class="print-no-link">#URP</a>
+      
+        <a href="/tags/CSG/" class="print-no-link">#CSG</a>
+      
+        <a href="/tags/SDF%E5%B8%83%E5%B0%94%E8%BF%90%E7%AE%97/" class="print-no-link">#SDF布尔运算</a>
+      
+        <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%89%B9%E6%95%88/" class="print-no-link">#程序化特效</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Unity Shader 系列（十三）：CSG 布尔运算：程序化切割与溶解特效</div>
+      <div>https://alex-rachel.github.io/2026/04/01/13-csg-boolean-operations/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月1日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/01/14-domain-repetition/" title="Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Unity Shader 系列（十四）：域重复：无限地板与程序化纹理优化</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/01/12-ray-marching/" title="Unity Shader 系列（十二）：URP 光线步进：Renderer Feature 全屏 SDF 渲染">
+                        <span class="hidden-mobile">Unity Shader 系列（十二）：URP 光线步进：Renderer Feature 全屏 SDF 渲染</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'd71f1d18298dca340bb8e6f312db491f'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

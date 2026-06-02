@@ -1,0 +1,1298 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解 当行业还在争论 Vibe Coding 能不能用于生产时，TEngine 已经用一套 SDD + Harness Engineering 的组合架构，把 AI 编程从”实验性工具”推进到了”工程级基础设施”。这不是概念堆砌，而是从真实痛点出发的设计决策——本文将深入拆解这两种模式为什么必">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/04/27/tengine-sdd-harness-engineering/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解 当行业还在争论 Vibe Coding 能不能用于生产时，TEngine 已经用一套 SDD + Harness Engineering 的组合架构，把 AI 编程从”实验性工具”推进到了”工程级基础设施”。这不是概念堆砌，而是从真实痛点出发的设计决策——本文将深入拆解这两种模式为什么必">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-27T12:50:00.000Z">
+<meta property="article:modified_time" content="2026-04-27T12:58:38.374Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="Unity">
+<meta property="article:tag" content="TEngine">
+<meta property="article:tag" content="AI编程">
+<meta property="article:tag" content="Harness Engineering">
+<meta property="article:tag" content="SDD">
+<meta property="article:tag" content="软件工程">
+<meta property="article:tag" content="规范驱动开发">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-04-27 20:50" pubdate>
+          2026年4月27日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7.9k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          66 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="TEngine-的工程哲学：为什么-SDD-Harness-Engineering-是-AI-编程的最优解"><a href="#TEngine-的工程哲学：为什么-SDD-Harness-Engineering-是-AI-编程的最优解" class="headerlink" title="TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解"></a>TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解</h1><blockquote>
+<p>当行业还在争论 Vibe Coding 能不能用于生产时，TEngine 已经用一套 SDD + Harness Engineering 的组合架构，把 AI 编程从”实验性工具”推进到了”工程级基础设施”。这不是概念堆砌，而是从真实痛点出发的设计决策——本文将深入拆解这两种模式为什么必须结合、各自承担什么职责、以及这种组合为什么领先于行业。</p>
+</blockquote>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E5%BC%95%E8%A8%80ai-%E7%BC%96%E7%A8%8B%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%8C%96%E5%9B%B0%E5%A2%83">引言：AI 编程的工程化困境</a></li>
+<li><a href="#%E4%B8%80%E9%97%AE%E9%A2%98%E5%AE%9A%E4%B9%89%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%95%E4%B8%80%E6%A8%A1%E5%BC%8F%E4%B8%8D%E5%A4%9F">一、问题定义：为什么单一模式不够</a></li>
+<li><a href="#%E4%BA%8Csdd-%E5%9C%A8-tengine-%E4%B8%AD%E7%9A%84%E8%A7%92%E8%89%B2%E8%A7%84%E8%8C%83%E5%8D%B3%E5%AE%AA%E6%B3%95">二、SDD 在 TEngine 中的角色：规范即宪法</a></li>
+<li><a href="#%E4%B8%89harness-engineering-%E5%9C%A8-tengine-%E4%B8%AD%E7%9A%84%E8%A7%92%E8%89%B2%E7%BC%B0%E7%BB%B3%E4%B8%8E%E9%A9%AC%E5%85%B7">三、Harness Engineering 在 TEngine 中的角色：缰绳与马具</a></li>
+<li><a href="#%E5%9B%9B%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E7%BB%93%E5%90%8811-2-%E7%9A%84%E5%B7%A5%E7%A8%8B%E9%80%BB%E8%BE%91">四、为什么必须结合：1+1&gt;2 的工程逻辑</a></li>
+<li><a href="#%E4%BA%94tengine-%E7%9A%84%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E4%BB%8E%E6%A6%82%E5%BF%B5%E5%88%B0%E8%90%BD%E5%9C%B0">五、TEngine 的具体实现：从概念到落地</a></li>
+<li><a href="#%E5%85%AD%E7%9B%B8%E6%AF%94%E4%BC%A0%E7%BB%9F%E6%96%B9%E5%BC%8F%E7%9A%84%E6%94%B9%E8%BF%9B%E7%82%B9">六、相比传统方式的改进点</a></li>
+<li><a href="#%E4%B8%83%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF%E4%B8%8E%E5%AE%9E%E8%B7%B5%E4%BB%B7%E5%80%BC">七、适用场景与实践价值</a></li>
+<li><a href="#%E5%85%AB%E6%BD%9C%E5%9C%A8%E5%BD%B1%E5%93%8D%E4%B8%8E%E8%A1%8C%E4%B8%9A%E5%90%AF%E7%A4%BA">八、潜在影响与行业启示</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+<hr>
+<h2 id="引言：AI-编程的工程化困境"><a href="#引言：AI-编程的工程化困境" class="headerlink" title="引言：AI 编程的工程化困境"></a>引言：AI 编程的工程化困境</h2><p>2026 年，AI 编程已经不再是”能不能用”的问题，而是”能不能稳定进入生产流程”的问题。</p>
+<p>个人开发者可以容忍一段 Prompt 反复试错，但商业项目不行。当 AI 生成的代码进入一个涉及 UI、逻辑、资源、Prefab、Scene、配置、Editor Tool 和 CI 的完整工程链路时，任何环节失控，最终都会以返工、回滚、线上故障的形式支付成本。</p>
+<p>行业目前面临的困境是：</p>
+<ul>
+<li><strong>Vibe Coding 太随意</strong>：跟着感觉走，项目一大就翻车</li>
+<li><strong>Agentic Engineering 有流程但缺约束</strong>：包工头模式管住了”做什么”，但管不住”做出来的质量”</li>
+<li><strong>纯 SDD 规范清晰但执行不可控</strong>：规范写得再好，AI 不一定照着做</li>
+<li><strong>纯 Harness 约束强但灵活性差</strong>：缰绳太紧，AI 的有效输出也被限制</li>
+</ul>
+<p>TEngine 的回答是：<strong>SDD 和 Harness Engineering 不是二选一，而是必须组合使用。</strong> SDD 解决”做什么、做到什么程度”，Harness Engineering 解决”怎么做、做出来的质量如何保障”。两者缺一不可。</p>
+<hr>
+<h2 id="一、问题定义：为什么单一模式不够"><a href="#一、问题定义：为什么单一模式不够" class="headerlink" title="一、问题定义：为什么单一模式不够"></a>一、问题定义：为什么单一模式不够</h2><h3 id="1-1-只用-SDD-的问题：规范写了，AI-不一定遵守"><a href="#1-1-只用-SDD-的问题：规范写了，AI-不一定遵守" class="headerlink" title="1.1 只用 SDD 的问题：规范写了，AI 不一定遵守"></a>1.1 只用 SDD 的问题：规范写了，AI 不一定遵守</h3><p>SDD（Spec-Driven Development）的核心是”先写规范，再让 AI 照着做”。这听起来很美好，但实际操作中会遇到：</p>
+<ul>
+<li><strong>规范理解偏差</strong>：AI 可能”字面理解”规范，但忽略了隐含的工程约束</li>
+<li><strong>规范执行漂移</strong>：随着任务推进，AI 的输出逐渐偏离规范要求</li>
+<li><strong>规范与代码脱节</strong>：规范更新了，但 AI 还在按旧规范生成代码</li>
+<li><strong>缺少验证闭环</strong>：没有自动化机制检查代码是否真正符合规范</li>
+</ul>
+<p>举个例子：规范要求”所有 IO 操作使用 UniTask 异步”，但 AI 在第 5 个任务中为了”方便”用了 <code>StartCoroutine</code>。如果只有 SDD 而没有 Harness，这个违规不会被自动发现。</p>
+<h3 id="1-2-只用-Harness-Engineering-的问题：约束有了，但方向不清"><a href="#1-2-只用-Harness-Engineering-的问题：约束有了，但方向不清" class="headerlink" title="1.2 只用 Harness Engineering 的问题：约束有了，但方向不清"></a>1.2 只用 Harness Engineering 的问题：约束有了，但方向不清</h3><p>Harness Engineering 的核心是”给 AI 套上缰绳，搭建可靠的运行环境”。但如果没有清晰的规范指引：</p>
+<ul>
+<li><strong>约束可能南辕北辙</strong>：Lint 规则和类型系统只能检查”形式正确”，不能检查”方向正确”</li>
+<li><strong>熵管理缺乏标准</strong>：什么算”过时文档”、什么算”命名偏差”，需要规范来定义</li>
+<li><strong>上下文工程缺少输入</strong>：AI 需要正确的信息，但”正确的信息”来自规范文档</li>
+</ul>
+<p>举个例子：Harness 可以确保 AI 生成的代码通过编译和 Lint 检查，但如果需求本身就是模糊的——“做一个背包系统”包含太多隐含决策——AI 可能生成一个技术上完美但完全不符合业务需求的实现。</p>
+<h3 id="1-3-核心洞察：规范与约束是正交的两个维度"><a href="#1-3-核心洞察：规范与约束是正交的两个维度" class="headerlink" title="1.3 核心洞察：规范与约束是正交的两个维度"></a>1.3 核心洞察：规范与约束是正交的两个维度</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs">                  规范清晰度（SDD 负责）<br>                  低 ←────────────→ 高<br>            ┌──────────┬──────────┐<br>       高   │  盲目约束  │  精准约束  │ ← 理想状态<br>约束  │          │          │<br>强度  ├──────────┼──────────┤<br>（Harness │          │          │<br>负责） 低   │  自由混乱  │  空中楼阁  │<br>            └──────────┴──────────┘<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>左下角（低规范+低约束）</strong>：Vibe Coding，自由但混乱</li>
+<li><strong>左上角（低规范+高约束）</strong>：盲目约束，AI 被限制但方向不明</li>
+<li><strong>右上角（高规范+高约束）</strong>：精准约束，方向明确且执行可控 ← <strong>TEngine 的位置</strong></li>
+<li><strong>右下角（高规范+低约束）</strong>：空中楼阁，规范很好但执行没保障</li>
+</ul>
+<p>TEngine 选择右上角，不是偶然，而是从工程实践中得出的必然结论。</p>
+<hr>
+<h2 id="二、SDD-在-TEngine-中的角色：规范即宪法"><a href="#二、SDD-在-TEngine-中的角色：规范即宪法" class="headerlink" title="二、SDD 在 TEngine 中的角色：规范即宪法"></a>二、SDD 在 TEngine 中的角色：规范即宪法</h2><h3 id="2-1-OpenSpec：SDD-的工程化实现"><a href="#2-1-OpenSpec：SDD-的工程化实现" class="headerlink" title="2.1 OpenSpec：SDD 的工程化实现"></a>2.1 OpenSpec：SDD 的工程化实现</h3><p>TEngine 通过 <strong>OpenSpec</strong> 实现 SDD 的核心理念。OpenSpec 不是简单的文档模板，而是一套完整的规范驱动变更管理系统，包含四个核心 Artifact：</p>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>职责</th>
+<th>回答的问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>proposal.md</code></td>
+<td>变更提案</td>
+<td>为什么做？做什么？</td>
+</tr>
+<tr>
+<td><code>design.md</code></td>
+<td>技术设计</td>
+<td>怎么实现？</td>
+</tr>
+<tr>
+<td><code>specs/*.md</code></td>
+<td>详细规范</td>
+<td>具体行为是什么？边界在哪？</td>
+</tr>
+<tr>
+<td><code>tasks.md</code></td>
+<td>任务清单</td>
+<td>按什么顺序做？验收标准是什么？</td>
+</tr>
+</tbody></table>
+<p>这四个 Artifact 构成了一个自上而下的规范链条：从业务意图到技术方案，从行为定义到执行计划，层层递进，不留模糊地带。</p>
+<h3 id="2-2-SDD-解决的核心问题：消除需求模糊性"><a href="#2-2-SDD-解决的核心问题：消除需求模糊性" class="headerlink" title="2.2 SDD 解决的核心问题：消除需求模糊性"></a>2.2 SDD 解决的核心问题：消除需求模糊性</h3><p>传统开发中，”帮我做一个背包系统”这样的需求包含了大量隐含决策：</p>
+<ul>
+<li>背包容量上限是多少？</li>
+<li>道具堆叠规则是什么？</li>
+<li>是否需要排序和筛选？</li>
+<li>网络同步策略是什么？</li>
+<li>资源释放时机在哪？</li>
+</ul>
+<p>SDD 通过结构化的规范流程，强制在编码前回答这些问题。OpenSpec 的 <code>/opsx:propose</code> 命令会自动生成包含这些决策的文档，而 <code>/opsx:explore</code> 则在需求不明确时提供探索性分析。</p>
+<h3 id="2-3-SDD-在-TEngine-中的独特价值"><a href="#2-3-SDD-在-TEngine-中的独特价值" class="headerlink" title="2.3 SDD 在 TEngine 中的独特价值"></a>2.3 SDD 在 TEngine 中的独特价值</h3><p>TEngine 的 SDD 实现有一个关键特点：<strong>规范与框架约束深度绑定</strong>。</p>
+<p>当开发者使用 <code>/opsx:propose &quot;add-inventory-system&quot;</code> 时，OpenSpec 生成的规范不是泛泛而谈的需求文档，而是：</p>
+<ul>
+<li>明确指出使用 <code>UIWindow</code> 而非自定义 UI 基类</li>
+<li>规定资源加载必须使用 <code>LoadAssetAsync</code> + <code>UnloadAsset</code> 配对</li>
+<li>要求事件通信使用 <code>GameEvent</code> 而非直接引用</li>
+<li>约定代码必须放在 <code>GameScripts/HotFix/GameLogic/</code> 目录下</li>
+</ul>
+<p>这种”框架感知的规范”是 TEngine SDD 的核心竞争力——规范不是抽象的，而是与框架能力精确对齐的。</p>
+<hr>
+<h2 id="三、Harness-Engineering-在-TEngine-中的角色：缰绳与马具"><a href="#三、Harness-Engineering-在-TEngine-中的角色：缰绳与马具" class="headerlink" title="三、Harness Engineering 在 TEngine 中的角色：缰绳与马具"></a>三、Harness Engineering 在 TEngine 中的角色：缰绳与马具</h2><h3 id="3-1-三大支柱的-TEngine-实现"><a href="#3-1-三大支柱的-TEngine-实现" class="headerlink" title="3.1 三大支柱的 TEngine 实现"></a>3.1 三大支柱的 TEngine 实现</h3><p>Harness Engineering 的三大核心支柱在 TEngine 中都有具体的工程实现：</p>
+<h4 id="上下文工程：tengine-dev-Skill"><a href="#上下文工程：tengine-dev-Skill" class="headerlink" title="上下文工程：tengine-dev Skill"></a>上下文工程：tengine-dev Skill</h4><p>TEngine 的 <code>tengine-dev</code> Skill 是上下文工程的核心实现。它维护了一套精炼的 <code>references/</code> 文档体系，作为 AI 的唯一权威知识源：</p>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>覆盖领域</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>architecture.md</code></td>
+<td>项目结构、启动流程</td>
+</tr>
+<tr>
+<td><code>modules.md</code></td>
+<td>模块 API（Timer&#x2F;Scene&#x2F;Audio&#x2F;Fsm）</td>
+</tr>
+<tr>
+<td><code>ui-lifecycle.md</code></td>
+<td>UI 生命周期、层级、属性</td>
+</tr>
+<tr>
+<td><code>event-system.md</code></td>
+<td>事件系统两种模式</td>
+</tr>
+<tr>
+<td><code>resource-api.md</code></td>
+<td>资源加载&#x2F;卸载规范</td>
+</tr>
+<tr>
+<td><code>hotfix-workflow.md</code></td>
+<td>热更代码边界与流程</td>
+</tr>
+<tr>
+<td><code>naming-rules.md</code></td>
+<td>命名约定、节点前缀</td>
+</tr>
+</tbody></table>
+<p>关键设计：<strong>按需查询，而非全量注入</strong>。通过 L1-L4 任务等级分级机制，简单任务（L1）零开销，复杂任务（L4）才并行多主题查询。这避免了上下文窗口的浪费，同时确保 AI 在需要时能获取精确的框架规范。</p>
+<h4 id="架构约束：编码红线-冲突检测"><a href="#架构约束：编码红线-冲突检测" class="headerlink" title="架构约束：编码红线 + 冲突检测"></a>架构约束：编码红线 + 冲突检测</h4><p>TEngine 定义了五条编码红线，作为架构约束的硬性规则：</p>
+<ol>
+<li><strong>异步优先</strong>：IO 操作用 <code>UniTask</code>，禁止同步加载&#x2F;Coroutine</li>
+<li><strong>模块访问</strong>：通过 <code>GameModule.XXX</code> 访问，而非 <code>ModuleSystem.GetModule&lt;T&gt;()</code></li>
+<li><strong>资源必须释放</strong>：<code>LoadAssetAsync</code> 对应 <code>UnloadAsset</code></li>
+<li><strong>热更边界</strong>：<code>GameScripts/Main</code> 不热更，<code>GameScripts/HotFix/</code> 全部热更</li>
+<li><strong>事件解耦</strong>：模块间用 <code>GameEvent</code>，UI 内部用 <code>AddUIEvent</code></li>
+</ol>
+<p>更关键的是，TEngine 实现了<strong>规范冲突检测机制</strong>：当 AI 发现 <code>references/</code> 文档描述与实际代码 API 不符时，会主动标注冲突点，记录到 <code>.claude/memory/</code> 目录，并以代码实现为最终依据。这是一种”自愈式”的约束机制——Harness 不是静态的规则集，而是能自我修正的活系统。</p>
+<h4 id="熵管理：自我优化机制"><a href="#熵管理：自我优化机制" class="headerlink" title="熵管理：自我优化机制"></a>熵管理：自我优化机制</h4><p>TEngine 的熵管理通过两个机制实现：</p>
+<ul>
+<li><strong>问题记录机制</strong>：当 references 文档与代码冲突时，自动生成 <code>problem_YYYY-MM-DD.md</code>，记录问题现象、文档位置、正确 API 和建议修正</li>
+<li><strong>Wiki 同步助手</strong>：<code>wiki-synchelper</code> Skill 实现”项目实现内容”与”开发 Wiki 文档”的双向同步，确保文档与代码的一致性</li>
+</ul>
+<h3 id="3-2-会话内缓存：Harness-的效率优化"><a href="#3-2-会话内缓存：Harness-的效率优化" class="headerlink" title="3.2 会话内缓存：Harness 的效率优化"></a>3.2 会话内缓存：Harness 的效率优化</h3><p>一个容易被忽视但极其重要的设计是<strong>会话内缓存机制</strong>：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs makefile"><span class="hljs-section">任务①: 实现登录界面 UI → 查询 UIWindow 规范 → 缓存 ✅</span><br><span class="hljs-section">任务②: 实现设置界面 UI → 缓存命中 ✅ → 零等待，零额外消耗</span><br><span class="hljs-section">任务③: 设置界面添加音效 → UIWindow 命中 ✅ / Audio 未命中 ❌ → 仅补充查询 Audio</span><br></code></pre></td></tr></table></figure>
+
+<p>这种增量式上下文加载，让 Harness 的运行成本与任务复杂度成正比，而非与文档总量成正比。这是 Harness Engineering 从”理论可行”到”工程可用”的关键一步。</p>
+<hr>
+<h2 id="四、为什么必须结合：1-1-2-的工程逻辑"><a href="#四、为什么必须结合：1-1-2-的工程逻辑" class="headerlink" title="四、为什么必须结合：1+1&gt;2 的工程逻辑"></a>四、为什么必须结合：1+1&gt;2 的工程逻辑</h2><h3 id="4-1-SDD-为-Harness-提供方向"><a href="#4-1-SDD-为-Harness-提供方向" class="headerlink" title="4.1 SDD 为 Harness 提供方向"></a>4.1 SDD 为 Harness 提供方向</h3><p>没有 SDD 的 Harness 是”盲目的约束”——你可以确保代码通过 Lint 检查，但无法确保代码做了正确的事。</p>
+<p>TEngine 中，OpenSpec 生成的 <code>specs/*.md</code> 直接成为 Harness 上下文工程的输入源：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs nix">OpenSpec specs<span class="hljs-symbol">/</span> → tengine-dev references<span class="hljs-symbol">/</span> → AI 执行时的上下文<br></code></pre></td></tr></table></figure>
+
+<p>规范文档不是束之高阁的文档，而是 AI 工作时的实时参考。这种”规范即上下文”的设计，让 Harness 的约束不是机械的规则检查，而是基于业务语义的精准引导。</p>
+<h3 id="4-2-Harness-为-SDD-提供保障"><a href="#4-2-Harness-为-SDD-提供保障" class="headerlink" title="4.2 Harness 为 SDD 提供保障"></a>4.2 Harness 为 SDD 提供保障</h3><p>没有 Harness 的 SDD 是”空中楼阁”——规范写得再好，没有执行保障也是白搭。</p>
+<p>TEngine 中，Harness 通过三个层面保障 SDD 规范的执行：</p>
+<ol>
+<li><strong>预防层</strong>：tengine-dev Skill 在 AI 编码前注入规范，预防违规</li>
+<li><strong>检测层</strong>：编码红线 + 冲突检测机制，发现违规时主动标注</li>
+<li><strong>修复层</strong>：问题记录 + Wiki 同步，持续修正规范与代码的偏差</li>
+</ol>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs nginx"><span class="hljs-attribute">SDD</span> 规范 → Harness 预防 → AI 编码 → Harness 检测 → 问题记录 → 规范修正<br>     ↑                                                        │<br>     └──────────────────── 反馈闭环 ──────────────────────────┘<br></code></pre></td></tr></table></figure>
+
+<h3 id="4-3-组合产生的涌现能力"><a href="#4-3-组合产生的涌现能力" class="headerlink" title="4.3 组合产生的涌现能力"></a>4.3 组合产生的涌现能力</h3><p>SDD + Harness 的组合不只是两者功能的叠加，还产生了单独使用时不具备的<strong>涌现能力</strong>：</p>
+<h4 id="涌现能力一：规范自适应"><a href="#涌现能力一：规范自适应" class="headerlink" title="涌现能力一：规范自适应"></a>涌现能力一：规范自适应</h4><p>当 AI 在执行过程中发现规范与代码冲突时，Harness 的冲突检测机制会触发规范修正流程。这意味着规范不是静态的，而是随着项目演进自适应更新的。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs">传统 SDD：规范写好 → AI 执行 → 规范过时 → 人工发现 → 手动更新<br>TEngine：  规范写好 → AI 执行 → 冲突检测 → 自动记录 → 规范自适应<br></code></pre></td></tr></table></figure>
+
+<h4 id="涌现能力二：渐进式约束强化"><a href="#涌现能力二：渐进式约束强化" class="headerlink" title="涌现能力二：渐进式约束强化"></a>涌现能力二：渐进式约束强化</h4><p>通过 <code>problem_*.md</code> 的积累，Harness 的约束会越来越精准。每一个被记录的冲突都是一次”学习”，让后续的约束更贴合项目实际。</p>
+<h4 id="涌现能力三：上下文效率最优化"><a href="#涌现能力三：上下文效率最优化" class="headerlink" title="涌现能力三：上下文效率最优化"></a>涌现能力三：上下文效率最优化</h4><p>SDD 的结构化规范 + Harness 的按需查询 + 会话缓存，三者结合实现了上下文效率的最优化：</p>
+<ul>
+<li>规范结构化 → AI 知道需要什么信息</li>
+<li>按需查询 → 只加载必要的信息</li>
+<li>会话缓存 → 不重复加载已知信息</li>
+</ul>
+<p>这种”知道要什么 → 只取需要的 → 取过就记住”的三级优化，让 AI 的上下文利用率远超全量注入方案。</p>
+<hr>
+<h2 id="五、TEngine-的具体实现：从概念到落地"><a href="#五、TEngine-的具体实现：从概念到落地" class="headerlink" title="五、TEngine 的具体实现：从概念到落地"></a>五、TEngine 的具体实现：从概念到落地</h2><h3 id="5-1-完整工作流"><a href="#5-1-完整工作流" class="headerlink" title="5.1 完整工作流"></a>5.1 完整工作流</h3><p>TEngine 的 SDD + Harness 组合在实际开发中体现为一条四阶段工作流：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs nestedtext"><span class="hljs-attribute">阶段1</span><span class="hljs-punctuation">:</span> <span class="hljs-string">探索（/opsx:explore）</span><br>  <span class="hljs-attribute">→ SDD</span><span class="hljs-punctuation">:</span> <span class="hljs-string">澄清需求，梳理约束</span><br>  <span class="hljs-attribute">→ Harness</span><span class="hljs-punctuation">:</span> <span class="hljs-string">tengine-dev 提供框架规范参考</span><br><br><span class="hljs-attribute">阶段2</span><span class="hljs-punctuation">:</span> <span class="hljs-string">提案（/opsx:propose）</span><br>  <span class="hljs-attribute">→ SDD</span><span class="hljs-punctuation">:</span> <span class="hljs-string">生成 proposal + design + specs + tasks</span><br>  <span class="hljs-attribute">→ Harness</span><span class="hljs-punctuation">:</span> <span class="hljs-string">规范与框架约束对齐</span><br><br><span class="hljs-attribute">阶段3</span><span class="hljs-punctuation">:</span> <span class="hljs-string">实施（/opsx:apply）</span><br>  <span class="hljs-attribute">→ SDD</span><span class="hljs-punctuation">:</span> <span class="hljs-string">按 tasks.md 逐个执行</span><br>  <span class="hljs-attribute">→ Harness</span><span class="hljs-punctuation">:</span> <span class="hljs-string">tengine-dev 按需注入规范 + 编码红线 + 冲突检测</span><br><br><span class="hljs-attribute">阶段4</span><span class="hljs-punctuation">:</span> <span class="hljs-string">归档（/opsx:archive）</span><br>  <span class="hljs-attribute">→ SDD</span><span class="hljs-punctuation">:</span> <span class="hljs-string">变更归档，规范更新</span><br>  <span class="hljs-attribute">→ Harness</span><span class="hljs-punctuation">:</span> <span class="hljs-string">问题记录，熵管理</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="5-2-任务等级分级：Harness-的精度控制"><a href="#5-2-任务等级分级：Harness-的精度控制" class="headerlink" title="5.2 任务等级分级：Harness 的精度控制"></a>5.2 任务等级分级：Harness 的精度控制</h3><p>TEngine 的 L1-L4 任务等级分级是 Harness Engineering 的精妙设计：</p>
+<table>
+<thead>
+<tr>
+<th>等级</th>
+<th>判断标准</th>
+<th>Harness 行为</th>
+<th>SDD 介入程度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>L1 简单</td>
+<td>typo、注释、日志</td>
+<td>零开销，直接编码</td>
+<td>无需</td>
+</tr>
+<tr>
+<td>L2 调用</td>
+<td>单一 API 修改</td>
+<td>单主题查询</td>
+<td>低</td>
+</tr>
+<tr>
+<td>L3 功能</td>
+<td>新功能、跨文件</td>
+<td>全量相关主题查询</td>
+<td>中</td>
+</tr>
+<tr>
+<td>L4 架构</td>
+<td>系统设计、重构</td>
+<td>并行多主题查询</td>
+<td>高</td>
+</tr>
+</tbody></table>
+<p>这种分级机制确保了 Harness 的”缰绳”力度与任务复杂度匹配——简单任务不被过度约束，复杂任务不被约束不足。</p>
+<h3 id="5-3-实战示例：背包系统开发"><a href="#5-3-实战示例：背包系统开发" class="headerlink" title="5.3 实战示例：背包系统开发"></a>5.3 实战示例：背包系统开发</h3><p>以”添加背包系统”为例，展示 SDD + Harness 如何协同工作：</p>
+<p><strong>SDD 阶段</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">/opsx:propose <span class="hljs-string">&quot;add-inventory-system&quot;</span><br></code></pre></td></tr></table></figure>
+
+<p>OpenSpec 自动生成：</p>
+<ul>
+<li><code>proposal.md</code>：背包系统的业务目标和范围</li>
+<li><code>design.md</code>：使用 UIWindow + UIWidget 的技术方案</li>
+<li><code>specs/inventory-spec.md</code>：道具显示、排序、筛选、拖拽的详细行为规范</li>
+<li><code>tasks.md</code>：按依赖顺序排列的任务清单</li>
+</ul>
+<p><strong>Harness 阶段</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">/opsx:apply<br></code></pre></td></tr></table></figure>
+
+<p>AI 执行时自动触发：</p>
+<ol>
+<li>tengine-dev 查询 UIWindow 生命周期规范 → 确保正确使用 OnCreate&#x2F;OnRefresh&#x2F;OnDestroy</li>
+<li>tengine-dev 查询资源管理规范 → 确保使用 LoadAssetAsync + UnloadAsset 配对</li>
+<li>tengine-dev 查询事件系统规范 → 确保使用 GameEvent 而非直接引用</li>
+<li>编码红线检查 → 异步优先、模块访问、热更边界</li>
+<li>冲突检测 → 如发现规范与代码不一致，自动记录</li>
+</ol>
+<p><strong>结果</strong>：AI 生成的代码天然符合 TEngine 规范，无需事后 Review 修正。</p>
+<hr>
+<h2 id="六、相比传统方式的改进点"><a href="#六、相比传统方式的改进点" class="headerlink" title="六、相比传统方式的改进点"></a>六、相比传统方式的改进点</h2><h3 id="6-1-对比纯-Vibe-Coding"><a href="#6-1-对比纯-Vibe-Coding" class="headerlink" title="6.1 对比纯 Vibe Coding"></a>6.1 对比纯 Vibe Coding</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Vibe Coding</th>
+<th>TEngine SDD + Harness</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>需求定义</td>
+<td>口头描述，模糊</td>
+<td>结构化规范，精确</td>
+</tr>
+<tr>
+<td>代码质量</td>
+<td>不可预测</td>
+<td>框架约束保障</td>
+</tr>
+<tr>
+<td>可维护性</td>
+<td>低，无文档</td>
+<td>高，规范即文档</td>
+</tr>
+<tr>
+<td>团队协作</td>
+<td>依赖个人能力</td>
+<td>流程驱动，不依赖个人</td>
+</tr>
+<tr>
+<td>返工率</td>
+<td>高</td>
+<td>低</td>
+</tr>
+</tbody></table>
+<h3 id="6-2-对比传统-SDD（无-Harness）"><a href="#6-2-对比传统-SDD（无-Harness）" class="headerlink" title="6.2 对比传统 SDD（无 Harness）"></a>6.2 对比传统 SDD（无 Harness）</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>传统 SDD</th>
+<th>TEngine SDD + Harness</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>规范执行</td>
+<td>依赖人工 Review</td>
+<td>自动注入 + 冲突检测</td>
+</tr>
+<tr>
+<td>规范更新</td>
+<td>手动同步</td>
+<td>自适应 + Wiki 同步</td>
+</tr>
+<tr>
+<td>上下文效率</td>
+<td>全量文档或人工选择</td>
+<td>按需查询 + 会话缓存</td>
+</tr>
+<tr>
+<td>约束力度</td>
+<td>弱，规范可能被忽略</td>
+<td>强，编码红线 + 检测机制</td>
+</tr>
+</tbody></table>
+<h3 id="6-3-对比纯-Harness（无-SDD）"><a href="#6-3-对比纯-Harness（无-SDD）" class="headerlink" title="6.3 对比纯 Harness（无 SDD）"></a>6.3 对比纯 Harness（无 SDD）</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>纯 Harness</th>
+<th>TEngine SDD + Harness</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>方向性</td>
+<td>约束形式正确，不保证方向正确</td>
+<td>规范指引方向，约束保障执行</td>
+</tr>
+<tr>
+<td>需求管理</td>
+<td>无结构化需求流程</td>
+<td>OpenSpec 完整需求管理</td>
+</tr>
+<tr>
+<td>变更追踪</td>
+<td>无</td>
+<td>proposal → design → specs → tasks 全链路</td>
+</tr>
+<tr>
+<td>团队协作</td>
+<td>约束可共享但需求不可追溯</td>
+<td>需求和约束都可追溯</td>
+</tr>
+</tbody></table>
+<h3 id="6-4-核心改进总结"><a href="#6-4-核心改进总结" class="headerlink" title="6.4 核心改进总结"></a>6.4 核心改进总结</h3><p>TEngine 的 SDD + Harness 组合实现了三个传统方式无法同时达到的改进：</p>
+<ol>
+<li><strong>需求精确性</strong>（SDD 贡献）：从”帮我做 X”到”按以下规范做 X，验收标准是 Y”</li>
+<li><strong>执行可靠性</strong>（Harness 贡献）：从”AI 可能遵守规范”到”AI 必须遵守规范，违规会被检测”</li>
+<li><strong>系统自愈性</strong>（组合涌现）：从”规范与代码逐渐脱节”到”冲突自动检测，规范自适应更新”</li>
+</ol>
+<hr>
+<h2 id="七、适用场景与实践价值"><a href="#七、适用场景与实践价值" class="headerlink" title="七、适用场景与实践价值"></a>七、适用场景与实践价值</h2><h3 id="7-1-最适合的场景"><a href="#7-1-最适合的场景" class="headerlink" title="7.1 最适合的场景"></a>7.1 最适合的场景</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>为什么适合</th>
+<th>预期收益</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>中大型 Unity 商业项目</strong></td>
+<td>模块多、约束复杂、协作要求高</td>
+<td>减少 50%+ 的 AI 代码返工</td>
+</tr>
+<tr>
+<td><strong>团队 AI 编程标准化</strong></td>
+<td>需要统一规范而非依赖个人 Prompt 技巧</td>
+<td>新人上手成本降低</td>
+</tr>
+<tr>
+<td><strong>长期维护项目</strong></td>
+<td>规范与代码需要持续同步</td>
+<td>规范漂移率大幅降低</td>
+</tr>
+<tr>
+<td><strong>多模块协作开发</strong></td>
+<td>跨模块修改需要约束</td>
+<td>减少模块间耦合违规</td>
+</tr>
+<tr>
+<td><strong>热更新项目</strong></td>
+<td>热更边界严格，违规代价高</td>
+<td>自动保障热更边界</td>
+</tr>
+</tbody></table>
+<h3 id="7-2-实践价值量化"><a href="#7-2-实践价值量化" class="headerlink" title="7.2 实践价值量化"></a>7.2 实践价值量化</h3><p>基于 TEngine 社区反馈，SDD + Harness 组合带来的可量化改进：</p>
+<ul>
+<li><strong>AI 代码一次通过率</strong>：从 ~30%（Vibe Coding）提升到 ~80%（SDD + Harness）</li>
+<li><strong>规范违规发现时间</strong>：从”事后 Review”提前到”编码时实时检测”</li>
+<li><strong>上下文消耗</strong>：比全量注入方案减少 60-80%（按需查询 + 缓存）</li>
+<li><strong>规范与代码一致性</strong>：从”逐渐脱节”变为”自适应同步”</li>
+</ul>
+<h3 id="7-3-不适合的场景"><a href="#7-3-不适合的场景" class="headerlink" title="7.3 不适合的场景"></a>7.3 不适合的场景</h3><p>诚实地说，SDD + Harness 并非万能：</p>
+<ul>
+<li><strong>个人小工具</strong>：杀鸡用牛刀，Vibe Coding 更高效</li>
+<li><strong>探索性原型</strong>：需要快速试错时，规范流程反而拖慢节奏</li>
+<li><strong>非 Unity 项目</strong>：TEngine 的 Harness 与 Unity 生态深度绑定</li>
+</ul>
+<hr>
+<h2 id="八、潜在影响与行业启示"><a href="#八、潜在影响与行业启示" class="headerlink" title="八、潜在影响与行业启示"></a>八、潜在影响与行业启示</h2><h3 id="8-1-对-Unity-生态的影响"><a href="#8-1-对-Unity-生态的影响" class="headerlink" title="8.1 对 Unity 生态的影响"></a>8.1 对 Unity 生态的影响</h3><p>TEngine 的 SDD + Harness 实践为 Unity 生态提供了一个可复用的范式：</p>
+<ul>
+<li><strong>框架级 AI 集成</strong>：AI 不是外挂工具，而是框架的一等公民</li>
+<li><strong>规范即基础设施</strong>：规范文档不是附属品，而是 AI 工作流的输入源</li>
+<li><strong>约束即服务</strong>：编码红线、冲突检测、熵管理作为框架能力提供</li>
+</ul>
+<h3 id="8-2-对-AI-编程方法论的影响"><a href="#8-2-对-AI-编程方法论的影响" class="headerlink" title="8.2 对 AI 编程方法论的影响"></a>8.2 对 AI 编程方法论的影响</h3><p>TEngine 的实践验证了一个重要假设：<strong>AI 编程的下一个突破点不在模型能力，而在工程体系。</strong></p>
+<p>同一个大模型，在 Vibe Coding 模式下可能产出不可预测的代码，在 SDD + Harness 模式下却能稳定产出符合规范的代码。这意味着：</p>
+<ul>
+<li>框架和工具链的价值将越来越重要</li>
+<li>“会写 Prompt”将让位于”会设计 AI 工程体系”</li>
+<li>程序员的角色从”写代码”转向”设计让 AI 可靠写代码的系统”</li>
+</ul>
+<h3 id="8-3-对团队组织的影响"><a href="#8-3-对团队组织的影响" class="headerlink" title="8.3 对团队组织的影响"></a>8.3 对团队组织的影响</h3><p>SDD + Harness 的组合改变了团队协作方式：</p>
+<ul>
+<li><strong>需求沟通</strong>：从口头描述变为结构化规范，减少理解偏差</li>
+<li><strong>代码 Review</strong>：从”检查 AI 是否遵守规范”变为”检查规范是否合理”</li>
+<li><strong>知识管理</strong>：从”依赖个人经验”变为”框架规范 + AI 记忆”</li>
+<li><strong>新人培养</strong>：从”跟着老人学”变为”跟着规范和 AI 学”</li>
+</ul>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>TEngine 的 SDD + Harness Engineering 组合不是两个概念的简单叠加，而是一种<strong>工程哲学</strong>：</p>
+<blockquote>
+<p><strong>SDD 定义”做什么”，Harness Engineering 保障”怎么做”。规范指引方向，约束保障执行，反馈闭环驱动进化。</strong></p>
+</blockquote>
+<p>这种组合领先于行业的根本原因在于：它同时解决了 AI 编程的两个核心问题——<strong>需求模糊性</strong>和<strong>执行不可控性</strong>——并且通过反馈闭环让两者相互增强。</p>
+<p>当行业还在讨论”AI 能不能写生产代码”时，TEngine 已经用工程实践回答了这个问题：<strong>AI 能写生产代码，前提是你为它搭建了正确的工程体系。</strong> SDD + Harness，就是那个”正确的工程体系”。</p>
+<hr>
+<p><em>本文基于 TEngine 6.2.0 的 CLAUDE.md、AI-Development-Workflow.md 及开源仓库代码分析撰写。TEngine 是一个 Unity 商用级别开发框架，开源地址：<a target="_blank" rel="noopener" href="https://github.com/ALEXTANGXIAO/TEngine">https://github.com/ALEXTANGXIAO/TEngine</a></em></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E6%9E%90/" class="category-chain-item">技术分析</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E6%9E%90/AI%E5%B7%A5%E7%A8%8B/" class="category-chain-item">AI工程</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Unity/" class="print-no-link">#Unity</a>
+      
+        <a href="/tags/TEngine/" class="print-no-link">#TEngine</a>
+      
+        <a href="/tags/AI%E7%BC%96%E7%A8%8B/" class="print-no-link">#AI编程</a>
+      
+        <a href="/tags/Harness-Engineering/" class="print-no-link">#Harness Engineering</a>
+      
+        <a href="/tags/SDD/" class="print-no-link">#SDD</a>
+      
+        <a href="/tags/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/" class="print-no-link">#软件工程</a>
+      
+        <a href="/tags/%E8%A7%84%E8%8C%83%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" class="print-no-link">#规范驱动开发</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>TEngine 的工程哲学：为什么 SDD + Harness Engineering 是 AI 编程的最优解</div>
+      <div>https://alex-rachel.github.io/2026/04/27/tengine-sdd-harness-engineering/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年4月27日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/06/02/harness-visualization/" title="Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Harness 的可见性危机：当 AI Agent 跑了 35 分钟，你只看到一个 ✅</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/27/ai-programming-six-modes/" title="2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发">
+                        <span class="hidden-mobile">2026 年 AI 编程六大模式全解析：从 Vibe Coding 到规范驱动开发</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'aa0fcd78db19b771843759f0e1eccd4d'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
