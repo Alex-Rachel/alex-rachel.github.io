@@ -19,15 +19,15 @@
   <meta name="author" content="Alex">
   <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
   
-    <meta name="description" content="游戏渲染技术全方位解析 🎮✨ 本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。  原文: 游戏渲染技术|全方位解析游戏画面的实现逻辑 — 网易游戏学堂  一、什么是游戏渲染？游戏渲染（Game Rendering），简单来说就是让你能在显示器上看到游戏画面的技术。 从 2000">
+    <meta name="description" content="游戏渲染技术全方位解析 🎮✨ 本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。每个技术点都会讲清楚是什么、为什么、怎么做，辅以数学公式、Shader 伪代码、实际游戏案例和性能数据。  原文: 游戏渲染技术|全方位解析游戏画面的实现逻辑 — 网易游戏学堂  一、什么是游戏渲染？">
 <meta property="og:type" content="article">
 <meta property="og:title" content="游戏渲染技术全方位解析 - 从一根头发到一片云的技术全景">
 <meta property="og:url" content="https://alex-rachel.github.io/2026/06/03/game-rendering-deep-dive/index.html">
 <meta property="og:site_name" content="Alex&#39;s Blog">
-<meta property="og:description" content="游戏渲染技术全方位解析 🎮✨ 本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。  原文: 游戏渲染技术|全方位解析游戏画面的实现逻辑 — 网易游戏学堂  一、什么是游戏渲染？游戏渲染（Game Rendering），简单来说就是让你能在显示器上看到游戏画面的技术。 从 2000">
+<meta property="og:description" content="游戏渲染技术全方位解析 🎮✨ 本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。每个技术点都会讲清楚是什么、为什么、怎么做，辅以数学公式、Shader 伪代码、实际游戏案例和性能数据。  原文: 游戏渲染技术|全方位解析游戏画面的实现逻辑 — 网易游戏学堂  一、什么是游戏渲染？">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-06-03T04:45:00.000Z">
-<meta property="article:modified_time" content="2026-06-03T04:41:22.200Z">
+<meta property="article:modified_time" content="2026-06-03T05:14:19.038Z">
 <meta property="article:author" content="Alex">
 <meta property="article:tag" content="游戏开发">
 <meta property="article:tag" content="渲染">
@@ -332,7 +332,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          3.8k 字
+          30k 字
         
       </span>
     
@@ -343,7 +343,7 @@
         
         
         
-          32 分钟
+          253 分钟
         
       </span>
     
@@ -388,13 +388,143 @@
               <div class="markdown-body">
                 
                 <h1 id="游戏渲染技术全方位解析-🎮✨"><a href="#游戏渲染技术全方位解析-🎮✨" class="headerlink" title="游戏渲染技术全方位解析 🎮✨"></a>游戏渲染技术全方位解析 🎮✨</h1><blockquote>
-<p>本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。</p>
+<p>本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。每个技术点都会讲清楚<strong>是什么、为什么、怎么做</strong>，辅以数学公式、Shader 伪代码、实际游戏案例和性能数据。</p>
 </blockquote>
 <p><strong>原文</strong>: <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/mCTB5SZ-ysVv-QQc7wTtoQ">游戏渲染技术|全方位解析游戏画面的实现逻辑</a> — 网易游戏学堂</p>
 <hr>
-<h2 id="一、什么是游戏渲染？"><a href="#一、什么是游戏渲染？" class="headerlink" title="一、什么是游戏渲染？"></a>一、什么是游戏渲染？</h2><p>游戏渲染（Game Rendering），简单来说就是<strong>让你能在显示器上看到游戏画面</strong>的技术。</p>
-<p>从 2000 年的《Quake 2》到 2022 年的《地平线：西之绝境》，20 多年间游戏画面发生了翻天覆地的变化，但底层做的事情始终如一：<strong>通过计算机图形学算法，将 3D 场景转化为 2D 图像</strong>。</p>
-<p>那些让人心动的画面，背后是一场关于”光”的精密计算。</p>
+<h2 id="一、什么是游戏渲染？"><a href="#一、什么是游戏渲染？" class="headerlink" title="一、什么是游戏渲染？"></a>一、什么是游戏渲染？</h2><h3 id="1-1-定义"><a href="#1-1-定义" class="headerlink" title="1.1 定义"></a>1.1 定义</h3><p>游戏渲染（Game Rendering），简单来说就是<strong>让你能在显示器上看到游戏画面</strong>的技术。更精确地说，它是一系列计算机图形学算法的集合，负责将虚拟的 3D 场景（模型、材质、灯光、动画）转化为显示器上的 2D 像素阵列。</p>
+<p>这个过程的本质可以概括为**”光的模拟”**——计算光子从光源出发，经过场景中各种物体的反射、折射、散射后，最终到达虚拟相机传感器的过程。</p>
+<h3 id="1-2-20-年的画面进化"><a href="#1-2-20-年的画面进化" class="headerlink" title="1.2 20 年的画面进化"></a>1.2 20 年的画面进化</h3><table>
+<thead>
+<tr>
+<th>年份</th>
+<th>游戏</th>
+<th>渲染特征</th>
+<th>技术里程碑</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1997</td>
+<td>Quake II</td>
+<td>逐像素光照、软件光栅化</td>
+<td>第一个商业硬件加速 3D 游戏</td>
+</tr>
+<tr>
+<td>2004</td>
+<td>Half-Life 2</td>
+<td>HDR 光照、法线贴图</td>
+<td>Source 引擎的光照系统</td>
+</tr>
+<tr>
+<td>2007</td>
+<td>Crysis</td>
+<td>实时阴影、SSAO、体积光</td>
+<td>“显卡危机”——PC 图形的标杆</td>
+</tr>
+<tr>
+<td>2013</td>
+<td>The Last of Us</td>
+<td>延迟渲染、后处理管线</td>
+<td>主机平台的 PBR 先驱</td>
+</tr>
+<tr>
+<td>2015</td>
+<td>The Witcher 3</td>
+<td>PBR 材质、开放世界流送</td>
+<td>大规模场景的 PBR 实践</td>
+</tr>
+<tr>
+<td>2017</td>
+<td>Horizon Zero Dawn</td>
+<td>体积云、大气散射、植被系统</td>
+<td>Decima 引擎的自然环境渲染</td>
+</tr>
+<tr>
+<td>2018</td>
+<td>Red Dead Redemption 2</td>
+<td>物理天空、全局光照、ECS</td>
+<td>极致的细节和交互</td>
+</tr>
+<tr>
+<td>2020</td>
+<td>Cyberpunk 2077</td>
+<td>RTX 光追、DLSS、虚拟几何</td>
+<td>光线追踪实时化的先驱</td>
+</tr>
+<tr>
+<td>2022</td>
+<td>Horizon Forbidden West</td>
+<td>体积云升级、水面交互</td>
+<td>大气渲染的新高度</td>
+</tr>
+<tr>
+<td>2023</td>
+<td>Alan Wake 2</td>
+<td>全路径追踪、Meshlet</td>
+<td>实时光追的全面突破</td>
+</tr>
+</tbody></table>
+<p>从 2000 年到 2025 年，游戏画面发生了翻天覆地的变化，但底层做的事情始终如一：<strong>通过计算机图形学算法，将 3D 场景转化为 2D 图像</strong>。变化的是算法的复杂度和硬件的性能——从简单的 Phong 光照模型，到基于物理的渲染（PBR），再到实时光线追踪。</p>
+<h3 id="1-3-渲染管线概览"><a href="#1-3-渲染管线概览" class="headerlink" title="1.3 渲染管线概览"></a>1.3 渲染管线概览</h3><p>理解游戏渲染，首先要理解<strong>渲染管线（Rendering Pipeline）</strong>——从 3D 数据到屏幕像素的完整流程：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs mathematica">┌──────────────────────────────────────────────────────────────────────┐<br>│                        渲染管线（<span class="hljs-variable">Rendering</span> <span class="hljs-variable">Pipeline</span>）                 │<br>├──────────────────────────────────────────────────────────────────────┤<br>│                                                                      │<br>│  ┌──────────┐   ┌──────────┐   ┌───────────┐   ┌────────────────┐  │<br>│  │ <span class="hljs-built_in">Application</span>│  │ <span class="hljs-variable">Geometry</span>  │  │ <span class="hljs-built_in">Rasterize</span> │  │   <span class="hljs-variable">Pixel</span><span class="hljs-operator">/</span>      │  │<br>│  │  <span class="hljs-variable">Stage</span>    │──▶│ <span class="hljs-variable">Processing</span>│──▶│  <span class="hljs-punctuation">(</span>光栅化<span class="hljs-punctuation">)</span> │──▶│  <span class="hljs-variable">Fragment</span>     │  │<br>│  │ <span class="hljs-punctuation">(</span><span class="hljs-variable">CPU</span> 端<span class="hljs-punctuation">)</span>  │  │ <span class="hljs-variable">Stage</span>     │  │           │  │  <span class="hljs-variable">Stage</span>        │  │<br>│  └──────────┘   └──────────┘   └───────────┘   └────────────────┘  │<br>│                                                                      │<br>│  ① 场景遍历     ④ 顶点变换     ⑦ 三角形→像素   ⑩ 像素着色         │<br>│  ② 视锥剔除     ⑤ 裁剪         ⑧ 重心坐标插值   ⑪ 纹理采样         │<br>│  ③ 排序<span class="hljs-operator">/</span>合批    ⑥ 屏幕映射     ⑨ <span class="hljs-variable">Early</span><span class="hljs-operator">-</span><span class="hljs-variable">Z</span> 测试    ⑫ 混合<span class="hljs-operator">/</span>输出       │<br>│                                                                      │<br>└──────────────────────────────────────────────────────────────────────┘<br></code></pre></td></tr></table></figure>
+
+<p><strong>关键阶段详解</strong>：</p>
+<ol>
+<li><p><strong>Application Stage（应用层）</strong>：CPU 端执行碰撞检测、物理模拟、动画更新、可见性判断。这是唯一完全由开发者控制的阶段。</p>
+</li>
+<li><p><strong>Geometry Processing（几何处理）</strong>：顶点着色器（Vertex Shader）执行模型-视图-投影变换（MVP）、法线变换、骨骼蒙皮。可选的曲面细分（Tessellation）和几何着色器（Geometry Shader）在此阶段运行。</p>
+</li>
+<li><p><strong>Rasterization（光栅化）</strong>：将三角形转换为像素片段（fragments）。这一步由 GPU 硬件固定管线完成，速度极快。</p>
+</li>
+<li><p><strong>Fragment Processing（片元处理）</strong>：像素&#x2F;片元着色器执行材质计算——这就是 PBR、NPR、SSS 等技术”发生”的地方。每个像素都要执行一次 Shader 程序。</p>
+</li>
+</ol>
+<p>现代引擎还广泛使用<strong>延迟渲染（Deferred Rendering）</strong>和<strong>前向+（Forward+）</strong>等变体，它们改变了管线的组织方式，但核心流程不变。</p>
+<h3 id="1-4-两种主流渲染架构"><a href="#1-4-两种主流渲染架构" class="headerlink" title="1.4 两种主流渲染架构"></a>1.4 两种主流渲染架构</h3><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>前向渲染（Forward）</th>
+<th>延迟渲染（Deferred）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>光照复杂度</strong></td>
+<td>O(物体数 × 光源数)</td>
+<td>O(像素数 × 光源数)</td>
+</tr>
+<tr>
+<td><strong>多光源</strong></td>
+<td>困难（需要多 pass）</td>
+<td>友好（G-Buffer 解耦）</td>
+</tr>
+<tr>
+<td><strong>透明物体</strong></td>
+<td>天然支持</td>
+<td>需要额外前向 pass</td>
+</tr>
+<tr>
+<td><strong>MSAA</strong></td>
+<td>天然支持</td>
+<td>不兼容（需 FXAA&#x2F;TAA）</td>
+</tr>
+<tr>
+<td><strong>带宽</strong></td>
+<td>低</td>
+<td>高（G-Buffer 读写）</td>
+</tr>
+<tr>
+<td><strong>代表引擎</strong></td>
+<td>Unity 默认、移动端</td>
+<td>UE4&#x2F;UE5 默认</td>
+</tr>
+<tr>
+<td><strong>移动端友好度</strong></td>
+<td>✅ 高</td>
+<td>❌ 低（带宽开销大）</td>
+</tr>
+</tbody></table>
+<p><strong>Forward+（分块前向渲染）</strong>结合了两者的优势：先用深度预pass将屏幕分块，计算每块的光源列表，然后在前向 pass 中只处理相关光源。这是目前主机和 PC 上的主流方案之一。</p>
 <hr>
 <h2 id="二、渲染画面的三大核心模块"><a href="#二、渲染画面的三大核心模块" class="headerlink" title="二、渲染画面的三大核心模块"></a>二、渲染画面的三大核心模块</h2><p>游戏渲染可以归纳为三个互相交织的核心模块：</p>
 <table>
@@ -403,36 +533,100 @@
 <th>模块</th>
 <th>关注点</th>
 <th>目标</th>
+<th>技术难度</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>角色（Character）</strong></td>
 <td>材质与交互：头发、皮肤、眼睛、服饰</td>
 <td>让角色看起来真实或有风格</td>
+<td>⭐⭐⭐⭐⭐</td>
 </tr>
 <tr>
 <td><strong>场景（Scene）</strong></td>
 <td>LOD 与流送：植被、云、水、地形</td>
 <td>构建可信的游戏世界</td>
+<td>⭐⭐⭐⭐</td>
 </tr>
 <tr>
 <td><strong>氛围（Atmosphere）</strong></td>
 <td>参数与控制：天气、光影（TOD 时间变化）</td>
 <td>营造沉浸感</td>
+<td>⭐⭐⭐</td>
 </tr>
 </tbody></table>
-<p><strong>关键洞察</strong>：三者并非割裂，而是存在大量交集——玩家踩水产生波纹、风吹草动、场景破坏等交互效果，正是提升沉浸感的关键，也是技术实现的难点。</p>
-<hr>
-<h2 id="三、角色渲染技术详解"><a href="#三、角色渲染技术详解" class="headerlink" title="三、角色渲染技术详解"></a>三、角色渲染技术详解</h2><h3 id="3-1-角色制作流程"><a href="#3-1-角色制作流程" class="headerlink" title="3.1 角色制作流程"></a>3.1 角色制作流程</h3><p>从原画设计到游戏画面，角色需经历：</p>
-<blockquote>
-<p><strong>原画设计 → 3D 建模 → 材质制作 → 渲染输出</strong></p>
-</blockquote>
-<p>角色材质分为两大类：</p>
+<h3 id="为什么是这三个模块？"><a href="#为什么是这三个模块？" class="headerlink" title="为什么是这三个模块？"></a>为什么是这三个模块？</h3><p>这不是随意的分类，而是反映了游戏画面构成的<strong>物理本质</strong>：</p>
 <ul>
-<li><strong>通用材质库</strong>：解决一般物体表面的光照问题</li>
-<li><strong>特殊材质</strong>：眼球、皮肤、头发等需要特殊处理</li>
+<li><strong>角色</strong>是玩家注意力的焦点——人脸识别的本能让玩家对角色的每一处细节都极度敏感。一个微小的皮肤渲染错误（比如看起来像塑料）会立刻破坏沉浸感。</li>
+<li><strong>场景</strong>是玩家活动的空间——它需要足够大（开放世界）、足够丰富（植被、建筑）、足够真实（光影正确），同时又不能超出硬件预算。</li>
+<li><strong>氛围</strong>是情绪的载体——同一个场景，晴天和雨天给玩家的感受完全不同。大气散射、体积云、天气系统是连接角色和场景的”胶水”。</li>
 </ul>
-<h3 id="3-2-PBR-vs-NPR：两大渲染范式"><a href="#3-2-PBR-vs-NPR：两大渲染范式" class="headerlink" title="3.2 PBR vs NPR：两大渲染范式"></a>3.2 PBR vs NPR：两大渲染范式</h3><p>这是游戏渲染中最核心的概念分野：</p>
+<h3 id="三者的交集：交互"><a href="#三者的交集：交互" class="headerlink" title="三者的交集：交互"></a>三者的交集：交互</h3><p><strong>关键洞察</strong>：三者并非割裂，而是存在大量<strong>交集</strong>——这些交集恰恰是技术上最难、也是提升沉浸感最关键的部分：</p>
+<figure class="highlight fortran"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs fortran">               ┌──────────────┐<br>               │   交互效果    │<br>               │              │<br>       ┌───────┤  角色踩水    ├───────┐<br>       │       │  风吹头发    │       │<br>       │       │  雨滴打伞    │       │<br>       │       │  场景破坏    │       │<br>       │       └──────┬───────┘       │<br>┌──────┴──────┐      │      ┌────────┴──────┐<br>│   角色       │      │      │    场景        │<br>│ <span class="hljs-keyword">Character</span>   │      │      │   Scene       │<br>└──────┬──────┘      │      └────────┬──────┘<br>       │       ┌──────┴───────┐       │<br>       └───────┤   氛围        ├───────┘<br>               │ Atmosphere   │<br>               └──────────────┘<br></code></pre></td></tr></table></figure>
+
+<p><strong>典型的交互渲染效果</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>交互类型</th>
+<th>角色侧</th>
+<th>场景侧</th>
+<th>氛围侧</th>
+<th>技术方案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>角色踩水</td>
+<td>溅水动画</td>
+<td>水面波纹</td>
+<td>泥地反射</td>
+<td>物理模拟 + Render to Texture</td>
+</tr>
+<tr>
+<td>风吹头发</td>
+<td>发丝摆动</td>
+<td>草地弯曲</td>
+<td>风向参数</td>
+<td>风场 + Verlet 积分</td>
+</tr>
+<tr>
+<td>雨天行走</td>
+<td>湿身效果</td>
+<td>地面水洼</td>
+<td>雨滴粒子</td>
+<td>SSS 变体 + 粒子系统</td>
+</tr>
+<tr>
+<td>场景破坏</td>
+<td>碎片物理</td>
+<td>几何变形</td>
+<td>灰尘特效</td>
+<td>Destructible Mesh + GPU 粒子</td>
+</tr>
+<tr>
+<td>雪地行走</td>
+<td>脚印标记</td>
+<td>雪地变形</td>
+<td>积雪厚度</td>
+<td>Splat Map + Tessellation</td>
+</tr>
+</tbody></table>
+<p>理解了这三个模块及其交互，就掌握了游戏渲染的全局视图。接下来我们逐个深入。</p>
+<hr>
+<h2 id="三、角色渲染技术详解"><a href="#三、角色渲染技术详解" class="headerlink" title="三、角色渲染技术详解"></a>三、角色渲染技术详解</h2><p>角色是游戏画面的核心。一个角色的渲染质量，直接决定了玩家对游戏画面水平的整体评判。</p>
+<h3 id="3-1-角色制作流程"><a href="#3-1-角色制作流程" class="headerlink" title="3.1 角色制作流程"></a>3.1 角色制作流程</h3><p>从原画设计到游戏画面，角色需经历一个完整的工业化管线：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs nix">原画设计 → 高模雕刻 → 拓扑简化 → UV 展开 → 烘焙贴图 → 材质制作 → 渲染输出<br>   │          │          │          │          │          │          │<br>   │          │          │          │          │          │          │<br>   ▼          ▼          ▼          ▼          ▼          ▼          ▼<br> 概念图    ZBrush     <span class="hljs-number">3</span>ds Max<span class="hljs-symbol">/</span>   RizomUV   Substance   PBR<span class="hljs-symbol">/NPR</span>   游戏引擎<br> 确定风格  百万面     Blender    UV布局    Painter     材质参数   实时渲染<br>           细节雕刻   万面级别   纹理密度   法线<span class="hljs-operator">+</span>金属   粗糙度等   LOD<span class="hljs-operator">/</span>剔除<br>                               AO等      <span class="hljs-operator">+</span>粗糙度     参数调整   最终效果<br></code></pre></td></tr></table></figure>
+
+<p><strong>角色材质的两大分类</strong>：</p>
+<ol>
+<li><strong>通用材质库</strong>：解决一般物体表面的光照问题。金属、木材、布料、皮革等通过 PBR 参数化描述，一套材质系统覆盖大部分需求。</li>
+<li><strong>特殊材质</strong>：眼球、皮肤、头发、丝袜等需要特殊的 Shader 处理——它们的光照行为无法被标准 PBR 模型准确描述。</li>
+</ol>
+<p>通用材质用一套标准化的 PBR 流程就能搞定，但特殊材质才是区分”一般画面”和”3A 画面”的关键。下面我们逐个拆解。</p>
+<hr>
+<h3 id="3-2-PBR-vs-NPR：两大渲染范式"><a href="#3-2-PBR-vs-NPR：两大渲染范式" class="headerlink" title="3.2 PBR vs NPR：两大渲染范式"></a>3.2 PBR vs NPR：两大渲染范式</h3><p>这是游戏渲染中最核心的概念分野。理解它们的差异，是理解后续所有技术的基础。</p>
+<h4 id="3-2-1-PBR（基于物理的渲染）"><a href="#3-2-1-PBR（基于物理的渲染）" class="headerlink" title="3.2.1 PBR（基于物理的渲染）"></a>3.2.1 PBR（基于物理的渲染）</h4><p><strong>核心思想</strong>：用物理公式描述光与材质的交互。给定材质参数（粗糙度、金属度等）和光照条件，渲染结果是<strong>确定的、可预测的</strong>。</p>
+<p><strong>为什么需要 PBR？</strong> 在 PBR 时代之前，美术需要手动调整每个材质的每一项参数来”凑出”看起来对的效果。一个问题：在日光下看起来正确的材质，在室内灯光下可能完全不对。PBR 通过物理模型保证了材质在<strong>任何光照条件</strong>下都正确。</p>
 <table>
 <thead>
 <tr>
@@ -461,262 +655,1325 @@
 <td>标准化，工具成熟</td>
 <td>需自定义，成本较高</td>
 </tr>
+<tr>
+<td><strong>光照一致性</strong></td>
+<td>✅ 任意光照下正确</td>
+<td>❌ 通常依赖烘焙，动态光需特殊处理</td>
+</tr>
+<tr>
+<td><strong>材质参数</strong></td>
+<td>Roughness, Metallic, AO 等</td>
+<td>色阶贴图、SDF 轮廓、法线阈值等</td>
+</tr>
+<tr>
+<td><strong>代表游戏</strong></td>
+<td>The Last of Us, Cyberpunk</td>
+<td>原神, 崩坏：星穹铁道, Zelda BotW</td>
+</tr>
+<tr>
+<td><strong>工具链</strong></td>
+<td>Substance 生态完善</td>
+<td>自研 Shader + 美术管线</td>
+</tr>
 </tbody></table>
-<h3 id="3-3-渲染方程"><a href="#3-3-渲染方程" class="headerlink" title="3.3 渲染方程"></a>3.3 渲染方程</h3><p>所有基于物理的渲染都建立在这个方程之上：</p>
-<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs stylus"><span class="hljs-function"><span class="hljs-title">Lo</span><span class="hljs-params">(ωo)</span></span> = <span class="hljs-built_in">Le</span>(ωo) + ∫Ω <span class="hljs-built_in">Fr</span>(ω<span class="hljs-selector-tag">i</span>, ωo) · <span class="hljs-built_in">Li</span>(ωi) · (n · ωi) dωi<br></code></pre></td></tr></table></figure>
-
-<p>它描述了从表面某点沿观察方向 ωo 射出的光量，等于自发光加上所有入射光经过 BRDF（双向反射分布函数）调制后的积分。</p>
-<h3 id="3-4-PBR-的材质基础：从-MERL-到-Disney-Principled-BRDF"><a href="#3-4-PBR-的材质基础：从-MERL-到-Disney-Principled-BRDF" class="headerlink" title="3.4 PBR 的材质基础：从 MERL 到 Disney Principled BRDF"></a>3.4 PBR 的材质基础：从 MERL 到 Disney Principled BRDF</h3><p>在 PBR 流行之前，研究者用专业设备测量真实材质的反射特性，建立了 <strong>MERL BRDF 数据库</strong>。但真实数据驱动存在瓶颈：</p>
-<ul>
-<li>数据量大（33MB+），搜索性能低</li>
-<li>无法表达次表面散射、各向异性等</li>
-<li>材质范围受限于采样</li>
-</ul>
-<p><strong>Disney Principled BRDF（2012）</strong> 带来了革命性的简化：</p>
-<ol>
-<li><strong>参数直观</strong>：如”粗糙度”而非晦涩的物理参数</li>
-<li><strong>参数尽可能少</strong>：控制在少数几个关键参数</li>
-<li><strong>值范围 0-1</strong>：标准化，便于理解和调整</li>
-<li><strong>允许参数超出范围</strong>：在有意义时突破限制</li>
-<li><strong>组合健壮</strong>：任意参数组合不产生错误</li>
-</ol>
-<p><strong>核心参数</strong>：粗糙度（Roughness）&#x2F; 光泽度（Glossiness），两者为相反关系。这一原则彻底改变了游戏美术的工作流。</p>
-<h3 id="3-5-微表面模型（Microfacet-Model）"><a href="#3-5-微表面模型（Microfacet-Model）" class="headerlink" title="3.5 微表面模型（Microfacet Model）"></a>3.5 微表面模型（Microfacet Model）</h3><p>当像素覆盖大量表面细节时，基于统计学描述表面的微小法线变化。</p>
-<p><strong>BRDF 的两种成分</strong>：</p>
-<ul>
-<li><strong>漫反射（Diffuse）</strong>：一般简化为 <code>1/π</code></li>
-<li><strong>镜面反射（Specular）</strong>：使用 <strong>GGX 模型 + Cook-Torrance BRDF</strong></li>
-</ul>
-<p><strong>多层材质混合的演进</strong>：</p>
-<ul>
-<li>传统方式：基于结果的混合（物理上有问题）</li>
-<li>更优方案：材质计算阶段提前混合（线性叠加）</li>
-<li><strong>UE5 的 Strata 系统</strong>：用”slab”概念表达每层的光学结构，实现更准确的线性混合</li>
-</ul>
-<h3 id="3-6-NPR（非真实感渲染）风格化"><a href="#3-6-NPR（非真实感渲染）风格化" class="headerlink" title="3.6 NPR（非真实感渲染）风格化"></a>3.6 NPR（非真实感渲染）风格化</h3><p>二次元渲染的核心原则：<strong>所见即所得</strong>。</p>
-<ul>
-<li><strong>贴图即结果</strong>：美术画的贴图直接对应最终效果</li>
-<li><strong>光照烘焙</strong>：光照信息预烘焙到贴图中</li>
-<li><strong>边缘光</strong>：利用菲涅尔（Fresnel）系数实现</li>
-<li><strong>屏幕空间处理</strong>：在屏幕空间做卷积得到更细的边缘光</li>
-</ul>
-<h3 id="3-7-皮肤渲染（Skin-Rendering）"><a href="#3-7-皮肤渲染（Skin-Rendering）" class="headerlink" title="3.7 皮肤渲染（Skin Rendering）"></a>3.7 皮肤渲染（Skin Rendering）</h3><p>皮肤与通用表面材质最大的不同：<strong>多层结构（表皮、真皮、油脂、血管）带来的次表面散射（SSS）</strong>。</p>
-<p>核心现象：</p>
-<ul>
-<li><strong>正面通透感</strong>：亮部到暗部的柔和过渡</li>
-<li><strong>背面透射</strong>：光从背面穿透薄皮肤</li>
-<li><strong>细节高光</strong>：更细、更丰富的高光层次</li>
-</ul>
-<p>SSS 是让皮肤看起来”活”的关键——没有它，皮肤就像塑料。</p>
-<h3 id="3-8-头发渲染（Hair-Rendering）"><a href="#3-8-头发渲染（Hair-Rendering）" class="headerlink" title="3.8 头发渲染（Hair Rendering）"></a>3.8 头发渲染（Hair Rendering）</h3><p>头发的特殊性：<strong>圆柱形纤维，非平面</strong>。光路行为有三种：直接反射、同侧透射、穿透散射。</p>
-<p><strong>光照模型</strong>：</p>
-<ul>
-<li><strong>Kajiya-Kay 模型（1989）</strong>：基于切线计算高光，公式简单，手游主流</li>
-<li><strong>Marschner 模型（2003）</strong>：完整解决三条光路，使用预计算 LUT 加速</li>
-</ul>
-<p>建模方案上，从卡片（Card）到发丝级（Strand）渲染，在效果和性能之间做取舍。</p>
-<h3 id="3-9-眼球渲染（Eye-Rendering）"><a href="#3-9-眼球渲染（Eye-Rendering）" class="headerlink" title="3.9 眼球渲染（Eye Rendering）"></a>3.9 眼球渲染（Eye Rendering）</h3><p>关键在于<strong>结构拆解</strong>：</p>
-<ul>
-<li><strong>角膜</strong>：折射、反射</li>
-<li><strong>虹膜</strong>：散射、纹理</li>
-<li><strong>巩膜</strong>：血管纹理、SSS</li>
-<li><strong>泪膜</strong>：高光反射</li>
-</ul>
-<p>最新趋势包括动态效果：肌肉跟随、Look At 功能的细节优化。</p>
-<h3 id="角色渲染小结"><a href="#角色渲染小结" class="headerlink" title="角色渲染小结"></a>角色渲染小结</h3><blockquote>
-<p><strong>核心原则：用更低成本达到更好效果。</strong> PBR 方案因标准化工作流而成本更低；NPR 方案需自定义工具链，成本较高。</p>
-</blockquote>
+<h4 id="3-2-2-NPR（非真实感渲染）"><a href="#3-2-2-NPR（非真实感渲染）" class="headerlink" title="3.2.2 NPR（非真实感渲染）"></a>3.2.2 NPR（非真实感渲染）</h4><p><strong>核心思想</strong>：最终效果由美术<strong>直接控制</strong>，Shader 的角色是”把美术的意图忠实呈现”，而不是”用公式算出物理正确的结果”。</p>
+<p>NPR 不是”不追求真实”，而是追求<strong>另一种真实</strong>——动画、漫画、油画等非写实风格的视觉语言。原神的渲染效果在物理上完全错误（阴影是硬编码的色阶、高光位置不符合物理），但在玩家的感知中，它”看起来就是对的”——因为玩家期待的是二次元风格，而不是物理真实。</p>
 <hr>
-<h2 id="四、场景渲染技术详解"><a href="#四、场景渲染技术详解" class="headerlink" title="四、场景渲染技术详解"></a>四、场景渲染技术详解</h2><h3 id="4-1-场景制作的-PCG-流程"><a href="#4-1-场景制作的-PCG-流程" class="headerlink" title="4.1 场景制作的 PCG 流程"></a>4.1 场景制作的 PCG 流程</h3><p>现代游戏场景制作大量使用<strong>程序化内容生成（PCG）</strong>：</p>
+<h3 id="3-3-渲染方程：一切-PBR-的基础"><a href="#3-3-渲染方程：一切-PBR-的基础" class="headerlink" title="3.3 渲染方程：一切 PBR 的基础"></a>3.3 渲染方程：一切 PBR 的基础</h3><p>所有基于物理的渲染都建立在一个方程之上——<strong>渲染方程（Rendering Equation）</strong>，由 James Kajiya 于 1986 年提出：</p>
+<p>$$L_o(\omega_o) &#x3D; L_e(\omega_o) + \int_{\Omega} f_r(\omega_i, \omega_o) \cdot L_i(\omega_i) \cdot (\mathbf{n} \cdot \omega_i) , d\omega_i$$</p>
+<p>这个方程看起来吓人，但拆解后每个部分都有清晰的物理含义：</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>名称</th>
+<th>物理含义</th>
+<th>直觉理解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$L_o(\omega_o)$</td>
+<td>出射辐射度</td>
+<td>沿观察方向 $\omega_o$ 离开表面的光量</td>
+<td>“你看到了什么”</td>
+</tr>
+<tr>
+<td>$L_e(\omega_o)$</td>
+<td>自发光</td>
+<td>表面自身发出的光</td>
+<td>“它自己是灯泡吗？”</td>
+</tr>
+<tr>
+<td>$\int_{\Omega}$</td>
+<td>半球积分</td>
+<td>对上半球所有方向求和</td>
+<td>“从四面八方收集光线”</td>
+</tr>
+<tr>
+<td>$f_r(\omega_i, \omega_o)$</td>
+<td>BRDF</td>
+<td>双向反射分布函数</td>
+<td>“这个表面有多能反光？”</td>
+</tr>
+<tr>
+<td>$L_i(\omega_i)$</td>
+<td>入射辐射度</td>
+<td>从方向 $\omega_i$ 来的光量</td>
+<td>“那里有多少光？”</td>
+</tr>
+<tr>
+<td>$(\mathbf{n} \cdot \omega_i)$</td>
+<td>Lambert 余弦</td>
+<td>表面法线与入射方向的点积</td>
+<td>“光有多正着照过来？”</td>
+</tr>
+<tr>
+<td>$d\omega_i$</td>
+<td>立体角微元</td>
+<td>方向上的微小变化</td>
+<td>“收集每个方向的一小份”</td>
+</tr>
+</tbody></table>
+<p><strong>直觉翻译</strong>：</p>
+<blockquote>
+<p>“你看到的颜色 &#x3D; 表面自己发的光 + 从四面八方来的光，经过表面反射后的总和。每束入射光的贡献取决于三个因素：光有多强（$L_i$）、表面在该方向的反射能力（BRDF）、光线照射的角度（Lambert 余弦项）。”</p>
+</blockquote>
+<h4 id="为什么这个方程重要？"><a href="#为什么这个方程重要？" class="headerlink" title="为什么这个方程重要？"></a>为什么这个方程重要？</h4><p>渲染方程是<strong>能量守恒</strong>的数学表达——表面反射出去的光能永远不会超过接收到的光能。这是 PBR 的基石：只要你的 BRDF 满足能量守恒，材质在任何光照条件下都会表现正确。</p>
+<h4 id="为什么渲染方程无法精确求解？"><a href="#为什么渲染方程无法精确求解？" class="headerlink" title="为什么渲染方程无法精确求解？"></a>为什么渲染方程无法精确求解？</h4><p>积分域 $\Omega$ 是连续的半球空间——理论上需要无限多次采样才能得到精确解。这就是为什么游戏渲染永远在做<strong>近似</strong>：</p>
+<ul>
+<li><strong>实时渲染</strong>用环境贴图（Cubemap）或球谐函数（SH）近似 $L_i$</li>
+<li><strong>离线渲染</strong>用蒙特卡洛方法（Monte Carlo）采样估计积分</li>
+<li><strong>光线追踪</strong>用光线采样直接求解积分</li>
+</ul>
+<hr>
+<h3 id="3-4-BRDF：表面的”身份证”"><a href="#3-4-BRDF：表面的”身份证”" class="headerlink" title="3.4 BRDF：表面的”身份证”"></a>3.4 BRDF：表面的”身份证”</h3><p>BRDF（Bidirectional Reflectance Distribution Function，双向反射分布函数）是渲染方程的核心——它描述了材质的光学特性。<strong>不同的材质就是不同的 BRDF</strong>。</p>
+<h4 id="3-4-1-BRDF-的物理约束"><a href="#3-4-1-BRDF-的物理约束" class="headerlink" title="3.4.1 BRDF 的物理约束"></a>3.4.1 BRDF 的物理约束</h4><p>一个物理合理的 BRDF 必须满足：</p>
+<ol>
+<li><strong>非负性</strong>：$f_r(\omega_i, \omega_o) \geq 0$（反射光不能为负）</li>
+<li><strong>互易律（Helmholtz Reciprocity）</strong>：$f_r(\omega_i, \omega_o) &#x3D; f_r(\omega_o, \omega_i)$（交换入射和出射方向，结果不变）</li>
+<li><strong>能量守恒</strong>：$\int_{\Omega} f_r(\omega_i, \omega_o) (\mathbf{n} \cdot \omega_o) d\omega_o \leq 1$（反射出去的总能量不超过入射能量）</li>
+</ol>
+<h4 id="3-4-2-从-MERL-数据库到参数化-BRDF"><a href="#3-4-2-从-MERL-数据库到参数化-BRDF" class="headerlink" title="3.4.2 从 MERL 数据库到参数化 BRDF"></a>3.4.2 从 MERL 数据库到参数化 BRDF</h4><p>在 PBR 流行之前，研究者用专业设备（测角光度计）测量真实材质的反射特性，建立了 <strong>MERL BRDF 数据库</strong>（Matusik et al., 2003），包含 100 种真实材质的 BRDF 数据。</p>
+<p><strong>MERL 数据库的问题</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>详情</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>数据量巨大</strong></td>
+<td>每个材质 33MB+，100 个材质就是 3.3GB</td>
+</tr>
+<tr>
+<td><strong>查询性能低</strong></td>
+<td>需要三线性插值，GPU 友好度差</td>
+</tr>
+<tr>
+<td><strong>表达能力受限</strong></td>
+<td>无法表达各向异性（如拉丝金属）、次表面散射等复杂现象</td>
+</tr>
+<tr>
+<td><strong>外推能力差</strong></td>
+<td>无法从采样数据生成数据库中没有的材质</td>
+</tr>
+<tr>
+<td><strong>参数不直观</strong></td>
+<td>没有美术能理解的参数化方式</td>
+</tr>
+</tbody></table>
+<p>这意味着：数据驱动这条路走不通。我们需要<strong>参数化的数学模型</strong>来近似真实材质。</p>
+<h4 id="3-4-3-Disney-Principled-BRDF（2012）——革命性的简化"><a href="#3-4-3-Disney-Principled-BRDF（2012）——革命性的简化" class="headerlink" title="3.4.3 Disney Principled BRDF（2012）——革命性的简化"></a>3.4.3 Disney Principled BRDF（2012）——革命性的简化</h4><p>Brent Burley 在 SIGGRAPH 2012 发表的 Disney Principled BRDF 带来了革命性的改变。它不是一个新的物理模型，而是一套<strong>美术友好的参数化方案</strong>，用少数直观参数控制复杂的材质外观。</p>
+<p><strong>设计原则</strong>：</p>
+<ol>
+<li><strong>参数直观</strong>：用”粗糙度”而非晦涩的”微表面斜率分布参数”</li>
+<li><strong>参数尽可能少</strong>：控制在 10 个左右的关键参数</li>
+<li><strong>值范围 0-1</strong>：标准化，便于理解和调整（美术最喜欢滑块！）</li>
+<li><strong>允许参数超出范围</strong>：在有意义时突破 [0,1] 限制以表达特殊效果</li>
+<li><strong>组合健壮</strong>：任意参数组合不产生明显错误</li>
+</ol>
+<p><strong>核心参数详解</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>英文名</th>
+<th>范围</th>
+<th>效果说明</th>
+<th>物理对应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>基础色</strong></td>
+<td>Base Color</td>
+<td>[0,1]³</td>
+<td>材质本身的颜色（非金属）或反射率（金属）</td>
+<td>反射率 albedo</td>
+</tr>
+<tr>
+<td><strong>粗糙度</strong></td>
+<td>Roughness</td>
+<td>[0,1]</td>
+<td>0 &#x3D; 镜面光滑，1 &#x3D; 完全粗糙</td>
+<td>微表面斜率的方差</td>
+</tr>
+<tr>
+<td><strong>金属度</strong></td>
+<td>Metallic</td>
+<td>[0,1]</td>
+<td>0 &#x3D; 非金属（有漫反射），1 &#x3D; 金属（无漫反射）</td>
+<td>导体&#x2F;介质区分</td>
+</tr>
+<tr>
+<td><strong>高光强度</strong></td>
+<td>Specular</td>
+<td>[0,1]</td>
+<td>非金属的镜面反射强度</td>
+<td>菲涅尔 F0 值</td>
+</tr>
+<tr>
+<td><strong>各向异性</strong></td>
+<td>Anisotropic</td>
+<td>[0,1]</td>
+<td>反射高光的拉伸程度（如拉丝金属）</td>
+<td>切线方向上的粗糙度差异</td>
+</tr>
+<tr>
+<td><strong>次表面</strong></td>
+<td>Subsurface</td>
+<td>[0,1]</td>
+<td>光线在表面下的散射程度</td>
+<td>次表面散射近似</td>
+</tr>
+<tr>
+<td><strong>光泽</strong></td>
+<td>Sheen</td>
+<td>[0,1]</td>
+<td>掠射角的布料光泽</td>
+<td>织物纤维的散射</td>
+</tr>
+<tr>
+<td><strong>光泽色</strong></td>
+<td>Sheen Tint</td>
+<td>[0,1]</td>
+<td>光泽的色调偏移</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>清漆</strong></td>
+<td>Clearcoat</td>
+<td>[0,1]</td>
+<td>表面额外的透明涂层</td>
+<td>汽车漆面的两层结构</td>
+</tr>
+<tr>
+<td><strong>清漆粗糙度</strong></td>
+<td>Clearcoat Roughness</td>
+<td>[0,1]</td>
+<td>透明涂层的粗糙度</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>最核心的参数是粗糙度（Roughness）</strong>。它和高光的光泽度（Glossiness）是互补关系：<code>Glossiness = 1 - Roughness</code>。不同的引擎用不同的约定——UE 用 Roughness，Unity 的 HDRP 默认也用 Roughness，但一些旧管线用 Smoothness（&#x3D; 1 - Roughness）。</p>
+<p><strong>一个关键的实现细节</strong>：在 Metallic&#x2F;Roughness 工作流中，如果 Base Color 贴图在金属-非金属边界处没有完美对齐，就会产生黑色或白色的边缘伪影。解决方案包括：</p>
+<ul>
+<li>使用更精确的 UV 和更细致的手绘</li>
+<li>后处理 dilate&#x2F;erode 边缘</li>
+<li>Unity HDRP 和 UE5 都有内置的边缘修复选项</li>
+</ul>
+<hr>
+<h3 id="3-5-微表面模型（Microfacet-Model）"><a href="#3-5-微表面模型（Microfacet-Model）" class="headerlink" title="3.5 微表面模型（Microfacet Model）"></a>3.5 微表面模型（Microfacet Model）</h3><p>微表面模型是理解 PBR 镜面反射的关键——它是 Disney BRDF 和游戏中几乎所有 Specular BRDF 的理论基础。</p>
+<h4 id="3-5-1-核心思想"><a href="#3-5-1-核心思想" class="headerlink" title="3.5.1 核心思想"></a>3.5.1 核心思想</h4><p>在微观尺度上，任何表面都不是完全光滑的。微表面模型假设：</p>
+<blockquote>
+<p>表面由无数个<strong>微小的、完美镜面的平面</strong>组成，每个微平面有自己的法线方向。表面的”粗糙度”由微平面法线分布的集中程度决定。</p>
+</blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs">光滑表面（Roughness ≈ 0）：        粗糙表面（Roughness ≈ 1）：<br>                                     <br>  ╲  │  ╱                            ╲  ╱ ╲ │ ╱ ╲  ╱<br>   ╲ │ ╱                              ╲╱  ╲│╱  ╲╱<br>  ────┼────                           ─╱╲─╱╲─╱╲─╱╲─<br>   ╱ │ ╲                              ╱  ╲╱ ╲╱  ╲<br>  ╱  │  ╲                            ╱  ╱ ╲ │ ╲  ╲<br>                                     <br>  微平面法线高度集中                    微平面法线高度分散<br>  → 反射光集中（镜面反射）             → 反射光分散（漫反射）<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-5-2-Cook-Torrance-BRDF"><a href="#3-5-2-Cook-Torrance-BRDF" class="headerlink" title="3.5.2 Cook-Torrance BRDF"></a>3.5.2 Cook-Torrance BRDF</h4><p>游戏中最常用的 Specular BRDF 是 <strong>Cook-Torrance 模型</strong>：</p>
+<p>$$f_{specular}(\omega_i, \omega_o) &#x3D; \frac{D(\mathbf{h}) \cdot F(\omega_o, \mathbf{h}) \cdot G(\omega_i, \omega_o, \mathbf{h})}{4 \cdot (\mathbf{n} \cdot \omega_i) \cdot (\mathbf{n} \cdot \omega_o)}$$</p>
+<p>其中 $\mathbf{h} &#x3D; \frac{\omega_i + \omega_o}{|\omega_i + \omega_o|}$ 是半程向量（Half Vector）。</p>
+<p>三个组成部分各有分工：</p>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>名称</th>
+<th>作用</th>
+<th>物理含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$D(\mathbf{h})$</td>
+<td><strong>法线分布函数（NDF）</strong></td>
+<td>决定高光的形状和大小</td>
+<td>微平面的法线朝 $\mathbf{h}$ 方向的概率密度</td>
+</tr>
+<tr>
+<td>$F(\omega_o, \mathbf{h})$</td>
+<td><strong>菲涅尔项（Fresnel）</strong></td>
+<td>决定不同角度的反射率</td>
+<td>从正面看vs从侧面看的反射强度差异</td>
+</tr>
+<tr>
+<td>$G(\omega_i, \omega_o, \mathbf{h})$</td>
+<td><strong>几何遮蔽项（Geometry）</strong></td>
+<td>补偿自遮挡</td>
+<td>微平面之间的相互遮挡</td>
+</tr>
+</tbody></table>
+<h4 id="3-5-3-法线分布函数：为什么选-GGX？"><a href="#3-5-3-法线分布函数：为什么选-GGX？" class="headerlink" title="3.5.3 法线分布函数：为什么选 GGX？"></a>3.5.3 法线分布函数：为什么选 GGX？</h4><p><strong>GGX（Trowbridge-Reitz）</strong> 是目前最主流的 NDF，由 Walter et al. 2007 提出：</p>
+<p>$$D_{GGX}(\mathbf{h}) &#x3D; \frac{\alpha^2}{\pi \cdot ((\mathbf{n} \cdot \mathbf{h})^2 \cdot (\alpha^2 - 1) + 1)^2}$$</p>
+<p>其中 $\alpha &#x3D; roughness^2$。</p>
+<p><strong>GGX vs Beckmann 对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>Beckmann</th>
+<th>GGX (Trowbridge-Reitz)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>高光形状</strong></td>
+<td>较平滑的衰减</td>
+<td>明显的”拖尾”（long tail）</td>
+</tr>
+<tr>
+<td><strong>高光核心</strong></td>
+<td>稍宽</td>
+<td>更窄、更亮</td>
+</tr>
+<tr>
+<td><strong>材质表现</strong></td>
+<td>适合塑料、油漆</td>
+<td>适合金属、玻璃</td>
+</tr>
+<tr>
+<td><strong>为什么选 GGX</strong></td>
+<td>—</td>
+<td>更长的拖尾更符合真实金属的反射特性</td>
+</tr>
+<tr>
+<td><strong>代表引擎</strong></td>
+<td>早期 OpenGL 固定管线</td>
+<td>UE4&#x2F;5、Unity HDRP、Filament</td>
+</tr>
+</tbody></table>
+<p><strong>拖尾（tail）</strong> 是关键区别。真实金属的高光不是完美的圆——它有一条长长的”尾巴”，在远离高光中心的地方仍然有可感知的反射。GGX 的长尾特性恰好匹配了这一现象，这就是为什么所有现代引擎都选择了 GGX。</p>
+<p><strong>Shader 伪代码</strong>：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// GGX / Trowbridge-Reitz NDF</span><br><span class="hljs-type">float</span> D_GGX(<span class="hljs-type">float</span> NoH, <span class="hljs-type">float</span> roughness) &#123;<br>    <span class="hljs-type">float</span> a = roughness * roughness;<br>    <span class="hljs-type">float</span> a2 = a * a;<br>    <span class="hljs-type">float</span> NoH2 = NoH * NoH;<br>    <span class="hljs-type">float</span> denom = NoH2 * (a2 - <span class="hljs-number">1.0</span>) + <span class="hljs-number">1.0</span>;<br>    <span class="hljs-keyword">return</span> a2 / (PI * denom * denom);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-5-4-菲涅尔项：Schlick-近似"><a href="#3-5-4-菲涅尔项：Schlick-近似" class="headerlink" title="3.5.4 菲涅尔项：Schlick 近似"></a>3.5.4 菲涅尔项：Schlick 近似</h4><p>菲涅尔效应描述了一个日常现象：<strong>从正面看水面是透明的，从侧面看水面是反射的</strong>。所有材质都有这个特性。</p>
+<p>完整的菲涅尔公式（Fresnel Equation）非常复杂，Schlick (1994) 提出了一个优雅的近似：</p>
+<p>$$F_{Schlick}(\cos\theta) &#x3D; F_0 + (1 - F_0) \cdot (1 - \cos\theta)^5$$</p>
+<p>其中 $F_0$ 是垂直入射时的反射率（法线方向的菲涅尔值）。</p>
+<p><strong>$F_0$ 的典型值</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>材质</th>
+<th>$F_0$ (sRGB)</th>
+<th>$F_0$ (线性)</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>水</td>
+<td>0.02</td>
+<td>(0.02, 0.02, 0.02)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>塑料</td>
+<td>0.04</td>
+<td>(0.04, 0.04, 0.04)</td>
+<td>大多数非金属</td>
+</tr>
+<tr>
+<td>玻璃</td>
+<td>0.04-0.08</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>金</td>
+<td>—</td>
+<td>(1.00, 0.71, 0.29)</td>
+<td>有色菲涅尔！</td>
+</tr>
+<tr>
+<td>铝</td>
+<td>—</td>
+<td>(0.91, 0.92, 0.92)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>铜</td>
+<td>—</td>
+<td>(0.95, 0.64, 0.54)</td>
+<td>有色菲涅尔！</td>
+</tr>
+</tbody></table>
+<p><strong>Shader 伪代码</strong>：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Schlick 菲涅尔近似</span><br><span class="hljs-type">vec3</span> F_Schlick(<span class="hljs-type">float</span> VoH, <span class="hljs-type">vec3</span> F0) &#123;<br>    <span class="hljs-keyword">return</span> F0 + (<span class="hljs-number">1.0</span> - F0) * <span class="hljs-built_in">pow</span>(<span class="hljs-number">1.0</span> - VoH, <span class="hljs-number">5.0</span>);<br>&#125;<br><br><span class="hljs-comment">// 在 UE5/Metallic 工作流中，F0 的计算：</span><br><span class="hljs-comment">// 非金属(metallic=0): F0 = specular * 0.08 (默认 0.04)</span><br><span class="hljs-comment">// 金属(metallic=1):   F0 = baseColor</span><br><span class="hljs-type">vec3</span> F0 = <span class="hljs-built_in">mix</span>(<span class="hljs-type">vec3</span>(<span class="hljs-number">0.04</span>), baseColor, metallic);<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-5-5-几何遮蔽项"><a href="#3-5-5-几何遮蔽项" class="headerlink" title="3.5.5 几何遮蔽项"></a>3.5.5 几何遮蔽项</h4><p>微平面之间会相互遮挡——这在高粗糙度和掠射角时尤为明显。</p>
+<p><strong>Smith-GGX</strong> 模型将遮蔽分为两个独立部分：</p>
+<p>$$G(\omega_i, \omega_o) &#x3D; G_1(\omega_i) \cdot G_1(\omega_o)$$</p>
+<p>其中 $G_1$ 是方向无关的遮蔽函数。UE4&#x2F;5 使用的是 <strong>Smith-Joint</strong> 近似，它是 Smith-GGX 的简化版：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// UE4 Smith-Joint 近似</span><br><span class="hljs-type">float</span> G_SmithJoint(<span class="hljs-type">float</span> NoV, <span class="hljs-type">float</span> NoL, <span class="hljs-type">float</span> roughness) &#123;<br>    <span class="hljs-type">float</span> a = roughness * roughness;<br>    <span class="hljs-type">float</span> a2 = a * a;<br>    <span class="hljs-type">float</span> Vis_SmithV = NoL * <span class="hljs-built_in">sqrt</span>(NoV * NoV * (<span class="hljs-number">1.0</span> - a2) + a2);<br>    <span class="hljs-type">float</span> Vis_SmithL = NoV * <span class="hljs-built_in">sqrt</span>(NoL * NoL * (<span class="hljs-number">1.0</span> - a2) + a2);<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0.5</span> / <span class="hljs-built_in">max</span>(Vis_SmithV + Vis_SmithL, <span class="hljs-number">1e-5</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-5-6-完整的-PBR-Shader-片段"><a href="#3-5-6-完整的-PBR-Shader-片段" class="headerlink" title="3.5.6 完整的 PBR Shader 片段"></a>3.5.6 完整的 PBR Shader 片段</h4><p>把所有部分组合起来，一个完整的直接光照 PBR 计算如下：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// PBR 直接光照计算（伪代码）</span><br><span class="hljs-type">vec3</span> PBR_DirectLight(<span class="hljs-type">vec3</span> N, <span class="hljs-type">vec3</span> V, <span class="hljs-type">vec3</span> L, <span class="hljs-type">vec3</span> baseColor,<br>                     <span class="hljs-type">float</span> metallic, <span class="hljs-type">float</span> roughness) &#123;<br>    <span class="hljs-type">vec3</span> H = <span class="hljs-built_in">normalize</span>(V + L);  <span class="hljs-comment">// 半程向量</span><br>    <span class="hljs-type">float</span> NoL = <span class="hljs-built_in">max</span>(<span class="hljs-built_in">dot</span>(N, L), <span class="hljs-number">0.0</span>);<br>    <span class="hljs-type">float</span> NoV = <span class="hljs-built_in">max</span>(<span class="hljs-built_in">dot</span>(N, V), <span class="hljs-number">0.0</span>);<br>    <span class="hljs-type">float</span> NoH = <span class="hljs-built_in">max</span>(<span class="hljs-built_in">dot</span>(N, H), <span class="hljs-number">0.0</span>);<br>    <span class="hljs-type">float</span> VoH = <span class="hljs-built_in">max</span>(<span class="hljs-built_in">dot</span>(V, H), <span class="hljs-number">0.0</span>);<br><br>    <span class="hljs-comment">// 1. 计算基础 F0</span><br>    <span class="hljs-type">vec3</span> F0 = <span class="hljs-built_in">mix</span>(<span class="hljs-type">vec3</span>(<span class="hljs-number">0.04</span>), baseColor, metallic);<br><br>    <span class="hljs-comment">// 2. Cook-Torrance 镜面反射</span><br>    <span class="hljs-type">float</span> D = D_GGX(NoH, roughness);      <span class="hljs-comment">// 法线分布</span><br>    <span class="hljs-type">vec3</span>  F = F_Schlick(VoH, F0);          <span class="hljs-comment">// 菲涅尔</span><br>    <span class="hljs-type">float</span> G = G_SmithJoint(NoV, NoL, roughness); <span class="hljs-comment">// 几何遮蔽</span><br><br>    <span class="hljs-type">vec3</span> specular = (D * F * G) / <span class="hljs-built_in">max</span>(<span class="hljs-number">4.0</span> * NoV * NoL, <span class="hljs-number">0.001</span>);<br><br>    <span class="hljs-comment">// 3. 漫反射（金属没有漫反射）</span><br>    <span class="hljs-type">vec3</span> kD = (<span class="hljs-number">1.0</span> - F) * (<span class="hljs-number">1.0</span> - metallic);<br>    <span class="hljs-type">vec3</span> diffuse = kD * baseColor / PI;<br><br>    <span class="hljs-comment">// 4. 最终颜色 = (漫反射 + 镜面反射) × 光照强度</span><br>    <span class="hljs-keyword">return</span> (diffuse + specular) * lightColor * NoL;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-5-7-多层材质混合的演进"><a href="#3-5-7-多层材质混合的演进" class="headerlink" title="3.5.7 多层材质混合的演进"></a>3.5.7 多层材质混合的演进</h4><p>很多真实材质是多层结构——车漆（清漆+底漆）、湿润的地面（水层+地面）、皮肤（油脂+表皮+真皮）。</p>
+<p><strong>多层混合的三种方案</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>思路</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>结果混合</strong></td>
+<td>分别计算两层 BRDF，混合结果</td>
+<td>简单</td>
+<td>物理不正确（能量不守恒）</td>
+</tr>
+<tr>
+<td><strong>参数预混合</strong></td>
+<td>在 BRDF 计算前混合参数</td>
+<td>部分正确</td>
+<td>无法表达层间多次反射</td>
+</tr>
+<tr>
+<td><strong>分层模型（Slab）</strong></td>
+<td>每层独立光学计算，层间传播</td>
+<td>物理正确</td>
+<td>计算量大</td>
+</tr>
+</tbody></table>
+<p><strong>UE5 的 Strata 系统</strong>是第三种方案的代表——它用”slab”概念表达每层的光学结构（折射率、吸收系数、散射系数），层与层之间通过物理公式传播光线，实现了更准确的线性混合。</p>
+<hr>
+<h3 id="3-6-NPR（非真实感渲染）风格化"><a href="#3-6-NPR（非真实感渲染）风格化" class="headerlink" title="3.6 NPR（非真实感渲染）风格化"></a>3.6 NPR（非真实感渲染）风格化</h3><p>NPR 是游戏渲染的另一半天空——原神、塞尔达、纪念碑谷等风格化游戏都使用 NPR。</p>
+<h4 id="3-6-1-核心原则：所见即所得"><a href="#3-6-1-核心原则：所见即所得" class="headerlink" title="3.6.1 核心原则：所见即所得"></a>3.6.1 核心原则：所见即所得</h4><p>NPR 的核心哲学是：<strong>美术画什么，玩家就看到什么</strong>。Shader 的角色是忠实地呈现美术的意图，而不是用公式计算物理正确的结果。</p>
+<p><strong>具体实现手段</strong>：</p>
+<ol>
+<li><p><strong>贴图即结果</strong>：美术画的贴图直接对应最终效果——亮度、阴影、高光都在贴图中预先定义好。</p>
+</li>
+<li><p><strong>光照烘焙（Baked Lighting in Texture）</strong>：光照信息预烘焙到贴图中。原神的角色阴影就是一个经典的阶梯函数——通过色阶贴图（Ramp Texture）控制阴影的过渡：</p>
+</li>
+</ol>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 阶梯色阶阴影（Cel Shading 核心）</span><br><span class="hljs-type">float</span> NdotL = <span class="hljs-built_in">dot</span>(N, L);<br><span class="hljs-comment">// 将 NdotL 映射到 [0,1] 并采样色阶贴图</span><br><span class="hljs-type">float</span> rampUV = NdotL * <span class="hljs-number">0.5</span> + <span class="hljs-number">0.5</span>;<br><span class="hljs-comment">// 色阶贴图：硬编码的明暗分界线</span><br><span class="hljs-type">vec3</span> shadeColor = <span class="hljs-built_in">texture</span>(rampTexture, <span class="hljs-type">vec2</span>(rampUV, <span class="hljs-number">0.5</span>)).rgb;<br><span class="hljs-comment">// 最终颜色 = 基础色 × 色阶结果</span><br><span class="hljs-type">vec3</span> finalColor = baseColor * shadeColor;<br></code></pre></td></tr></table></figure>
+
+<ol start="3">
+<li><strong>边缘光（Rim Light）</strong>：利用菲涅尔系数实现角色与背景的视觉分离：</li>
+</ol>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 边缘光（Rim Light / Fresnel Outline）</span><br><span class="hljs-type">float</span> rimFactor = <span class="hljs-number">1.0</span> - <span class="hljs-built_in">max</span>(<span class="hljs-built_in">dot</span>(N, V), <span class="hljs-number">0.0</span>);<br>rimFactor = <span class="hljs-built_in">pow</span>(rimFactor, rimPower);  <span class="hljs-comment">// 通常 power = 3-5</span><br><span class="hljs-type">vec3</span> rimColor = rimFactor * rimLightColor * rimIntensity;<br></code></pre></td></tr></table></figure>
+
+<ol start="4">
+<li><strong>屏幕空间轮廓描边</strong>：在屏幕空间做卷积得到更精细的边缘检测：</li>
+</ol>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Sobel 边缘检测描边（后处理方式）</span><br><span class="hljs-type">float</span> SobelOutline(<span class="hljs-type">sampler2D</span> depthTex, <span class="hljs-type">vec2</span> uv, <span class="hljs-type">vec2</span> texelSize) &#123;<br>    <span class="hljs-type">float</span> depth[<span class="hljs-number">9</span>];<br>    <span class="hljs-comment">// 3x3 邻域采样</span><br>    depth[<span class="hljs-number">0</span>] = <span class="hljs-built_in">texture</span>(depthTex, uv + texelSize * <span class="hljs-type">vec2</span>(<span class="hljs-number">-1</span>,<span class="hljs-number">-1</span>)).r;<br>    depth[<span class="hljs-number">1</span>] = <span class="hljs-built_in">texture</span>(depthTex, uv + texelSize * <span class="hljs-type">vec2</span>( <span class="hljs-number">0</span>,<span class="hljs-number">-1</span>)).r;<br>    depth[<span class="hljs-number">2</span>] = <span class="hljs-built_in">texture</span>(depthTex, uv + texelSize * <span class="hljs-type">vec2</span>( <span class="hljs-number">1</span>,<span class="hljs-number">-1</span>)).r;<br>    depth[<span class="hljs-number">3</span>] = <span class="hljs-built_in">texture</span>(depthTex, uv + texelSize * <span class="hljs-type">vec2</span>(<span class="hljs-number">-1</span>, <span class="hljs-number">0</span>)).r;<br>    <span class="hljs-comment">// ... 省略其余5个采样</span><br>    <br>    <span class="hljs-comment">// Sobel 算子</span><br>    <span class="hljs-type">float</span> sobelX = depth[<span class="hljs-number">2</span>] + <span class="hljs-number">2</span>*depth[<span class="hljs-number">5</span>] + depth[<span class="hljs-number">8</span>]<br>                 - depth[<span class="hljs-number">0</span>] - <span class="hljs-number">2</span>*depth[<span class="hljs-number">3</span>] - depth[<span class="hljs-number">6</span>];<br>    <span class="hljs-type">float</span> sobelY = depth[<span class="hljs-number">0</span>] + <span class="hljs-number">2</span>*depth[<span class="hljs-number">1</span>] + depth[<span class="hljs-number">2</span>]<br>                 - depth[<span class="hljs-number">6</span>] - <span class="hljs-number">2</span>*depth[<span class="hljs-number">7</span>] - depth[<span class="hljs-number">8</span>];<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">sqrt</span>(sobelX * sobelX + sobelY * sobelY);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-6-2-描边的多种实现方式"><a href="#3-6-2-描边的多种实现方式" class="headerlink" title="3.6.2 描边的多种实现方式"></a>3.6.2 描边的多种实现方式</h4><p>描边是 NPR 中最标志性的视觉效果。不同游戏根据性能和风格需求选择了不同的方案：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>原理</th>
+<th>优点</th>
+<th>缺点</th>
+<th>代表游戏</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>法线外扩</strong></td>
+<td>两遍渲染，第二遍沿法线放大</td>
+<td>线宽一致</td>
+<td>需要额外 pass</td>
+<td>崩坏3、战双帕弥什</td>
+</tr>
+<tr>
+<td><strong>后处理边缘检测</strong></td>
+<td>深度&#x2F;法线 buffer 做 Sobel</td>
+<td>简单</td>
+<td>线宽不均</td>
+<td>Guilty Gear Xrd</td>
+</tr>
+<tr>
+<td><strong>SDF 描边</strong></td>
+<td>利用 SDF 距离场</td>
+<td>精确控制</td>
+<td>需要额外贴图</td>
+<td>部分手游</td>
+</tr>
+<tr>
+<td><strong>几何着色器</strong></td>
+<td>沿法线生成额外三角形</td>
+<td>GPU 高效</td>
+<td>几何着色器慢</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>法线外扩描边</strong>的 Shader 实现：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 顶点着色器：沿法线方向外扩</span><br><span class="hljs-comment">// 第二遍渲染，Cull Front（只渲染背面）</span><br><span class="hljs-type">vec3</span> outlineOffset = normal * outlineWidth;<br><span class="hljs-built_in">gl_Position</span> = MVP * <span class="hljs-type">vec4</span>(position + outlineOffset, <span class="hljs-number">1.0</span>);<br><br><span class="hljs-comment">// 片元着色器：纯色输出</span><br>fragColor = outlineColor;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-6-3-NPR-的特殊挑战"><a href="#3-6-3-NPR-的特殊挑战" class="headerlink" title="3.6.3 NPR 的特殊挑战"></a>3.6.3 NPR 的特殊挑战</h4><p>NPR 面临一些 PBR 不存在的独特问题：</p>
+<ol>
+<li><p><strong>面部阴影控制</strong>：由于卡通渲染的阴影是硬边缘的，角色的脸部稍微转动就可能导致阴影突变。解决方案是用一张 <strong>SDF 面部阴影贴图</strong> 精确控制面部明暗分界线的形状。</p>
+</li>
+<li><p><strong>多光源处理</strong>：PBR 天然支持多光源叠加，但 NPR 的色阶阴影一旦叠加就会失去风格化特征。通常只取<strong>主导光源</strong>做色阶，其余光源做简单叠加。</p>
+</li>
+<li><p><strong>LOD 一致性</strong>：角色远距离时，描边线宽需要随距离缩放，否则会出现”远景描边比角色还粗”的问题。</p>
+</li>
+</ol>
+<hr>
+<h3 id="3-7-皮肤渲染（Skin-Rendering）"><a href="#3-7-皮肤渲染（Skin-Rendering）" class="headerlink" title="3.7 皮肤渲染（Skin Rendering）"></a>3.7 皮肤渲染（Skin Rendering）</h3><p>皮肤是角色渲染中最复杂的特殊材质之一。理解皮肤渲染需要从皮肤的物理结构出发。</p>
+<h4 id="3-7-1-为什么皮肤不能直接用-PBR？"><a href="#3-7-1-为什么皮肤不能直接用-PBR？" class="headerlink" title="3.7.1 为什么皮肤不能直接用 PBR？"></a>3.7.1 为什么皮肤不能直接用 PBR？</h4><p>皮肤的物理结构是<strong>多层的半透明介质</strong>：</p>
+<figure class="highlight subunit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs subunit">光线进入皮肤后的行为：<br><br>     光线 → → → → → → →<br>    ╔══════════════════════╗<br>    ║  油脂层（Sebum）      ║ ← 约 1<span class="hljs-string">-2</span>μm，产生高光反射<br>    ╠══════════════════════╣<br>    ║  表皮（Epidermis）    ║ ← 约 0.05<span class="hljs-string">-0</span>.1mm，轻微散射<br>    ╠══════════════════════╣<br>    ║  真皮（Dermis）       ║ ← 约 1<span class="hljs-string">-4</span>mm，主要散射层<br>    ║  · 血管 · 胶原蛋白    ║ ← 红色血液吸收短波光<br>    ║  · 色素细胞 ·         ║    导致散射光偏红<br>    ╠══════════════════════╣<br>    ║  皮下组织（Subcutis）  ║ ← 脂肪层，进一步散射<br>    ╚══════════════════════╝<br></code></pre></td></tr></table></figure>
+
+<p>关键现象：光线进入皮肤后，在真皮层中经历多次散射，路径长度可达数毫米。<strong>短波光（蓝色）被血红蛋白大量吸收</strong>，而<strong>长波光（红色）更容易穿透</strong>——这就是为什么手指对着光看会呈现红色透光效果。</p>
+<h4 id="3-7-2-次表面散射（Subsurface-Scattering-SSS）"><a href="#3-7-2-次表面散射（Subsurface-Scattering-SSS）" class="headerlink" title="3.7.2 次表面散射（Subsurface Scattering, SSS）"></a>3.7.2 次表面散射（Subsurface Scattering, SSS）</h4><p>SSS 是让皮肤看起来”活”的关键。没有 SSS 的皮肤看起来像塑料，因为光线在边界处被硬切断——而真实的皮肤中，光线会在皮下扩散，产生柔和的明暗过渡。</p>
+<p><strong>核心现象</strong>：</p>
+<ul>
+<li><strong>正面通透感</strong>：亮部到暗部的柔和过渡——阴影边界不是锐利的，而是模糊的</li>
+<li><strong>背面透射</strong>：光从背面穿透薄皮肤（耳朵、手指之间的缝隙发红光）</li>
+<li><strong>细节高光</strong>：油脂层产生的细小高光——比一般的 Specular 更锐利</li>
+</ul>
+<h4 id="3-7-3-SSS-的实现方案"><a href="#3-7-3-SSS-的实现方案" class="headerlink" title="3.7.3 SSS 的实现方案"></a>3.7.3 SSS 的实现方案</h4><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>原理</th>
+<th>性能</th>
+<th>适用场景</th>
+<th>代表游戏&#x2F;引擎</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>纹理空间模糊（TSSS）</strong></td>
+<td>在 UV 空间做高斯模糊</td>
+<td>中</td>
+<td>主机&#x2F;PC</td>
+<td>UE4 早期方案</td>
+</tr>
+<tr>
+<td><strong>屏幕空间模糊（SSSSS）</strong></td>
+<td>在屏幕空间沿法线方向模糊</td>
+<td>中-高</td>
+<td>主机&#x2F;PC</td>
+<td>GDC 2015 方案</td>
+</tr>
+<tr>
+<td><strong>预积分皮肤 Shader</strong></td>
+<td>用预计算 LUT 近似 SSS</td>
+<td>低</td>
+<td>移动端&#x2F;全平台</td>
+<td>UE4 Mobile</td>
+</tr>
+<tr>
+<td><strong>可分离 SSS</strong></td>
+<td>将 2D 模糊分离为两次 1D</td>
+<td>中-高</td>
+<td>主机&#x2F;PC</td>
+<td>UE4&#x2F;UE5 默认</td>
+</tr>
+<tr>
+<td><strong>路径追踪 SSS</strong></td>
+<td>随机游走模拟</td>
+<td>极高</td>
+<td>离线&#x2F;RTX</td>
+<td>UE5 Lumen+RT</td>
+</tr>
+</tbody></table>
+<p><strong>预积分皮肤 Shader</strong> 是移动端最实用的方案。核心思想：<strong>预计算一个 LUT（查找表）</strong>，输入曲率和 NdotL，输出 SSS 近似结果。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 预积分皮肤 Shader（Penner &amp; Borshukov 2011）</span><br><span class="hljs-comment">// 核心思想：用预计算的 LUT 替代运行时的模糊操作</span><br><span class="hljs-type">vec3</span> PreintegratedSkin(<span class="hljs-type">float</span> NdotL, <span class="hljs-type">float</span> curvature) &#123;<br>    <span class="hljs-comment">// curvature = 1/radius，反映皮肤曲面的弯曲程度</span><br>    <span class="hljs-comment">// 曲率越大（如鼻尖），SSS 效果越明显</span><br>    <br>    <span class="hljs-comment">// 采样预积分 LUT</span><br>    <span class="hljs-type">vec2</span> uv = <span class="hljs-type">vec2</span>(NdotL * <span class="hljs-number">0.5</span> + <span class="hljs-number">0.5</span>, curvature);<br>    <span class="hljs-type">vec3</span> sssColor = <span class="hljs-built_in">texture</span>(sssLUT, uv).rgb;<br>    <br>    <span class="hljs-comment">// 叠加细节高光（油脂层）</span><br>    <span class="hljs-type">float</span> specular = D_GGX(NoH, <span class="hljs-number">0.3</span>);  <span class="hljs-comment">// 低粗糙度 = 锐利高光</span><br>    <br>    <span class="hljs-keyword">return</span> sssColor * diffuseColor + specular * <span class="hljs-type">vec3</span>(<span class="hljs-number">1.0</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>为什么预积分有效？</strong> SSS 的核心效果是模糊阴影边界和增加暗部亮度。通过对不同曲率的表面预计算这个模糊效果，可以用一个简单的纹理采样代替运行时的卷积操作。</p>
+<p><strong>曲率（Curvature）</strong> 的计算：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 从法线贴图和几何法线计算曲率</span><br><span class="hljs-type">float</span> curvature = <span class="hljs-built_in">length</span>(<span class="hljs-built_in">fwidth</span>(normalWorld)) / <span class="hljs-built_in">length</span>(<span class="hljs-built_in">fwidth</span>(positionWorld));<br><span class="hljs-comment">// 或者从预烘焙的曲率贴图采样</span><br><span class="hljs-type">float</span> curvature = <span class="hljs-built_in">texture</span>(curvatureMap, uv).r;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-7-4-背面透射"><a href="#3-7-4-背面透射" class="headerlink" title="3.7.4 背面透射"></a>3.7.4 背面透射</h4><p>耳朵、手指等薄皮肤部位的背面透射效果：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 简化的背面透射</span><br><span class="hljs-type">float</span> NdotLBack = <span class="hljs-built_in">dot</span>(N, -L);  <span class="hljs-comment">// 背面光照</span><br><span class="hljs-type">float</span> thickness = <span class="hljs-built_in">texture</span>(thicknessMap, uv).r;  <span class="hljs-comment">// 预烘焙的厚度贴图</span><br><span class="hljs-comment">// 指数衰减：越厚，透射越少</span><br><span class="hljs-type">float</span> transmittance = <span class="hljs-built_in">exp</span>(-thickness * scatterDistortion);<br><span class="hljs-type">vec3</span> transColor = transmittance * subsurfaceColor * NdotLBack * lightColor;<br></code></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-8-头发渲染（Hair-Rendering）"><a href="#3-8-头发渲染（Hair-Rendering）" class="headerlink" title="3.8 头发渲染（Hair Rendering）"></a>3.8 头发渲染（Hair Rendering）</h3><p>头发渲染的特殊性在于：<strong>头发是圆柱形的纤维，不是平面</strong>。这导致光在发丝上的行为与普通表面完全不同。</p>
+<h4 id="3-8-1-头发的光学特性"><a href="#3-8-1-头发的光学特性" class="headerlink" title="3.8.1 头发的光学特性"></a>3.8.1 头发的光学特性</h4><p>一根头发纤维的光路行为有三种：</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs less">     光线 →<br>      ↓<br>╭───────────╮<br>│  <span class="hljs-attribute">R</span>: 直接反射  │ ← 光在表面直接反射（高光）<br>│   ╭─────╮   │<br>│   │ <span class="hljs-attribute">TT</span>:  │   │ ← 光进入纤维，从另一侧穿出<br>│   │同侧透│   │   （透射，导致头发半透明感）<br>│   │射    │   │<br>│   ╰─────╯   │<br>│  <span class="hljs-attribute">TRT</span>:       │ ← 光进入纤维，在内壁反射一次后穿出<br>│  穿透散射   │   （导致头发颜色偏移和高光加宽）<br>╰───────────╯<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>R（Reflection）</strong>：直接反射，产生主要高光</li>
+<li><strong>TT（Transmission-Transmission）</strong>：同侧透射，产生头发的半透明感</li>
+<li><strong>TRT（Transmission-Reflection-Transmission）</strong>：穿透散射，产生次级高光和颜色偏移</li>
+</ul>
+<h4 id="3-8-2-Kajiya-Kay-模型（1989）"><a href="#3-8-2-Kajiya-Kay-模型（1989）" class="headerlink" title="3.8.2 Kajiya-Kay 模型（1989）"></a>3.8.2 Kajiya-Kay 模型（1989）</h4><p>Kajiya-Kay 是最早的头发光照模型之一，至今仍是手游的主流选择——因为它足够简单。</p>
+<p><strong>核心思想</strong>：用<strong>切线方向</strong>（而非法线）计算高光。因为头发是圆柱形的，法线在截面上处处不同，但切线方向是一致的。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Kajiya-Kay 高光计算</span><br><span class="hljs-type">float</span> KajiyaKaySpec(<span class="hljs-type">vec3</span> T, <span class="hljs-type">vec3</span> H, <span class="hljs-type">float</span> exponent) &#123;<br>    <span class="hljs-comment">// T = 头发切线方向</span><br>    <span class="hljs-comment">// H = 半程向量</span><br>    <span class="hljs-type">float</span> TdotH = <span class="hljs-built_in">dot</span>(T, H);<br>    <span class="hljs-comment">// sin(theta) 近似</span><br>    <span class="hljs-type">float</span> sinTheta = <span class="hljs-built_in">sqrt</span>(<span class="hljs-number">1.0</span> - TdotH * TdotH);<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">pow</span>(sinTheta, exponent);<br>&#125;<br><br><span class="hljs-comment">// 最终颜色</span><br><span class="hljs-type">float</span> spec1 = KajiyaKaySpec(tangent, H, primaryExponent);   <span class="hljs-comment">// 主高光</span><br><span class="hljs-type">float</span> spec2 = KajiyaKaySpec(tangentShifted, H, secondaryExponent); <span class="hljs-comment">// 次高光（切线偏移）</span><br><span class="hljs-type">vec3</span> hairColor = diffuse + spec1 * <span class="hljs-type">vec3</span>(<span class="hljs-number">1.0</span>) + spec2 * hairBaseColor;<br></code></pre></td></tr></table></figure>
+
+<p><strong>优点</strong>：计算简单，一个 dot + pow 就搞定。移动端友好。<br><strong>缺点</strong>：物理不准确——没有区分 R&#x2F;TT&#x2F;TRT 三条光路，高光形状是各向同性的（真实头发的高光应该沿发丝方向拉伸）。</p>
+<h4 id="3-8-3-Marschner-模型（2003）"><a href="#3-8-3-Marschner-模型（2003）" class="headerlink" title="3.8.3 Marschner 模型（2003）"></a>3.8.3 Marschner 模型（2003）</h4><p>Marschner 模型完整地解决了 R、TT、TRT 三条光路，是 3A 游戏头发渲染的标准方案。</p>
+<p><strong>核心贡献</strong>：</p>
+<ul>
+<li>建立了头发纤维的椭圆截面模型</li>
+<li>推导了每条光路的精确 BRDF</li>
+<li>发现了高光会随光线入射角<strong>偏移</strong>（不是在法线方向上，而是在切线方向上偏移）</li>
+</ul>
+<p><strong>实现方案</strong>：完整的 Marschner 计算量很大（需要大量三角函数和指数运算），所以实际游戏中都用<strong>预计算 LUT</strong>：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Marschner LUT 方案</span><br><span class="hljs-comment">// 预计算 4 张 LUT，运行时查表</span><br><span class="hljs-comment">// M_R, M_TT, M_TRT：纵向散射函数</span><br><span class="hljs-comment">// N_R, N_TT, N_TRT：方位角散射函数</span><br><br><span class="hljs-type">vec3</span> MarschnerHair(<span class="hljs-type">vec3</span> T, <span class="hljs-type">vec3</span> V, <span class="hljs-type">vec3</span> L) &#123;<br>    <span class="hljs-type">float</span> cosThetaI = <span class="hljs-built_in">dot</span>(T, L);<br>    <span class="hljs-type">float</span> cosThetaR = <span class="hljs-built_in">dot</span>(T, V);<br>    <br>    <span class="hljs-comment">// 采样预计算 LUT</span><br>    <span class="hljs-type">vec3</span> R   = <span class="hljs-built_in">texture</span>(LUT_M_R,   <span class="hljs-type">vec2</span>(cosThetaI, cosThetaR)).rgb;<br>    <span class="hljs-type">vec3</span> TT  = <span class="hljs-built_in">texture</span>(LUT_M_TT,  <span class="hljs-type">vec2</span>(cosThetaI, cosThetaR)).rgb;<br>    <span class="hljs-type">vec3</span> TRT = <span class="hljs-built_in">texture</span>(LUT_M_TRT, <span class="hljs-type">vec2</span>(cosThetaI, cosThetaR)).rgb;<br>    <br>    <span class="hljs-keyword">return</span> R + TT + TRT;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>实际使用中</strong>，Frostbite（EA）和 UE5 都采用了 Marschner 的简化变体，通常只保留 R 和 TT 项（TRT 用近似代替），并将 LUT 压缩到更小的纹理中。</p>
+<h4 id="3-8-4-头发建模方案"><a href="#3-8-4-头发建模方案" class="headerlink" title="3.8.4 头发建模方案"></a>3.8.4 头发建模方案</h4><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>面数</th>
+<th>效果</th>
+<th>性能开销</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Card（卡片）</strong></td>
+<td>低（几十个面片）</td>
+<td>中等</td>
+<td>低</td>
+<td>手游、远处 LOD</td>
+</tr>
+<tr>
+<td><strong>Strand（发丝级）</strong></td>
+<td>高（每根发丝一条曲线）</td>
+<td>最好</td>
+<td>高（需特殊管线）</td>
+<td>3A 近景</td>
+</tr>
+</tbody></table>
+<p><strong>Strand Hair</strong> 在 UE5 中通过 Groom 系统实现，支持物理模拟和自阴影。但发丝级渲染的开销非常大——一个角色可能有 10000+ 根发丝，每根都要独立计算光照。</p>
+<hr>
+<h3 id="3-9-眼球渲染（Eye-Rendering）"><a href="#3-9-眼球渲染（Eye-Rendering）" class="headerlink" title="3.9 眼球渲染（Eye Rendering）"></a>3.9 眼球渲染（Eye Rendering）</h3><p>眼球是角色中最复杂的小型渲染对象。关键在于<strong>精确的结构拆解</strong>——眼球不是一个球体，而是一个多层光学系统。</p>
+<h4 id="3-9-1-眼球的光学结构"><a href="#3-9-1-眼球的光学结构" class="headerlink" title="3.9.1 眼球的光学结构"></a>3.9.1 眼球的光学结构</h4><figure class="highlight excel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs excel">┌─────────────────────────────────────────────┐<br>│              眼球结构（剖面图）                │<br>│                                              │<br>│   角膜（Cornea）                              │<br>│   ┌──────┐  ← 折射率 <span class="hljs-built_in">n</span>≈<span class="hljs-number">1.376</span>                  │<br>│   │  ╭──╮│  ← 凸面，产生折射+反射             │<br>│   │  │虹││                                   │<br>│   │  │膜││  ← 色素纹理 + 散射                  │<br>│   │  │  ││                                   │<br>│   │  ╰──╯│                                   │<br>│   │ 瞳孔  │  ← 瞳孔深度（光线进入内部的开口）   │<br>│   └──────┘                                   │<br>│                                              │<br>│   巩膜（Sclera）                              │<br>│   ┌──────────────────┐                       │<br>│   │ 血管纹理 + SSS    │  ← 白眼球，有次表面散射 │<br>│   └──────────────────┘                       │<br>│                                              │<br>│   泪膜（Tear Film）                           │<br>│   最外层薄膜 → 产生锐利的高光反射点            │<br>│                                              │<br>└─────────────────────────────────────────────┘<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-9-2-眼球渲染的技术要点"><a href="#3-9-2-眼球渲染的技术要点" class="headerlink" title="3.9.2 眼球渲染的技术要点"></a>3.9.2 眼球渲染的技术要点</h4><p><strong>1. 角膜折射</strong></p>
+<p>角膜是一个凸面透镜，光线在进入眼球时会发生折射。使用 Snell 定律：</p>
+<p>$$n_1 \sin\theta_1 &#x3D; n_2 \sin\theta_2$$</p>
+<p>其中 $n_1 &#x3D; 1.0$（空气），$n_2 \approx 1.376$（角膜）。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Snell 折射（简化版）</span><br><span class="hljs-type">vec3</span> Refract(<span class="hljs-type">vec3</span> incident, <span class="hljs-type">vec3</span> normal, <span class="hljs-type">float</span> eta) &#123;<br>    <span class="hljs-type">float</span> cosI = -<span class="hljs-built_in">dot</span>(incident, normal);<br>    <span class="hljs-type">float</span> sinT2 = eta * eta * (<span class="hljs-number">1.0</span> - cosI * cosI);<br>    <span class="hljs-type">float</span> cosT = <span class="hljs-built_in">sqrt</span>(<span class="hljs-number">1.0</span> - sinT2);<br>    <span class="hljs-keyword">return</span> eta * incident + (eta * cosI - cosT) * normal;<br>&#125;<br><br><span class="hljs-type">vec3</span> corneaNormal = ...; <span class="hljs-comment">// 角膜曲面法线</span><br><span class="hljs-type">vec3</span> refractedDir = Refract(viewDir, corneaNormal, <span class="hljs-number">1.0</span> / <span class="hljs-number">1.376</span>);<br><span class="hljs-comment">// 用折射后的方向采样虹膜纹理</span><br><span class="hljs-type">vec3</span> irisColor = <span class="hljs-built_in">texture</span>(irisMap, refractedUV).rgb;<br></code></pre></td></tr></table></figure>
+
+<p><strong>2. 虹膜散射</strong></p>
+<p>虹膜的纹理不是简单的平面贴图——它是一个半透明的散射介质。光线进入虹膜后会在内部散射，导致虹膜颜色看起来有深度感。</p>
+<p><strong>3. 巩膜 SSS</strong></p>
+<p>白眼球（巩膜）不是纯白的——它有血管纹理，并且表现出次表面散射效果。通常使用与皮肤相同的 SSS Shader，但参数不同。</p>
+<p><strong>4. 泪膜高光</strong></p>
+<p>泪膜是角膜表面的一层极薄的液体，产生非常锐利的高光反射点。这个高光是眼球看起来”有神”的关键。</p>
+<h4 id="3-9-3-最新趋势"><a href="#3-9-3-最新趋势" class="headerlink" title="3.9.3 最新趋势"></a>3.9.3 最新趋势</h4><ul>
+<li><strong>肌肉跟随</strong>：眼球的运动不是简单的旋转——周围有 6 条肌肉控制，限制了眼球的运动范围和速度</li>
+<li><strong>Look At 功能</strong>：角色的视线追踪目标，需要精确的 IK 计算</li>
+<li><strong>微表情</strong>：瞳孔大小变化、眨眼频率、视线方向都是角色表现力的关键</li>
+<li><strong>Caustics inside eye</strong>：光在眼球内部产生的焦散效果，让虹膜看起来更有层次</li>
+</ul>
+<hr>
+<h3 id="角色渲染小结"><a href="#角色渲染小结" class="headerlink" title="角色渲染小结"></a>角色渲染小结</h3><blockquote>
+<p><strong>核心原则：用更低成本达到更好效果。</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>渲染技术</th>
+<th>性能开销</th>
+<th>视觉提升</th>
+<th>推荐平台</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>标准 PBR</td>
+<td>基准</td>
+<td>基准</td>
+<td>全平台</td>
+</tr>
+<tr>
+<td>SSS 皮肤</td>
+<td>中-高</td>
+<td>显著</td>
+<td>PC&#x2F;主机</td>
+</tr>
+<tr>
+<td>预积分 SSS</td>
+<td>低</td>
+<td>中</td>
+<td>全平台</td>
+</tr>
+<tr>
+<td>Kajiya-Kay 头发</td>
+<td>低</td>
+<td>中</td>
+<td>移动端优先</td>
+</tr>
+<tr>
+<td>Marschner 头发</td>
+<td>中-高</td>
+<td>显著</td>
+<td>PC&#x2F;主机</td>
+</tr>
+<tr>
+<td>精细眼球</td>
+<td>低</td>
+<td>中（近距离才有效果）</td>
+<td>全平台</td>
+</tr>
+<tr>
+<td>NPR 色阶</td>
+<td>低</td>
+<td>取决于风格</td>
+<td>全平台</td>
+</tr>
+</tbody></table>
+<p>PBR 方案因标准化工作流而成本更低；NPR 方案需自定义工具链，成本较高。**选择的关键不是”哪个更好”，而是”哪个更适合你的游戏风格和目标平台”**。</p>
+<hr>
+<h2 id="四、场景渲染技术详解"><a href="#四、场景渲染技术详解" class="headerlink" title="四、场景渲染技术详解"></a>四、场景渲染技术详解</h2><p>场景渲染的目标是构建一个<strong>可信的游戏世界</strong>。与角色渲染不同，场景渲染的核心挑战不是”单个物体的质量”，而是”大规模内容的效率”。</p>
+<h3 id="4-1-场景制作的-PCG-流程"><a href="#4-1-场景制作的-PCG-流程" class="headerlink" title="4.1 场景制作的 PCG 流程"></a>4.1 场景制作的 PCG 流程</h3><p>现代 3A 游戏的场景规模已经达到了惊人的程度——《荒野大镖客2》的地图约 29 平方英里，纯手工制作是不可能的。<strong>程序化内容生成（PCG）</strong> 是解决方案。</p>
 <table>
 <thead>
 <tr>
 <th>步骤</th>
 <th>工具&#x2F;技术</th>
 <th>输出</th>
+<th>人工干预程度</th>
 </tr>
 </thead>
 <tbody><tr>
 <td>地形生成</td>
-<td>高度图雕刻</td>
+<td>高度图雕刻（World Machine&#x2F;Gaea）</td>
 <td>基础地貌</td>
+<td>低</td>
 </tr>
 <tr>
 <td>河流切割</td>
-<td>程序化工具</td>
-<td>河道</td>
+<td>程序化侵蚀模拟</td>
+<td>河道、冲积扇</td>
+<td>低</td>
 </tr>
 <tr>
 <td>悬崖细节</td>
-<td>Houdini 等</td>
+<td>Houdini 程序化建模</td>
 <td>岩石细节</td>
+<td>中</td>
 </tr>
 <tr>
 <td>植被布置</td>
-<td>生态刷子</td>
+<td>生态刷子（Scatter Tool）</td>
 <td>树木、草地</td>
+<td>中</td>
+</tr>
+<tr>
+<td>建筑放置</td>
+<td>PCG + 手动调整</td>
+<td>村庄、城市</td>
+<td>高</td>
 </tr>
 <tr>
 <td>最终整合</td>
-<td>场景编辑器</td>
+<td>场景编辑器（UE5&#x2F;Unity）</td>
 <td>完整场景</td>
+<td>高</td>
 </tr>
 </tbody></table>
-<h3 id="4-2-地形渲染（Terrain-Rendering）"><a href="#4-2-地形渲染（Terrain-Rendering）" class="headerlink" title="4.2 地形渲染（Terrain Rendering）"></a>4.2 地形渲染（Terrain Rendering）</h3><p><strong>何时需要地形系统？</strong></p>
-<table>
+<p><strong>UE5 的 PCG 框架</strong>是目前的最佳实践——它用图节点（Graph Node）描述生成规则，支持实时预览和迭代，并可以与 Houdini 等外部工具通过 Houdini Engine 插件对接。</p>
+<hr>
+<h3 id="4-2-地形渲染（Terrain-Rendering）"><a href="#4-2-地形渲染（Terrain-Rendering）" class="headerlink" title="4.2 地形渲染（Terrain Rendering）"></a>4.2 地形渲染（Terrain Rendering）</h3><h4 id="4-2-1-何时需要地形系统？"><a href="#4-2-1-何时需要地形系统？" class="headerlink" title="4.2.1 何时需要地形系统？"></a>4.2.1 何时需要地形系统？</h4><table>
 <thead>
 <tr>
 <th>场景规模</th>
 <th>推荐方案</th>
+<th>理由</th>
 </tr>
 </thead>
 <tbody><tr>
 <td>&lt; 200 米</td>
 <td>普通网格模型</td>
+<td>地形系统有额外开销，小场景不值得</td>
 </tr>
 <tr>
 <td>200 米 - 1 公里</td>
 <td>视情况选择</td>
+<td>评估性能预算和内容需求</td>
 </tr>
 <tr>
 <td>&gt; 1 公里</td>
 <td>地形系统（推荐）</td>
+<td>网格模型数据量太大，必须用 LOD 管理</td>
 </tr>
 <tr>
 <td>1000+ 平方公里</td>
 <td>大世界地形系统</td>
+<td>需要 Streaming + GPU Driven + 分页</td>
 </tr>
 </tbody></table>
-<p><strong>核心技术</strong>：</p>
+<h4 id="4-2-2-高度图（Heightmap）"><a href="#4-2-2-高度图（Heightmap）" class="headerlink" title="4.2.2 高度图（Heightmap）"></a>4.2.2 高度图（Heightmap）</h4><p>地形渲染的基础数据结构是高度图——一个 2D 数组，每个像素存储一个高度值。</p>
+<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs abnf">高度图示例（灰度图表示）：<br><br>     亮 <span class="hljs-operator">=</span> 高海拔          暗 <span class="hljs-operator">=</span> 低海拔<br>     ████████████          ░░░░░░░░░░░░<br>     ████████████          ░░░░░░░░░░░░<br>     ██████暗暗████          ░░░░河░░河░░<br>     ████████████          ░░░░░░░░░░░░<br></code></pre></td></tr></table></figure>
+
+<p><strong>参数选择</strong>：</p>
 <ul>
-<li><strong>高度图（Heightmap）</strong>：每米&#x2F;每像素存储一个高度值，实时生成网格</li>
-<li><strong>LOD（Level of Detail）</strong>：根据距离调整网格密度</li>
-<li><strong>Clipmap &#x2F; 四叉树</strong>：高效管理大区域地形数据</li>
-<li><strong>VT（Virtual Texture）</strong>：虚拟纹理优化材质混合性能</li>
-<li><strong>GPU Driven</strong>：GPU 直接生成网格，减少 CPU 开销</li>
+<li><strong>分辨率</strong>：通常 1 米&#x2F;像素到 0.5 米&#x2F;像素。一个 4km × 4km 的地形，1m 分辨率需要 16M 个采样点</li>
+<li><strong>精度</strong>：8-bit（256 级，适合平缓地形）或 16-bit（65536 级，适合高山）</li>
+<li><strong>存储</strong>：16-bit float（half float）是最佳选择——节省空间且精度足够</li>
 </ul>
-<p><strong>地形材质混合</strong>：使用权重图混合多种材质（草地、岩不、泥土等），通过只保留权重最高的两层材质来优化性能。</p>
-<h3 id="4-3-植被系统（Vegetation-System）"><a href="#4-3-植被系统（Vegetation-System）" class="headerlink" title="4.3 植被系统（Vegetation System）"></a>4.3 植被系统（Vegetation System）</h3><p>核心目标：<strong>在有限性能预算内渲染足够密度的植被</strong>。</p>
-<p><strong>创作方式</strong>：</p>
+<p><strong>从高度图生成网格</strong>：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 地形网格生成（Vertex Shader）</span><br><span class="hljs-type">vec3</span> TerrainVertex(<span class="hljs-type">vec2</span> uv, <span class="hljs-type">sampler2D</span> heightmap) &#123;<br>    <span class="hljs-type">float</span> height = <span class="hljs-built_in">texture</span>(heightmap, uv).r * heightScale;<br>    <span class="hljs-type">vec3</span> position = <span class="hljs-type">vec3</span>(uv.x * terrainSize, height, uv.y * terrainSize);<br>    <br>    <span class="hljs-comment">// 法线从高度图梯度计算</span><br>    <span class="hljs-type">float</span> hL = <span class="hljs-built_in">texture</span>(heightmap, uv + <span class="hljs-type">vec2</span>(-texelSize, <span class="hljs-number">0</span>)).r;<br>    <span class="hljs-type">float</span> hR = <span class="hljs-built_in">texture</span>(heightmap, uv + <span class="hljs-type">vec2</span>( texelSize, <span class="hljs-number">0</span>)).r;<br>    <span class="hljs-type">float</span> hD = <span class="hljs-built_in">texture</span>(heightmap, uv + <span class="hljs-type">vec2</span>(<span class="hljs-number">0</span>, -texelSize)).r;<br>    <span class="hljs-type">float</span> hU = <span class="hljs-built_in">texture</span>(heightmap, uv + <span class="hljs-type">vec2</span>(<span class="hljs-number">0</span>,  texelSize)).r;<br>    <span class="hljs-type">vec3</span> normal = <span class="hljs-built_in">normalize</span>(<span class="hljs-type">vec3</span>(hL - hR, <span class="hljs-number">2.0</span> * texelSize * heightScale, hD - hU));<br>    <br>    <span class="hljs-keyword">return</span> position;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="4-2-3-LOD（Level-of-Detail）"><a href="#4-2-3-LOD（Level-of-Detail）" class="headerlink" title="4.2.3 LOD（Level of Detail）"></a>4.2.3 LOD（Level of Detail）</h4><p>地形 LOD 的核心问题：<strong>远处的地形需要较少的三角形，近处的需要较多</strong>。如何在不产生裂缝（crack）的情况下实现平滑过渡？</p>
+<p><strong>Clipmap 方案</strong>：</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs mathematica"><span class="hljs-variable">Clipmap</span> 层级示意（俯视）：<br><br>┌─────────────────────────────────────┐<br>│  <span class="hljs-built_in">Level</span> <span class="hljs-number">0</span><span class="hljs-operator">:</span> 最粗（覆盖全区）          │<br>│  ┌─────────────────────────┐        │<br>│  │  <span class="hljs-built_in">Level</span> <span class="hljs-number">1</span><span class="hljs-operator">:</span> 较粗          │        │<br>│  │  ┌───────────────┐      │        │<br>│  │  │  <span class="hljs-built_in">Level</span> <span class="hljs-number">2</span><span class="hljs-operator">:</span>     │      │        │<br>│  │  │  ┌─────┐      │      │        │<br>│  │  │  │ <span class="hljs-variable">L3</span>  │← 最细│      │        │<br>│  │  │  │玩家 │      │      │        │<br>│  │  │  └─────┘      │      │        │<br><span class="hljs-operator">|</span>  │  └───────────────┘      │        │<br>│  └─────────────────────────┘        │<br>└─────────────────────────────────────┘<br><br>每一层的分辨率是上一层的一半，<br>只有玩家周围是最细的 <span class="hljs-variable">LOD</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>四叉树（Quadtree）方案</strong>：</p>
+<p>将地形分成四叉树结构，每个节点可以独立选择 LOD 等级。UE4&#x2F;UE5 的地形系统使用的就是这种方案。</p>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs mathematica">四叉树 <span class="hljs-variable">LOD</span>：<br>        ┌────────┐<br>        │ <span class="hljs-built_in">Root</span>   │<br>        │ <span class="hljs-built_in">Level</span> <span class="hljs-number">0</span>│<br>        └───┬────┘<br>      ┌─────┼─────┐<br>  ┌───┴──┐┌┴───┐┌─┴───┐┌────┐<br>  │ <span class="hljs-variable">L1</span><span class="hljs-operator">-</span><span class="hljs-variable">A</span> ││<span class="hljs-variable">L1</span><span class="hljs-operator">-</span><span class="hljs-variable">B</span>││<span class="hljs-variable">L1</span><span class="hljs-operator">-</span><span class="hljs-built_in">C</span> ││<span class="hljs-variable">L1</span><span class="hljs-operator">-</span><span class="hljs-built_in">D</span>│<br>  └──┬───┘└────┘└─────┘└────┘<br>  ┌──┼──┐<br>  │  │  │  ← 近处细分，远处不细分<br>  <span class="hljs-variable">L2</span> <span class="hljs-variable">L2</span> <span class="hljs-variable">L2</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>消除 LOD 裂缝（Crack Fixing）</strong>：</p>
+<p>当相邻的两个 LOD 等级不同时，会在接缝处产生”裂缝”。常见的解决方案：</p>
+<ol>
+<li><strong>裙边（Skirt）</strong>：在 LOD 块的边缘向内添加一圈额外三角形，遮挡裂缝</li>
+<li><strong>过渡区（Transition）</strong>：在接缝区域做几何 Morph（逐顶点插值）</li>
+<li><strong>T-Junction 消除</strong>：在低 LOD 的一侧添加额外顶点匹配高 LOD</li>
+</ol>
+<h4 id="4-2-4-GPU-Driven-地形"><a href="#4-2-4-GPU-Driven-地形" class="headerlink" title="4.2.4 GPU Driven 地形"></a>4.2.4 GPU Driven 地形</h4><p>传统地形在 CPU 端生成网格，然后上传到 GPU。<strong>GPU Driven</strong> 方案直接在 GPU 上生成地形网格，CPU 只发送高度图和 LOD 参数。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// GPU Driven 地形（Compute Shader 生成 mesh）</span><br>[numthreads(<span class="hljs-number">8</span>, <span class="hljs-number">8</span>, <span class="hljs-number">1</span>)]<br><span class="hljs-type">void</span> GenerateTerrainMesh(uint3 id : SV_DispatchThreadID) &#123;<br>    <span class="hljs-comment">// 1. 根据 LOD 等级确定采样位置</span><br>    float2 uv = (id.xy + <span class="hljs-number">0.5</span>) / gridResolution;<br>    <br>    <span class="hljs-comment">// 2. 采样高度图</span><br>    <span class="hljs-type">float</span> height = Heightmap.SampleLevel(sampler, uv, mipLevel);<br>    <br>    <span class="hljs-comment">// 3. 生成顶点</span><br>    float3 position = float3(uv.x * terrainSize, height, uv.y * terrainSize);<br>    <br>    <span class="hljs-comment">// 4. 写入 Vertex Buffer</span><br>    outputVertices[id.x + id.y * gridWidth] = position;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>性能对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>CPU 开销</th>
+<th>GPU 开销</th>
+<th>带宽</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CPU 生成</td>
+<td>高（逐帧更新）</td>
+<td>低</td>
+<td>高（每帧上传 VB）</td>
+<td>小地形</td>
+</tr>
+<tr>
+<td>GPU Driven</td>
+<td>极低</td>
+<td>低-中</td>
+<td>低（只传参数）</td>
+<td>大世界</td>
+</tr>
+<tr>
+<td>Mesh Shader</td>
+<td>极低</td>
+<td>低（硬件加速）</td>
+<td>最低</td>
+<td>RTX 30+ &#x2F; RDNA2+</td>
+</tr>
+</tbody></table>
+<h4 id="4-2-5-地形材质混合"><a href="#4-2-5-地形材质混合" class="headerlink" title="4.2.5 地形材质混合"></a>4.2.5 地形材质混合</h4><p>真实的地形不是单一材质——山坡是岩石，平地是草地，低洼处是泥土。需要混合多种材质。</p>
+<p><strong>权重图（Splat Map &#x2F; Weight Map）</strong>：</p>
+<p>每个像素存储各材质层的权重（总和 &#x3D; 1）。例如 4 层材质需要 RGBA 四个通道。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 地形材质混合</span><br><span class="hljs-type">vec4</span> weights = <span class="hljs-built_in">texture</span>(splatMap, uv);  <span class="hljs-comment">// 各层权重</span><br><span class="hljs-type">vec3</span> grass  = <span class="hljs-built_in">texture</span>(grassAlbedo,  uv * grassTiling).rgb;<br><span class="hljs-type">vec3</span> rock   = <span class="hljs-built_in">texture</span>(rockAlbedo,   uv * rockTiling).rgb;<br><span class="hljs-type">vec3</span> dirt   = <span class="hljs-built_in">texture</span>(dirtAlbedo,   uv * dirtTiling).rgb;<br><span class="hljs-type">vec3</span> snow   = <span class="hljs-built_in">texture</span>(snowAlbedo,   uv * snowTiling).rgb;<br><br><span class="hljs-type">vec3</span> terrainColor = grass * weights.r<br>                   + rock  * weights.g<br>                   + dirt  * weights.b<br>                   + snow  * weights.a;<br></code></pre></td></tr></table></figure>
+
+<p><strong>优化策略</strong>：</p>
 <ul>
-<li><strong>密度图刷</strong>：用刷子绘制密度，运行时按阈值生成（大范围植被）</li>
-<li><strong>精确撒点</strong>：手动指定每个植被的位置（精确控制区域）</li>
+<li><strong>只保留权重最高的两层</strong>：大多数像素只有 1-2 层材质占主导，省略次要层可以减少采样次数</li>
+<li><strong>Virtual Texture（VT）</strong>：将混合结果预计算到虚拟纹理中，运行时只需一次采样。UE5 的 Virtual Texture 系统就是这个思路</li>
 </ul>
-<p><strong>植被交互</strong>——通过<strong>风场（Wind Field）</strong>和<strong>物理模拟</strong>实现：</p>
-<ul>
-<li>风吹摆动：牛顿力学 <code>F = ma</code></li>
-<li>角色碰撞：角色附近绑”风力源”</li>
-<li>实时响应：与环境和角色的动态交互</li>
+<hr>
+<h3 id="4-3-植被系统（Vegetation-System）"><a href="#4-3-植被系统（Vegetation-System）" class="headerlink" title="4.3 植被系统（Vegetation System）"></a>4.3 植被系统（Vegetation System）</h3><p>植被渲染的核心挑战：<strong>在有限性能预算内渲染足够密度的植被</strong>。《荒野大镖客2》中有超过 300 种植物，每种可能有上千个实例。</p>
+<h4 id="4-3-1-渲染方案选择"><a href="#4-3-1-渲染方案选择" class="headerlink" title="4.3.1 渲染方案选择"></a>4.3.1 渲染方案选择</h4><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>描述</th>
+<th>三角形数</th>
+<th>性能</th>
+<th>代表游戏</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Billboard</strong></td>
+<td>永远面向相机的面片</td>
+<td>2</td>
+<td>极低</td>
+<td>远景植被</td>
+</tr>
+<tr>
+<td><strong>Cross-Plane</strong></td>
+<td>两个交叉面片</td>
+<td>4</td>
+<td>低</td>
+<td>手游植被</td>
+</tr>
+<tr>
+<td><strong>Impostor</strong></td>
+<td>多角度烘焙到面片</td>
+<td>8-24</td>
+<td>中</td>
+<td>中远景植被</td>
+</tr>
+<tr>
+<td><strong>简化 3D 模型</strong></td>
+<td>低面树模型</td>
+<td>100-500</td>
+<td>中-高</td>
+<td>近景植被</td>
+</tr>
+<tr>
+<td><strong>完整 3D 模型</strong></td>
+<td>高精度模型</td>
+<td>1000+</td>
+<td>高</td>
+<td>极近距离</td>
+</tr>
+</tbody></table>
+<p><strong>LOD 策略</strong>通常是组合使用：远处用 Billboard，中距离用 Impostor，近处用简化&#x2F;完整模型。</p>
+<h4 id="4-3-2-创作方式"><a href="#4-3-2-创作方式" class="headerlink" title="4.3.2 创作方式"></a>4.3.2 创作方式</h4><ul>
+<li><strong>密度图刷（Density Map Brush）</strong>：用刷子绘制密度值，运行时根据阈值生成植被实例。适合大范围的草地、灌木。</li>
+<li><strong>精确撒点（Manual Placement）</strong>：手动指定每个植被的位置。适合需要精确控制的区域，如村庄周围的花园。</li>
+<li><strong>生态规则（Ecological Rules）</strong>：PCG 根据高度、坡度、湿度等参数自动决定植被种类和密度。UE5 PCG 框架的强项。</li>
 </ul>
-<h3 id="4-4-水体渲染（Water-Rendering）"><a href="#4-4-水体渲染（Water-Rendering）" class="headerlink" title="4.4 水体渲染（Water Rendering）"></a>4.4 水体渲染（Water Rendering）</h3><p><strong>水体光照成分</strong>：</p>
-<ul>
-<li><strong>反射（Reflection）</strong>：SSR 或光追</li>
-<li><strong>折射（Refraction）</strong>：水下透视效果</li>
-<li><strong>焦散（Caustics）</strong>：光聚焦形成的光斑</li>
-<li><strong>次表面散射（SSS）</strong>：水的通透感</li>
-<li><strong>深浅颜色渐变</strong>：浅水&#x2F;深水不同颜色</li>
-</ul>
-<p><strong>水体网格</strong>：使用 <strong>CDLOD（Continuous Distance LOD）</strong> 实现平滑过渡——重叠区域两套 LOD 网格共存，根据距离做渐变混合。</p>
-<h3 id="4-5-天气系统：天空、大气、云、雾"><a href="#4-5-天气系统：天空、大气、云、雾" class="headerlink" title="4.5 天气系统：天空、大气、云、雾"></a>4.5 天气系统：天空、大气、云、雾</h3><p><strong>统一的技术本质</strong>：<strong>Ray Marching（光线步进）</strong>——所有介质的光照问题都可以通过这一核心算法求解。</p>
-<h4 id="物理大气（Atmosphere）"><a href="#物理大气（Atmosphere）" class="headerlink" title="物理大气（Atmosphere）"></a>物理大气（Atmosphere）</h4><ul>
-<li><strong>经典论文</strong>：Preetham 2008《A Practical Analytic Model for Daylight》</li>
-<li><strong>建模</strong>：两层壳模型（地球内核 + 外层大气）</li>
-<li><strong>预计算 LUT</strong>：根据高度、视角、光源角查表</li>
-<li><strong>散射类型</strong>：瑞利散射（蓝天）+ 米氏散射（雾天）</li>
-<li><strong>多次散射</strong>：迭代 LUT 实现间接光照</li>
-</ul>
-<h4 id="大气雾（Aerial-Perspective）"><a href="#大气雾（Aerial-Perspective）" class="headerlink" title="大气雾（Aerial Perspective）"></a>大气雾（Aerial Perspective）</h4><p>解决传统高度雾与大气渲染<strong>割裂</strong>的问题：使用深度切片（32×32×16）融入大气计算，通过透射率&#x2F;散射亮度实现无缝衔接。</p>
-<h4 id="体积云（Volumetric-Cloud）"><a href="#体积云（Volumetric-Cloud）" class="headerlink" title="体积云（Volumetric Cloud）"></a>体积云（Volumetric Cloud）</h4><p>效果最逼真但性能开销最大。使用 <strong>3D 密度场 + Ray Marching</strong>，云层可遮挡光照影响场景。</p>
-<p><strong>云的层级化方案</strong>：</p>
+<h4 id="4-3-3-植被交互：风场与物理"><a href="#4-3-3-植被交互：风场与物理" class="headerlink" title="4.3.3 植被交互：风场与物理"></a>4.3.3 植被交互：风场与物理</h4><p>植被不是静止的——风会吹动草和树，角色经过会压弯草丛。这些交互是提升沉浸感的关键。</p>
+<p><strong>风场模型（Wind Field）</strong>：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 简化的植被风场 Shader</span><br><span class="hljs-type">vec3</span> WindDisplacement(<span class="hljs-type">vec3</span> objectPos, <span class="hljs-type">float</span> time, <span class="hljs-type">float</span> windStrength) &#123;<br>    <span class="hljs-comment">// 使用正弦波叠加模拟风的效果</span><br>    <span class="hljs-comment">// 不同频率的波叠加产生自然的风吹效果</span><br>    <span class="hljs-type">float</span> phase = objectPos.x * <span class="hljs-number">0.5</span> + objectPos.z * <span class="hljs-number">0.3</span>;<br>    <span class="hljs-type">float</span> wind1 = <span class="hljs-built_in">sin</span>(time * <span class="hljs-number">2.0</span> + phase) * <span class="hljs-number">0.3</span>;<br>    <span class="hljs-type">float</span> wind2 = <span class="hljs-built_in">sin</span>(time * <span class="hljs-number">3.7</span> + phase * <span class="hljs-number">1.3</span>) * <span class="hljs-number">0.1</span>;  <span class="hljs-comment">// 高频细节</span><br>    <span class="hljs-type">float</span> wind3 = <span class="hljs-built_in">sin</span>(time * <span class="hljs-number">0.5</span> + phase * <span class="hljs-number">0.2</span>) * <span class="hljs-number">0.6</span>;  <span class="hljs-comment">// 低频主导</span><br>    <br>    <span class="hljs-type">float</span> totalWind = (wind1 + wind2 + wind3) * windStrength;<br>    <br>    <span class="hljs-comment">// 顶部位移大，底部位移小（模拟根部固定）</span><br>    <span class="hljs-type">float</span> heightFactor = objectPos.y / maxPlantHeight;<br>    heightFactor = heightFactor * heightFactor;  <span class="hljs-comment">// 二次方增长</span><br>    <br>    <span class="hljs-keyword">return</span> <span class="hljs-type">vec3</span>(totalWind * heightFactor, <span class="hljs-number">0.0</span>, totalWind * <span class="hljs-number">0.5</span> * heightFactor);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>角色交互</strong>：角色附近绑定一个”风力源”，当角色经过植被时，风力源对附近的植被施加力——本质上就是牛顿力学 <code>F = ma</code>。植被的弯曲程度与距离成反比。</p>
+<hr>
+<h3 id="4-4-水体渲染（Water-Rendering）"><a href="#4-4-水体渲染（Water-Rendering）" class="headerlink" title="4.4 水体渲染（Water Rendering）"></a>4.4 水体渲染（Water Rendering）</h3><p>水是游戏场景中最复杂也最迷人的渲染对象。真实的水体需要同时处理反射、折射、波浪、焦散等多个光学现象。</p>
+<h4 id="4-4-1-波浪模拟"><a href="#4-4-1-波浪模拟" class="headerlink" title="4.4.1 波浪模拟"></a>4.4.1 波浪模拟</h4><p>水体表面的波浪可以用不同的数学模型描述：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>原理</th>
+<th>复杂度</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>正弦波叠加</strong></td>
+<td>多个不同频率的正弦波叠加</td>
+<td>低</td>
+<td>简单水面</td>
+</tr>
+<tr>
+<td><strong>Gerstner Wave</strong></td>
+<td>圆形运动的水面质点</td>
+<td>中</td>
+<td>写实海面</td>
+</tr>
+<tr>
+<td><strong>FFT 海洋</strong></td>
+<td>频域统计模型 + FFT</td>
+<td>高</td>
+<td>3A 海洋</td>
+</tr>
+<tr>
+<td><strong>物理模拟（Shallow Water）</strong></td>
+<td>Navier-Stokes 简化</td>
+<td>极高</td>
+<td>河流、水池交互</td>
+</tr>
+</tbody></table>
+<p><strong>Gerstner Wave</strong> 是最常见的方案，它比简单的正弦波更真实——因为 Gerstner Wave 的水面质点做的是<strong>圆形运动</strong>，产生的波峰更尖、波谷更宽，这与真实海浪的形状一致：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Gerstner Wave（单一波浪）</span><br><span class="hljs-type">vec3</span> GerstnerWave(<span class="hljs-type">vec2</span> position, <span class="hljs-type">vec2</span> direction, <span class="hljs-type">float</span> steepness,<br>                  <span class="hljs-type">float</span> wavelength, <span class="hljs-type">float</span> time) &#123;<br>    <span class="hljs-type">float</span> k = <span class="hljs-number">2.0</span> * PI / wavelength;        <span class="hljs-comment">// 波数</span><br>    <span class="hljs-type">float</span> c = <span class="hljs-built_in">sqrt</span>(<span class="hljs-number">9.8</span> / k);                <span class="hljs-comment">// 相速度（深水波）</span><br>    <span class="hljs-type">float</span> a = steepness / k;                 <span class="hljs-comment">// 振幅</span><br>    <br>    <span class="hljs-type">vec2</span> d = <span class="hljs-built_in">normalize</span>(direction);<br>    <span class="hljs-type">float</span> f = k * (<span class="hljs-built_in">dot</span>(d, position) - c * time);<br>    <br>    <span class="hljs-keyword">return</span> <span class="hljs-type">vec3</span>(<br>        d.x * a * <span class="hljs-built_in">cos</span>(f),                    <span class="hljs-comment">// 水平位移</span><br>        a * <span class="hljs-built_in">sin</span>(f),                           <span class="hljs-comment">// 垂直位移</span><br>        d.y * a * <span class="hljs-built_in">cos</span>(f)                      <span class="hljs-comment">// 水平位移</span><br>    );<br>&#125;<br><br><span class="hljs-comment">// 通常叠加 4-8 个 Gerstner Wave 得到自然的水面</span><br><span class="hljs-type">vec3</span> totalDisplacement = <span class="hljs-type">vec3</span>(<span class="hljs-number">0.0</span>);<br>totalDisplacement += GerstnerWave(pos, dir1, steep1, wl1, time);<br>totalDisplacement += GerstnerWave(pos, dir2, steep2, wl2, time);<br>totalDisplacement += GerstnerWave(pos, dir3, steep3, wl3, time);<br><span class="hljs-comment">// ... 更多波</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>FFT 海洋</strong>是最高端的方案，基于 Tessendorf (2001) 的统计模型。核心思想：海洋表面可以看作大量不同频率、不同方向的波浪的叠加——这在频域中可以用 FFT 高效计算。代表游戏：《盗贼之海》、《死亡搁浅》。</p>
+<h4 id="4-4-2-水体光照成分"><a href="#4-4-2-水体光照成分" class="headerlink" title="4.4.2 水体光照成分"></a>4.4.2 水体光照成分</h4><p>水体渲染需要同时处理多个光学现象：</p>
+<p><strong>1. 反射（Reflection）</strong></p>
+<p>水面像一面镜子，反射天空和周围的场景。</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>原理</th>
+<th>质量</th>
+<th>性能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Planar Reflection</strong></td>
+<td>从水面下方翻转会渲染整个场景</td>
+<td>高</td>
+<td>高（额外一帧渲染）</td>
+</tr>
+<tr>
+<td><strong>SSR（Screen Space Reflection）</strong></td>
+<td>在屏幕空间追踪反射光线</td>
+<td>中</td>
+<td>中</td>
+</tr>
+<tr>
+<td><strong>Cubemap Reflection</strong></td>
+<td>用预烘焙的环境贴图</td>
+<td>低</td>
+<td>低</td>
+</tr>
+<tr>
+<td><strong>Ray Traced Reflection</strong></td>
+<td>光线追踪</td>
+<td>最高</td>
+<td>极高（需 RTX）</td>
+</tr>
+</tbody></table>
+<p><strong>2. 折射（Refraction）</strong></p>
+<p>透过水面看到的水下场景。使用 Snell 定律偏移水下图像的 UV：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 水面折射</span><br><span class="hljs-type">vec2</span> refractUV = screenUV + normal.xy * refractionStrength;<br><span class="hljs-type">vec3</span> waterBottom = <span class="hljs-built_in">texture</span>(sceneColorTex, refractUV).rgb;<br><span class="hljs-comment">// 深度调制：越深，折射越不明显</span><br><span class="hljs-type">float</span> depthFactor = <span class="hljs-built_in">exp</span>(-waterDepth * absorptionCoeff);<br><span class="hljs-type">vec3</span> refractedColor = <span class="hljs-built_in">mix</span>(deepWaterColor, waterBottom, depthFactor);<br></code></pre></td></tr></table></figure>
+
+<p><strong>3. 焦散（Caustics）</strong></p>
+<p>水面波浪聚焦光线形成的光斑——就像游泳池底部的波纹光网。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 简化的焦散效果</span><br><span class="hljs-type">vec2</span> causticUV = worldPos.xz * causticScale + time * causticSpeed;<br><span class="hljs-type">float</span> caustic = <span class="hljs-built_in">texture</span>(causticTexture, causticUV).r;<br><span class="hljs-comment">// 焦散强度随深度衰减</span><br><span class="hljs-type">float</span> causticIntensity = caustic * <span class="hljs-built_in">exp</span>(-depth * causticFalloff);<br></code></pre></td></tr></table></figure>
+
+<p><strong>4. 次表面散射（SSS）</strong></p>
+<p>水的通透感——阳光照射下的水面边缘会发出蓝绿色的光。这与皮肤 SSS 的原理相同。</p>
+<p><strong>5. 深浅颜色渐变</strong></p>
+<p>浅水区域（岸边）呈现透明的浅蓝绿色，深水区域呈现深蓝色。使用指数衰减模拟水的吸收：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 水的吸收系数（Beer-Lambert 定律）</span><br><span class="hljs-type">vec3</span> absorptionCoeff = <span class="hljs-type">vec3</span>(<span class="hljs-number">0.4</span>, <span class="hljs-number">0.1</span>, <span class="hljs-number">0.01</span>); <span class="hljs-comment">// R 吸收多，B 吸收少</span><br><span class="hljs-type">float</span> opticalDepth = waterDepth * <span class="hljs-number">2.0</span>; <span class="hljs-comment">// 光学路径长度</span><br><span class="hljs-type">vec3</span> waterColor = baseWaterColor * <span class="hljs-built_in">exp</span>(-absorptionCoeff * opticalDepth);<br></code></pre></td></tr></table></figure>
+
+<h4 id="4-4-3-水体网格-LOD（CDLOD）"><a href="#4-4-3-水体网格-LOD（CDLOD）" class="headerlink" title="4.4.3 水体网格 LOD（CDLOD）"></a>4.4.3 水体网格 LOD（CDLOD）</h4><p>水体使用 <strong>CDLOD（Continuous Distance LOD）</strong> 实现平滑过渡：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs nginx"><span class="hljs-attribute">CDLOD</span> 原理：<br><br>近距离：高密度网格（每米一个顶点）<br>┌─┬─┬─┬─┬─┬─┬─┬─┐<br>├─┼─┼─┼─┼─┼─┼─┼─┤<br>├─┼─┼─┼─┼─┼─┼─┼─┤<br>└─┴─┴─┴─┴─┴─┴─┴─┘<br><br>远距离：低密度网格<br>┌───────────────┐<br>│               │<br>│               │<br>└───────────────┘<br><br>过渡区：两套 LOD 共存，渐变混合<br>两套网格重叠，alpha 从 <span class="hljs-number">0</span>→<span class="hljs-number">1</span> 过渡<br></code></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-5-天气系统：天空、大气、云、雾"><a href="#4-5-天气系统：天空、大气、云、雾" class="headerlink" title="4.5 天气系统：天空、大气、云、雾"></a>4.5 天气系统：天空、大气、云、雾</h3><p>这一组技术有一个<strong>统一的核心算法：Ray Marching（光线步进）</strong>。所有介质（大气、云、雾）的光照问题都可以通过这一算法求解。</p>
+<h4 id="4-5-1-Ray-Marching-核心算法"><a href="#4-5-1-Ray-Marching-核心算法" class="headerlink" title="4.5.1 Ray Marching 核心算法"></a>4.5.1 Ray Marching 核心算法</h4><p>Ray Marching 的思想非常直观：沿着光线方向一步步前进，每一步计算该位置的密度和光照贡献，累积起来就是最终效果。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// Ray Marching 伪代码（体积渲染通用框架）</span><br><span class="hljs-type">vec4</span> RayMarch(<span class="hljs-type">vec3</span> rayOrigin, <span class="hljs-type">vec3</span> rayDir, <span class="hljs-type">float</span> maxDist) &#123;<br>    <span class="hljs-type">vec3</span> accumulatedColor = <span class="hljs-type">vec3</span>(<span class="hljs-number">0.0</span>);<br>    <span class="hljs-type">float</span> accumulatedAlpha = <span class="hljs-number">0.0</span>;<br>    <br>    <span class="hljs-type">float</span> stepSize = maxDist / NUM_STEPS;<br>    <br>    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i = <span class="hljs-number">0</span>; i &lt; NUM_STEPS; i++) &#123;<br>        <span class="hljs-type">vec3</span> pos = rayOrigin + rayDir * (i * stepSize);<br>        <br>        <span class="hljs-comment">// 1. 采样该位置的密度</span><br>        <span class="hljs-type">float</span> density = SampleDensity(pos);<br>        <br>        <span class="hljs-keyword">if</span> (density &gt; <span class="hljs-number">0.0</span>) &#123;<br>            <span class="hljs-comment">// 2. 计算该点的光照（向光源方向也做一次 Ray March）</span><br>            <span class="hljs-type">float</span> lightDensity = SampleLightDensity(pos, lightDir);<br>            <span class="hljs-type">float</span> transmittance = <span class="hljs-built_in">exp</span>(-lightDensity * absorptionCoeff);<br>            <br>            <span class="hljs-comment">// 3. 累积颜色和透明度</span><br>            <span class="hljs-type">vec3</span> localColor = scatteringCoeff * density * transmittance * lightColor;<br>            accumulatedColor += localColor * (<span class="hljs-number">1.0</span> - accumulatedAlpha);<br>            accumulatedAlpha += density * stepSize * (<span class="hljs-number">1.0</span> - accumulatedAlpha);<br>        &#125;<br>        <br>        <span class="hljs-comment">// 提前退出</span><br>        <span class="hljs-keyword">if</span> (accumulatedAlpha &gt; <span class="hljs-number">0.99</span>) <span class="hljs-keyword">break</span>;<br>    &#125;<br>    <br>    <span class="hljs-keyword">return</span> <span class="hljs-type">vec4</span>(accumulatedColor, accumulatedAlpha);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="4-5-2-物理大气（Atmospheric-Scattering）"><a href="#4-5-2-物理大气（Atmospheric-Scattering）" class="headerlink" title="4.5.2 物理大气（Atmospheric Scattering）"></a>4.5.2 物理大气（Atmospheric Scattering）</h4><p>天空不是蓝色的”背景板”——它是一个巨大的发光球壳。蓝色的天空是<strong>大气散射</strong>的结果。</p>
+<p><strong>经典论文</strong>：Preetham et al. (2008)《A Practical Analytic Model for Daylight》</p>
+<p><strong>物理模型</strong>：两层壳模型</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs">╭─────────────────────────╮  ← 大气层顶部（约 100km）<br>│   外层大气               │<br>│   稀薄气体               │<br>│                          │<br>│  ←──── 光线散射 ────→    │<br>│                          │<br>│                          │<br>╰──────────┬──────────────╯<br>      ┌────┴────┐<br>      │ 地球表面 │  ← 地形/海面<br>      └─────────┘<br></code></pre></td></tr></table></figure>
+
+<p><strong>两种散射类型</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>散射类型</th>
+<th>粒子大小</th>
+<th>效果</th>
+<th>公式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>瑞利散射（Rayleigh）</strong></td>
+<td>&lt;&lt; 光波长</td>
+<td>蓝天、日落红霞</td>
+<td>$\sigma_s \propto \frac{1}{\lambda^4}$</td>
+</tr>
+<tr>
+<td><strong>米氏散射（Mie）</strong></td>
+<td>≈ 光波长</td>
+<td>雾天、光晕</td>
+<td>前向散射为主</td>
+</tr>
+</tbody></table>
+<p><strong>为什么天空是蓝色的？</strong> 瑞利散射强度与波长的四次方成反比。蓝光（λ≈450nm）的散射强度约是红光（λ≈650nm）的 $(650&#x2F;450)^4 ≈ 4.3$ 倍——所以白光经过大气后，蓝光被大量散射到各个方向，形成了蓝色的天空。</p>
+<p><strong>为什么日落是红色的？</strong> 日落时太阳光穿过的大气层更厚，蓝光已经被散射殆尽，只剩下红光和橙光能到达你的眼睛。</p>
+<p><strong>预计算 LUT 方案</strong>：</p>
+<p>完整的物理大气计算每帧开销太大（每像素都要做 Ray Marching），所以业界使用<strong>预计算查找表（LUT）</strong>：</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 大气散射预计算 LUT（通常是 3D 或 2D 纹理）</span><br><span class="hljs-comment">// 输入参数：</span><br><span class="hljs-comment">//   u = 视角高度（0-1 映射到 0-100km）</span><br><span class="hljs-comment">//   v = 视角与天顶的夹角（0-π）</span><br><span class="hljs-comment">//   w = 太阳与天顶的夹角（0-π）</span><br><br><span class="hljs-type">vec3</span> atmosphericColor = <span class="hljs-built_in">texture</span>(atmosphereLUT, <br>    <span class="hljs-type">vec2</span>(viewZenith, sunZenith)).rgb;<br></code></pre></td></tr></table></figure>
+
+<p><strong>多次散射</strong>：光在大气中会经历多次散射（散射出去的光又散射回来）。单次散射只能产生简单的蓝天效果，而多次散射才能产生真实的地平线泛白、日落时的橙色渐变。实现方式是<strong>迭代 LUT</strong>——用前一次的结果作为输入计算下一次。</p>
+<h4 id="4-5-3-大气雾（Aerial-Perspective）"><a href="#4-5-3-大气雾（Aerial-Perspective）" class="headerlink" title="4.5.3 大气雾（Aerial Perspective）"></a>4.5.3 大气雾（Aerial Perspective）</h4><p><strong>问题</strong>：传统的高度雾（Height Fog）与物理大气渲染是<strong>割裂</strong>的——天空用的是大气散射，地面用的是简单的指数雾。两者在衔接处会有明显的颜色&#x2F;密度跳变。</p>
+<p><strong>解决方案</strong>：使用<strong>深度切片（Froxel）</strong>将大气计算融入统一的框架。</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs armasm">深度切片示意：<br><br>  相机 ──────────────────────────→ 远处<br>  <br>  │<span class="hljs-built_in">F1</span>│<span class="hljs-built_in">F2</span>│<span class="hljs-built_in">F3</span>│<span class="hljs-built_in">F4</span>│<span class="hljs-built_in">F5</span>│<span class="hljs-built_in">F6</span>│<span class="hljs-built_in">F7</span>│F8│F9│F10│<br>  │  │  │  │  │  │  │  │  │  │   │<br>  近                                  远<br>  <br>  每个切片（Froxel）存储：<br>  - 散射亮度（Scattering Luminance）<br>  - 透射率（Transmittance）<br>  <br>  通常分辨率：<span class="hljs-number">32</span>×<span class="hljs-number">32</span>×<span class="hljs-number">16</span> 或 <span class="hljs-number">64</span>×<span class="hljs-number">64</span>×<span class="hljs-number">32</span><br></code></pre></td></tr></table></figure>
+
+<p>通过在每个 Froxel 中计算散射和透射率，大气雾与天空渲染完全统一——不再有”天空”和”雾”的割裂感。</p>
+<h4 id="4-5-4-体积云（Volumetric-Cloud）"><a href="#4-5-4-体积云（Volumetric-Cloud）" class="headerlink" title="4.5.4 体积云（Volumetric Cloud）"></a>4.5.4 体积云（Volumetric Cloud）</h4><p>体积云是场景渲染中最耗性能但也最壮观的效果。</p>
+<p><strong>核心方案</strong>：3D 密度场 + Ray Marching</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs markdown">体积云渲染流程：<br><br><span class="hljs-bullet">1.</span> 生成 3D 密度场<br>   → 使用噪声函数描述云的形状<br>   → Perlin/Worley 噪声叠加<br><br><span class="hljs-bullet">2.</span> Ray Marching 采样<br>   → 沿视线方向步进<br>   → 每步采样密度<br><br><span class="hljs-bullet">3.</span> 光照计算<br>   → 向光源方向也做 Ray Marching<br>   → 累积散射光<br><br><span class="hljs-bullet">4.</span> 合成到场景<br>   → 云的 alpha 混合到场景颜色上<br></code></pre></td></tr></table></figure>
+
+<p><strong>噪声函数</strong>：云的形状由噪声函数定义。</p>
+<table>
+<thead>
+<tr>
+<th>噪声类型</th>
+<th>特点</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Perlin Noise</strong></td>
+<td>平滑的梯度噪声</td>
+<td>云的大致形状</td>
+</tr>
+<tr>
+<td><strong>Worley&#x2F;Voronoi</strong></td>
+<td>细胞状结构</td>
+<td>云的细节（蓬松感）</td>
+</tr>
+<tr>
+<td><strong>分形叠加（FBM）</strong></td>
+<td>多个八度叠加</td>
+<td>自然的多尺度细节</td>
+</tr>
+</tbody></table>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-comment">// 云密度采样（FBM 噪声）</span><br><span class="hljs-type">float</span> CloudDensity(<span class="hljs-type">vec3</span> pos) &#123;<br>    <span class="hljs-comment">// 基础形状：低频 Perlin 噪声</span><br>    <span class="hljs-type">float</span> base = perlinNoise(pos * <span class="hljs-number">0.001</span>);<br>    <br>    <span class="hljs-comment">// 细节层：高频 Worley 噪声叠加</span><br>    <span class="hljs-type">float</span> detail = worleyNoise(pos * <span class="hljs-number">0.01</span>) * <span class="hljs-number">0.5</span><br>                 + worleyNoise(pos * <span class="hljs-number">0.02</span>) * <span class="hljs-number">0.25</span><br>                 + worleyNoise(pos * <span class="hljs-number">0.04</span>) * <span class="hljs-number">0.125</span>;<br>    <br>    <span class="hljs-comment">// 高度曲线：云只在特定高度范围存在</span><br>    <span class="hljs-type">float</span> heightFade = <span class="hljs-number">1.0</span> - <span class="hljs-built_in">smoothstep</span>(cloudBase, cloudBase + cloudThickness, pos.y);<br>    <br>    <span class="hljs-comment">// 最终密度 = 基础形状 × 细节 × 高度</span><br>    <span class="hljs-type">float</span> density = <span class="hljs-built_in">max</span>(<span class="hljs-number">0.0</span>, base - cloudThreshold) * (<span class="hljs-number">1.0</span> - detail * <span class="hljs-number">0.5</span>) * heightFade;<br>    <br>    <span class="hljs-keyword">return</span> density;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>云的层级化方案</strong>（根据性能预算选择）：</p>
 <table>
 <thead>
 <tr>
 <th>类型</th>
 <th>实现方式</th>
 <th>性能</th>
+<th>视觉质量</th>
+<th>适用平台</th>
 </tr>
 </thead>
 <tbody><tr>
 <td>雾（低层云）</td>
-<td>体积雾类似方案</td>
+<td>体积雾方案</td>
 <td>低</td>
+<td>低</td>
+<td>全平台</td>
 </tr>
 <tr>
 <td>普通云层</td>
 <td>Billboard&#x2F;Impostor</td>
 <td>中</td>
+<td>中</td>
+<td>全平台</td>
+</tr>
+<tr>
+<td>精灵云</td>
+<td>精灵层叠</td>
+<td>中</td>
+<td>中-高</td>
+<td>主机</td>
 </tr>
 <tr>
 <td>体积云</td>
 <td>Ray Marching 密度场</td>
 <td>高</td>
+<td>高</td>
+<td>PC&#x2F;主机</td>
+</tr>
+<tr>
+<td>高品质体积云</td>
+<td>多散射+锥形采样</td>
+<td>极高</td>
+<td>最高</td>
+<td>高端 PC</td>
 </tr>
 </tbody></table>
+<p><strong>性能数据参考</strong>（1080p 分辨率）：</p>
+<table>
+<thead>
+<tr>
+<th>云方案</th>
+<th>Ray March 步数</th>
+<th>GPU 时间</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>简单体积云</td>
+<td>32 步</td>
+<td>~2ms</td>
+<td>Unity 默认</td>
+</tr>
+<tr>
+<td>中等体积云</td>
+<td>64 步</td>
+<td>~4ms</td>
+<td>UE4 插件</td>
+</tr>
+<tr>
+<td>高品质体积云</td>
+<td>128 步 + light march</td>
+<td>~8-12ms</td>
+<td>《地平线》</td>
+</tr>
+<tr>
+<td>超高品质</td>
+<td>256 步 + multi-scatter</td>
+<td>~15-20ms</td>
+<td>《死亡搁浅》</td>
+</tr>
+</tbody></table>
+<h4 id="4-5-5-天气系统的时间控制（TOD）"><a href="#4-5-5-天气系统的时间控制（TOD）" class="headerlink" title="4.5.5 天气系统的时间控制（TOD）"></a>4.5.5 天气系统的时间控制（TOD）</h4><p><strong>TOD（Time of Day）</strong> 系统是连接所有天气元素的控制层：</p>
+<figure class="highlight q"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs q">TOD 参数 → 控制所有天气元素：<br>    <br>    太阳角度 ──┬──→ 大气散射颜色（日出/正午/日落/夜空）<br>              ├──→ 阴影方向和长度<br>              ├──→ 体积云的光照颜色<br>              └──→ 环境光强度和颜色<br>    <br>    云量 ──────┬──→ 云的密度阈值<br>              ├──→ 散射光强度（阴天 <span class="hljs-built_in">vs</span> 晴天）<br>              └──→ 地面直射光 <span class="hljs-built_in">vs</span> 间接光比例<br>    <br>    风向/风速 ─┬──→ 云的移动速度和方向<br>              ├──→ 植被摆动幅度<br>              └──→ 粒子（雨/雪）方向<br>    <br>    湿度 ──────┬──→ 雾的浓度<br>              ├──→ 地面湿润度（反射率变化）<br>              └──→ Puddle（水洼）的面积<br></code></pre></td></tr></table></figure>
+
+<p>UE5 的天气系统通过一个统一的 <strong>Sky Atmosphere</strong> 组件 + <strong>Exponential Height Fog</strong> + <strong>Volumetric Cloud</strong> 三者联动实现 TOD 控制。</p>
+<hr>
 <h3 id="场景渲染小结"><a href="#场景渲染小结" class="headerlink" title="场景渲染小结"></a>场景渲染小结</h3><p><strong>场景制作的三大挑战</strong>：</p>
 <table>
 <thead>
 <tr>
 <th>挑战</th>
 <th>说明</th>
+<th>核心技术</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>内容</strong></td>
 <td>创作工具（笔刷、PCG、AIGC）决定生产效率</td>
+<td>Houdini, UE5 PCG, AI 辅助</td>
 </tr>
 <tr>
 <td><strong>性能</strong></td>
 <td>LOD、剔除、流送、GPU Driven</td>
+<td>Nanite, Virtual Texture, Streaming</td>
 </tr>
 <tr>
 <td><strong>效果</strong></td>
 <td>风&#x2F;水交互、场景破坏、UGC 挖洞等</td>
+<td>物理模拟, Destructible Mesh</td>
 </tr>
 </tbody></table>
 <hr>
-<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><h3 id="渲染技术选择原则"><a href="#渲染技术选择原则" class="headerlink" title="渲染技术选择原则"></a>渲染技术选择原则</h3><table>
+<h2 id="五、总结与实战指南"><a href="#五、总结与实战指南" class="headerlink" title="五、总结与实战指南"></a>五、总结与实战指南</h2><h3 id="5-1-渲染技术选择原则"><a href="#5-1-渲染技术选择原则" class="headerlink" title="5.1 渲染技术选择原则"></a>5.1 渲染技术选择原则</h3><table>
 <thead>
 <tr>
 <th>场景</th>
 <th>推荐方案</th>
+<th>理由</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>写实类 3A 游戏</td>
-<td>PBR + 物理准确方案</td>
+<td>写实类 3A 游戏（PC&#x2F;主机）</td>
+<td>PBR + 物理准确方案 + SSS + Marschner</td>
+<td>硬件预算充足，追求极致效果</td>
 </tr>
 <tr>
-<td>移动端游戏</td>
-<td>简化 PBR + LUT 预计算</td>
+<td>移动端写实游戏</td>
+<td>简化 PBR + LUT 预计算 + Kajiya-Kay</td>
+<td>性能敏感，需要预计算优化</td>
 </tr>
 <tr>
 <td>二次元&#x2F;风格化</td>
-<td>NPR + 所见即所得</td>
+<td>NPR + 所见即所得 + 色阶阴影</td>
+<td>艺术风格驱动，不是物理正确驱动</td>
 </tr>
 <tr>
 <td>混合风格</td>
 <td>分层材质系统（如 UE5 Strata）</td>
+<td>支持多层材质的物理正确混合</td>
+</tr>
+<tr>
+<td>开放世界</td>
+<td>LOD + Streaming + GPU Driven</td>
+<td>大规模场景管理的核心</td>
+</tr>
+<tr>
+<td>竞技&#x2F;电竞</td>
+<td>最低延迟 + 稳定帧率 &gt; 画质</td>
+<td>画面质量服从竞技需求</td>
 </tr>
 </tbody></table>
-<h3 id="性能优化通用套路"><a href="#性能优化通用套路" class="headerlink" title="性能优化通用套路"></a>性能优化通用套路</h3><ol>
-<li><strong>LOD 策略</strong>：距离越远，细节越少</li>
-<li><strong>剔除优化</strong>：视锥剔除 + 遮挡剔除</li>
-<li><strong>流送管理</strong>：只加载需要的数据</li>
-<li><strong>GPU Driven</strong>：让 GPU 承担更多工作</li>
-<li><strong>预计算 LUT</strong>：空间换时间</li>
-</ol>
-<h3 id="核心学习路径"><a href="#核心学习路径" class="headerlink" title="核心学习路径"></a>核心学习路径</h3><ul>
-<li><strong>基础</strong>：渲染方程 → BRDF → 微表面模型</li>
-<li><strong>进阶</strong>：Disney PBR → SSS → 各向异性</li>
-<li><strong>场景</strong>：地形 LOD → 植被渲染 → 水体模拟</li>
-<li><strong>氛围</strong>：大气散射 → Ray Marching → 体积云</li>
+<h3 id="5-2-不同平台的技术选型对比"><a href="#5-2-不同平台的技术选型对比" class="headerlink" title="5.2 不同平台的技术选型对比"></a>5.2 不同平台的技术选型对比</h3><table>
+<thead>
+<tr>
+<th>技术领域</th>
+<th>PC&#x2F;主机（PS5&#x2F;XSX）</th>
+<th>移动端（骁龙8 Gen3）</th>
+<th>Web&#x2F;小程序</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>渲染架构</strong></td>
+<td>延迟渲染 &#x2F; Forward+</td>
+<td>前向渲染（TBDR）</td>
+<td>前向渲染</td>
+</tr>
+<tr>
+<td><strong>PBR</strong></td>
+<td>Cook-Torrance 完整版</td>
+<td>简化版（无 GGX 长尾）</td>
+<td>基础 PBR</td>
+</tr>
+<tr>
+<td><strong>阴影</strong></td>
+<td>CSM + Contact Shadow</td>
+<td>CSM + 简化</td>
+<td>单一 Shadow Map</td>
+</tr>
+<tr>
+<td><strong>SSS</strong></td>
+<td>屏幕空间&#x2F;可分离</td>
+<td>预积分 LUT</td>
+<td>无 &#x2F; 简化 tint</td>
+</tr>
+<tr>
+<td><strong>头发</strong></td>
+<td>Marschner + Strand</td>
+<td>Kajiya-Kay + Card</td>
+<td>Card &#x2F; 无特殊处理</td>
+</tr>
+<tr>
+<td><strong>地形 LOD</strong></td>
+<td>GPU Driven + Nanite</td>
+<td>简化 Clipmap</td>
+<td>固定 LOD</td>
+</tr>
+<tr>
+<td><strong>水体</strong></td>
+<td>Gerstner + FFT</td>
+<td>正弦波叠加</td>
+<td>法线贴图模拟</td>
+</tr>
+<tr>
+<td><strong>大气</strong></td>
+<td>物理大气 + 体积云</td>
+<td>简化天空盒</td>
+<td>天空盒</td>
+</tr>
+<tr>
+<td><strong>后处理</strong></td>
+<td>TAA + SSR + Bloom</td>
+<td>FXAA + 简化 Bloom</td>
+<td>基础后处理</td>
+</tr>
+<tr>
+<td><strong>光追</strong></td>
+<td>RT 反射&#x2F;阴影&#x2F;GI</td>
+<td>无</td>
+<td>无</td>
+</tr>
+<tr>
+<td><strong>帧率目标</strong></td>
+<td>60fps（4K）&#x2F; 30fps（光追）</td>
+<td>30-60fps（1080p）</td>
+<td>30fps（720p）</td>
+</tr>
+</tbody></table>
+<h3 id="5-3-性能优化通用套路"><a href="#5-3-性能优化通用套路" class="headerlink" title="5.3 性能优化通用套路"></a>5.3 性能优化通用套路</h3><ol>
+<li><p><strong>LOD 策略</strong>：距离越远，细节越少。不只是几何 LOD，还有 Shader LOD（远处用更简单的材质）和阴影 LOD（远处物体不产生阴影）。</p>
+</li>
+<li><p><strong>剔除优化</strong>：</p>
+<ul>
+<li><strong>视锥剔除（Frustum Culling）</strong>：不在视野内的物体不渲染</li>
+<li><strong>遮挡剔除（Occlusion Culling）</strong>：被其他物体遮挡的不渲染</li>
+<li><strong>距离剔除（Distance Culling）</strong>：超过一定距离的小物体直接不渲染</li>
 </ul>
+</li>
+<li><p><strong>流送管理（Streaming）</strong>：只加载玩家周围的资源。Mipmap 的本质就是一种流送——远处用低分辨率贴图。</p>
+</li>
+<li><p><strong>GPU Driven</strong>：让 GPU 承担更多工作。Nanite 的核心思想就是完全在 GPU 端管理 LOD 和剔除。</p>
+</li>
+<li><p><strong>预计算 LUT</strong>：空间换时间。SSS、大气、BRDF 都可以用预计算查找表将运行时计算变为纹理采样。</p>
+</li>
+<li><p><strong>实例化渲染（Instancing）</strong>：相同几何体的多个实例，一次 Draw Call 渲染全部。植被系统的核心优化手段。</p>
+</li>
+</ol>
+<h3 id="5-4-核心学习路径"><a href="#5-4-核心学习路径" class="headerlink" title="5.4 核心学习路径"></a>5.4 核心学习路径</h3><figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs mathematica">学习路径（建议按此顺序）：<br><br>基础（<span class="hljs-number">1</span><span class="hljs-operator">-</span><span class="hljs-number">3</span>个月）<br>├── 渲染管线架构<br>├── 渲染方程 → <span class="hljs-variable">BRDF</span> → 微表面模型<br>├── 光源模型（点<span class="hljs-operator">/</span>方向<span class="hljs-operator">/</span>聚光<span class="hljs-operator">/</span>面光源）<br>└── <span class="hljs-variable">Shader</span> 编程入门（<span class="hljs-variable">GLSL</span><span class="hljs-operator">/</span><span class="hljs-variable">HLSL</span>）<br><br>进阶（<span class="hljs-number">3</span><span class="hljs-operator">-</span><span class="hljs-number">6</span>个月）<br>├── <span class="hljs-variable">Disney</span> <span class="hljs-variable">Principled</span> <span class="hljs-variable">BRDF</span> → <span class="hljs-variable">IBL</span>（基于图像的光照）<br>├── <span class="hljs-variable">SSS</span> → 各向异性 → <span class="hljs-variable">Clearcoat</span><br>├── 后处理管线（<span class="hljs-variable">TAA</span><span class="hljs-operator">,</span> <span class="hljs-variable">Bloom</span><span class="hljs-operator">,</span> <span class="hljs-variable">Tonemapping</span>）<br>└── 阴影技术（<span class="hljs-variable">CSM</span><span class="hljs-operator">,</span> <span class="hljs-variable">PCF</span><span class="hljs-operator">,</span> <span class="hljs-variable">VSM</span><span class="hljs-operator">,</span> <span class="hljs-variable">Ray</span> <span class="hljs-variable">Traced</span>）<br><br>场景（<span class="hljs-number">6</span><span class="hljs-operator">-</span><span class="hljs-number">12</span>个月）<br>├── 地形 <span class="hljs-variable">LOD</span>（<span class="hljs-variable">Clipmap</span><span class="hljs-operator">,</span> <span class="hljs-variable">Quadtree</span><span class="hljs-operator">,</span> <span class="hljs-variable">GPU</span> <span class="hljs-variable">Driven</span>）<br>├── 植被渲染（<span class="hljs-variable">Wind</span> <span class="hljs-variable">Shader</span><span class="hljs-operator">,</span> <span class="hljs-variable">Instancing</span>）<br>├── 水体模拟（<span class="hljs-variable">Gerstner</span><span class="hljs-operator">,</span> <span class="hljs-variable">FFT</span><span class="hljs-operator">,</span> <span class="hljs-variable">SSS</span>）<br>└── 大规模场景管理（<span class="hljs-variable">Streaming</span><span class="hljs-operator">,</span> <span class="hljs-variable">Virtual</span> <span class="hljs-built_in">Texture</span>）<br><br>氛围（<span class="hljs-number">6</span><span class="hljs-operator">-</span><span class="hljs-number">12</span>个月）<br>├── 大气散射（<span class="hljs-variable">Rayleigh</span><span class="hljs-operator">,</span> <span class="hljs-variable">Mie</span><span class="hljs-operator">,</span> <span class="hljs-variable">Preetham</span>）<br>├── <span class="hljs-variable">Ray</span> <span class="hljs-variable">Marching</span> 核心算法<br>├── 体积云（噪声函数<span class="hljs-operator">,</span> <span class="hljs-number">3</span><span class="hljs-built_in">D</span> 密度场）<br>└── 天气系统（<span class="hljs-variable">TOD</span><span class="hljs-operator">,</span> 参数联动）<br><br>前沿（持续学习）<br>├── 实时光线追踪（<span class="hljs-variable">RTX</span><span class="hljs-operator">,</span> <span class="hljs-variable">DLSS</span>）<br>├── <span class="hljs-variable">Nanite</span> <span class="hljs-operator">/</span> <span class="hljs-built_in">Mesh</span> <span class="hljs-variable">Shader</span><br>├── <span class="hljs-variable">Neural</span> <span class="hljs-variable">Rendering</span><br>└── <span class="hljs-variable">AI</span> 辅助渲染（神经辐射场<span class="hljs-operator">,</span> <span class="hljs-number">3</span><span class="hljs-built_in">D</span> <span class="hljs-variable">Gaussian</span> <span class="hljs-variable">Splatting</span>）<br></code></pre></td></tr></table></figure>
+
 <hr>
 <h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><blockquote>
 <p><em>“渲染的本质是用最低的成本，达到最好的效果。”</em></p>
 </blockquote>
-<p>游戏渲染是一个<strong>效果、性能、成本</strong>三者平衡的艺术。没有银弹方案，只有最适合当前项目的选择。理解底层原理，掌握工具链，才能在实际开发中做出正确的技术决策。</p>
-<p>从一根头发的光线追踪，到整片天空的大气散射——每一个像素背后，都是数学和工程的精密配合。这正是游戏渲染技术的魅力所在。</p>
+<p>游戏渲染是一个<strong>效果、性能、成本</strong>三者平衡的艺术。没有银弹方案，只有最适合当前项目的选择。</p>
+<p>从渲染方程的数学精确性，到 NPR 色阶贴图的艺术自由度；从微表面模型的统计学优雅，到体积云 Ray Marching 的暴力美学——每一个像素背后，都是数学和工程的精密配合。</p>
+<p>理解底层原理，不是为了能写出更复杂的公式，而是为了在遇到问题时能<strong>找到正确的近似方向</strong>。渲染方程的精确解不可能实时算出，但理解它之后，你就知道每一次近似牺牲了什么、保留了什么、在什么条件下近似会失效。</p>
+<p><strong>这正是游戏渲染技术的魅力所在——在无限的可能性中，找到有限预算下的最优解。</strong></p>
+<hr>
+<p><em>本文基于网易游戏学堂的技术分享整理扩展，融入了图形学经典论文和实际游戏引擎的实现经验。如有疏漏，欢迎指正。</em></p>
 
                 
               </div>
