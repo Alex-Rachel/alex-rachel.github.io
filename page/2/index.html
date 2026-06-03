@@ -336,6 +336,82 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
+        <a href="/2026/04/01/34-simulation-physics/" target="_self">
+          Unity Shader 系列（三十四）：Compute Shader 物理模拟——布料与粒子群
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/34-simulation-physics/" target="_self">
+        <div>
+          为什么用 Compute Shader 做物理？Unity 自带的 PhysX 是 CPU 物理引擎，适合刚体碰撞检测，但处理万级以上粒子或布料节点时性能急剧下降。Compute Shader 让物理计算搬到 GPU 上并行执行：  1024 个线程组 × 64 线程&#x2F;组 &#x3D; 65536 个粒子同时并行更新 数据常驻 GPU，无需 CPU→GPU 数据传输（除非需要读回） 与渲
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-04-01 14:30" pubdate>
+              2026-04-01
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/GPU-%E8%AE%A1%E7%AE%97%E4%B8%8E%E6%A8%A1%E6%8B%9F/" class="category-chain-item">GPU 计算与模拟</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HLSL/">#HLSL</a>
+            
+              <a href="/tags/URP/">#URP</a>
+            
+              <a href="/tags/Compute-Shader/">#Compute Shader</a>
+            
+              <a href="/tags/GPU%E7%89%A9%E7%90%86/">#GPU物理</a>
+            
+              <a href="/tags/%E5%B8%83%E6%96%99%E6%A8%A1%E6%8B%9F/">#布料模拟</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
         <a href="/2026/04/01/33-polar-uv-manipulation/" target="_self">
           Unity Shader 系列（三十三）：UV 动画与极坐标特效——技能指示器与魔法阵
         </a>
@@ -1009,82 +1085,6 @@
               <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%94%9F%E6%88%90/">#程序化生成</a>
             
               <a href="/tags/%E5%90%8E%E5%A4%84%E7%90%86%E7%89%B9%E6%95%88/">#后处理特效</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2026/04/01/24-terrain-rendering/" target="_self">
-          Unity Shader 系列（二十四）：Unity 地形系统与自定义 Shader
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2026/04/01/24-terrain-rendering/" target="_self">
-        <div>
-          Unity 地形系统（Terrain）是开放世界游戏的核心基础设施。从内置 TerrainLit Shader 的工作原理，到自定义 Splatmap 多层纹理混合，再到基于坡度和高度的自动材质分配，本文提供完整的 URP 地形渲染技术指南。 Unity Terrain 与 URP：TerrainLit Shader 工作原理Unity 的 TerrainLit Shader 是专门为 Terra
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2026-04-01 12:50" pubdate>
-              2026-04-01
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/" class="category-chain-item">Unity Shader 系列</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Unity-Shader-%E7%B3%BB%E5%88%97/%E8%87%AA%E7%84%B6%E5%9C%BA%E6%99%AF/" class="category-chain-item">自然场景</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/HLSL/">#HLSL</a>
-            
-              <a href="/tags/URP/">#URP</a>
-            
-              <a href="/tags/%E5%9C%B0%E5%BD%A2%E6%B8%B2%E6%9F%93/">#地形渲染</a>
-            
-              <a href="/tags/Splatmap/">#Splatmap</a>
-            
-              <a href="/tags/%E5%9C%B0%E5%BD%A2%E7%BA%B9%E7%90%86%E6%B7%B7%E5%90%88/">#地形纹理混合</a>
             
           </div>
         

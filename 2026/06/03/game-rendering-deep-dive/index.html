@@ -1,0 +1,1189 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alex">
+  <meta name="keywords" content="Hexo, Fluid, 技术, 生活">
+  
+    <meta name="description" content="游戏渲染技术全方位解析 🎮✨ 本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。  原文: 游戏渲染技术|全方位解析游戏画面的实现逻辑 — 网易游戏学堂  一、什么是游戏渲染？游戏渲染（Game Rendering），简单来说就是让你能在显示器上看到游戏画面的技术。 从 2000">
+<meta property="og:type" content="article">
+<meta property="og:title" content="游戏渲染技术全方位解析 - 从一根头发到一片云的技术全景">
+<meta property="og:url" content="https://alex-rachel.github.io/2026/06/03/game-rendering-deep-dive/index.html">
+<meta property="og:site_name" content="Alex&#39;s Blog">
+<meta property="og:description" content="游戏渲染技术全方位解析 🎮✨ 本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。  原文: 游戏渲染技术|全方位解析游戏画面的实现逻辑 — 网易游戏学堂  一、什么是游戏渲染？游戏渲染（Game Rendering），简单来说就是让你能在显示器上看到游戏画面的技术。 从 2000">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-06-03T04:45:00.000Z">
+<meta property="article:modified_time" content="2026-06-03T04:41:22.200Z">
+<meta property="article:author" content="Alex">
+<meta property="article:tag" content="游戏开发">
+<meta property="article:tag" content="渲染">
+<meta property="article:tag" content="PBR">
+<meta property="article:tag" content="NPR">
+<meta property="article:tag" content="图形学">
+<meta property="article:tag" content="UE5">
+<meta property="article:tag" content="实时渲染">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>游戏渲染技术全方位解析 - 从一根头发到一片云的技术全景 - Alex&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alex-rachel.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="游戏渲染技术全方位解析 - 从一根头发到一片云的技术全景"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-06-03 12:45" pubdate>
+          2026年6月3日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.8k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          32 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">游戏渲染技术全方位解析 - 从一根头发到一片云的技术全景</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="游戏渲染技术全方位解析-🎮✨"><a href="#游戏渲染技术全方位解析-🎮✨" class="headerlink" title="游戏渲染技术全方位解析 🎮✨"></a>游戏渲染技术全方位解析 🎮✨</h1><blockquote>
+<p>本文基于网易游戏学堂的技术分享，深入拆解游戏渲染的核心原理——从角色皮肤上的次表面散射，到天空中飘过的体积云，看技术美术如何用代码和数学在屏幕上重构一个真实可感的世界。</p>
+</blockquote>
+<p><strong>原文</strong>: <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/mCTB5SZ-ysVv-QQc7wTtoQ">游戏渲染技术|全方位解析游戏画面的实现逻辑</a> — 网易游戏学堂</p>
+<hr>
+<h2 id="一、什么是游戏渲染？"><a href="#一、什么是游戏渲染？" class="headerlink" title="一、什么是游戏渲染？"></a>一、什么是游戏渲染？</h2><p>游戏渲染（Game Rendering），简单来说就是<strong>让你能在显示器上看到游戏画面</strong>的技术。</p>
+<p>从 2000 年的《Quake 2》到 2022 年的《地平线：西之绝境》，20 多年间游戏画面发生了翻天覆地的变化，但底层做的事情始终如一：<strong>通过计算机图形学算法，将 3D 场景转化为 2D 图像</strong>。</p>
+<p>那些让人心动的画面，背后是一场关于”光”的精密计算。</p>
+<hr>
+<h2 id="二、渲染画面的三大核心模块"><a href="#二、渲染画面的三大核心模块" class="headerlink" title="二、渲染画面的三大核心模块"></a>二、渲染画面的三大核心模块</h2><p>游戏渲染可以归纳为三个互相交织的核心模块：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>关注点</th>
+<th>目标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>角色（Character）</strong></td>
+<td>材质与交互：头发、皮肤、眼睛、服饰</td>
+<td>让角色看起来真实或有风格</td>
+</tr>
+<tr>
+<td><strong>场景（Scene）</strong></td>
+<td>LOD 与流送：植被、云、水、地形</td>
+<td>构建可信的游戏世界</td>
+</tr>
+<tr>
+<td><strong>氛围（Atmosphere）</strong></td>
+<td>参数与控制：天气、光影（TOD 时间变化）</td>
+<td>营造沉浸感</td>
+</tr>
+</tbody></table>
+<p><strong>关键洞察</strong>：三者并非割裂，而是存在大量交集——玩家踩水产生波纹、风吹草动、场景破坏等交互效果，正是提升沉浸感的关键，也是技术实现的难点。</p>
+<hr>
+<h2 id="三、角色渲染技术详解"><a href="#三、角色渲染技术详解" class="headerlink" title="三、角色渲染技术详解"></a>三、角色渲染技术详解</h2><h3 id="3-1-角色制作流程"><a href="#3-1-角色制作流程" class="headerlink" title="3.1 角色制作流程"></a>3.1 角色制作流程</h3><p>从原画设计到游戏画面，角色需经历：</p>
+<blockquote>
+<p><strong>原画设计 → 3D 建模 → 材质制作 → 渲染输出</strong></p>
+</blockquote>
+<p>角色材质分为两大类：</p>
+<ul>
+<li><strong>通用材质库</strong>：解决一般物体表面的光照问题</li>
+<li><strong>特殊材质</strong>：眼球、皮肤、头发等需要特殊处理</li>
+</ul>
+<h3 id="3-2-PBR-vs-NPR：两大渲染范式"><a href="#3-2-PBR-vs-NPR：两大渲染范式" class="headerlink" title="3.2 PBR vs NPR：两大渲染范式"></a>3.2 PBR vs NPR：两大渲染范式</h3><p>这是游戏渲染中最核心的概念分野：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>PBR</th>
+<th>NPR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>驱动方式</strong></td>
+<td>公式驱动（Formula Driven）</td>
+<td>结果驱动（Result Driven）</td>
+</tr>
+<tr>
+<td><strong>追求目标</strong></td>
+<td>物理正确性</td>
+<td>艺术风格表达</td>
+</tr>
+<tr>
+<td><strong>代表类型</strong></td>
+<td>写实类游戏</td>
+<td>二次元 &#x2F; 风格化游戏</td>
+</tr>
+<tr>
+<td><strong>美术工作流</strong></td>
+<td>标准化，工具成熟</td>
+<td>需自定义，成本较高</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-渲染方程"><a href="#3-3-渲染方程" class="headerlink" title="3.3 渲染方程"></a>3.3 渲染方程</h3><p>所有基于物理的渲染都建立在这个方程之上：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs stylus"><span class="hljs-function"><span class="hljs-title">Lo</span><span class="hljs-params">(ωo)</span></span> = <span class="hljs-built_in">Le</span>(ωo) + ∫Ω <span class="hljs-built_in">Fr</span>(ω<span class="hljs-selector-tag">i</span>, ωo) · <span class="hljs-built_in">Li</span>(ωi) · (n · ωi) dωi<br></code></pre></td></tr></table></figure>
+
+<p>它描述了从表面某点沿观察方向 ωo 射出的光量，等于自发光加上所有入射光经过 BRDF（双向反射分布函数）调制后的积分。</p>
+<h3 id="3-4-PBR-的材质基础：从-MERL-到-Disney-Principled-BRDF"><a href="#3-4-PBR-的材质基础：从-MERL-到-Disney-Principled-BRDF" class="headerlink" title="3.4 PBR 的材质基础：从 MERL 到 Disney Principled BRDF"></a>3.4 PBR 的材质基础：从 MERL 到 Disney Principled BRDF</h3><p>在 PBR 流行之前，研究者用专业设备测量真实材质的反射特性，建立了 <strong>MERL BRDF 数据库</strong>。但真实数据驱动存在瓶颈：</p>
+<ul>
+<li>数据量大（33MB+），搜索性能低</li>
+<li>无法表达次表面散射、各向异性等</li>
+<li>材质范围受限于采样</li>
+</ul>
+<p><strong>Disney Principled BRDF（2012）</strong> 带来了革命性的简化：</p>
+<ol>
+<li><strong>参数直观</strong>：如”粗糙度”而非晦涩的物理参数</li>
+<li><strong>参数尽可能少</strong>：控制在少数几个关键参数</li>
+<li><strong>值范围 0-1</strong>：标准化，便于理解和调整</li>
+<li><strong>允许参数超出范围</strong>：在有意义时突破限制</li>
+<li><strong>组合健壮</strong>：任意参数组合不产生错误</li>
+</ol>
+<p><strong>核心参数</strong>：粗糙度（Roughness）&#x2F; 光泽度（Glossiness），两者为相反关系。这一原则彻底改变了游戏美术的工作流。</p>
+<h3 id="3-5-微表面模型（Microfacet-Model）"><a href="#3-5-微表面模型（Microfacet-Model）" class="headerlink" title="3.5 微表面模型（Microfacet Model）"></a>3.5 微表面模型（Microfacet Model）</h3><p>当像素覆盖大量表面细节时，基于统计学描述表面的微小法线变化。</p>
+<p><strong>BRDF 的两种成分</strong>：</p>
+<ul>
+<li><strong>漫反射（Diffuse）</strong>：一般简化为 <code>1/π</code></li>
+<li><strong>镜面反射（Specular）</strong>：使用 <strong>GGX 模型 + Cook-Torrance BRDF</strong></li>
+</ul>
+<p><strong>多层材质混合的演进</strong>：</p>
+<ul>
+<li>传统方式：基于结果的混合（物理上有问题）</li>
+<li>更优方案：材质计算阶段提前混合（线性叠加）</li>
+<li><strong>UE5 的 Strata 系统</strong>：用”slab”概念表达每层的光学结构，实现更准确的线性混合</li>
+</ul>
+<h3 id="3-6-NPR（非真实感渲染）风格化"><a href="#3-6-NPR（非真实感渲染）风格化" class="headerlink" title="3.6 NPR（非真实感渲染）风格化"></a>3.6 NPR（非真实感渲染）风格化</h3><p>二次元渲染的核心原则：<strong>所见即所得</strong>。</p>
+<ul>
+<li><strong>贴图即结果</strong>：美术画的贴图直接对应最终效果</li>
+<li><strong>光照烘焙</strong>：光照信息预烘焙到贴图中</li>
+<li><strong>边缘光</strong>：利用菲涅尔（Fresnel）系数实现</li>
+<li><strong>屏幕空间处理</strong>：在屏幕空间做卷积得到更细的边缘光</li>
+</ul>
+<h3 id="3-7-皮肤渲染（Skin-Rendering）"><a href="#3-7-皮肤渲染（Skin-Rendering）" class="headerlink" title="3.7 皮肤渲染（Skin Rendering）"></a>3.7 皮肤渲染（Skin Rendering）</h3><p>皮肤与通用表面材质最大的不同：<strong>多层结构（表皮、真皮、油脂、血管）带来的次表面散射（SSS）</strong>。</p>
+<p>核心现象：</p>
+<ul>
+<li><strong>正面通透感</strong>：亮部到暗部的柔和过渡</li>
+<li><strong>背面透射</strong>：光从背面穿透薄皮肤</li>
+<li><strong>细节高光</strong>：更细、更丰富的高光层次</li>
+</ul>
+<p>SSS 是让皮肤看起来”活”的关键——没有它，皮肤就像塑料。</p>
+<h3 id="3-8-头发渲染（Hair-Rendering）"><a href="#3-8-头发渲染（Hair-Rendering）" class="headerlink" title="3.8 头发渲染（Hair Rendering）"></a>3.8 头发渲染（Hair Rendering）</h3><p>头发的特殊性：<strong>圆柱形纤维，非平面</strong>。光路行为有三种：直接反射、同侧透射、穿透散射。</p>
+<p><strong>光照模型</strong>：</p>
+<ul>
+<li><strong>Kajiya-Kay 模型（1989）</strong>：基于切线计算高光，公式简单，手游主流</li>
+<li><strong>Marschner 模型（2003）</strong>：完整解决三条光路，使用预计算 LUT 加速</li>
+</ul>
+<p>建模方案上，从卡片（Card）到发丝级（Strand）渲染，在效果和性能之间做取舍。</p>
+<h3 id="3-9-眼球渲染（Eye-Rendering）"><a href="#3-9-眼球渲染（Eye-Rendering）" class="headerlink" title="3.9 眼球渲染（Eye Rendering）"></a>3.9 眼球渲染（Eye Rendering）</h3><p>关键在于<strong>结构拆解</strong>：</p>
+<ul>
+<li><strong>角膜</strong>：折射、反射</li>
+<li><strong>虹膜</strong>：散射、纹理</li>
+<li><strong>巩膜</strong>：血管纹理、SSS</li>
+<li><strong>泪膜</strong>：高光反射</li>
+</ul>
+<p>最新趋势包括动态效果：肌肉跟随、Look At 功能的细节优化。</p>
+<h3 id="角色渲染小结"><a href="#角色渲染小结" class="headerlink" title="角色渲染小结"></a>角色渲染小结</h3><blockquote>
+<p><strong>核心原则：用更低成本达到更好效果。</strong> PBR 方案因标准化工作流而成本更低；NPR 方案需自定义工具链，成本较高。</p>
+</blockquote>
+<hr>
+<h2 id="四、场景渲染技术详解"><a href="#四、场景渲染技术详解" class="headerlink" title="四、场景渲染技术详解"></a>四、场景渲染技术详解</h2><h3 id="4-1-场景制作的-PCG-流程"><a href="#4-1-场景制作的-PCG-流程" class="headerlink" title="4.1 场景制作的 PCG 流程"></a>4.1 场景制作的 PCG 流程</h3><p>现代游戏场景制作大量使用<strong>程序化内容生成（PCG）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>工具&#x2F;技术</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>地形生成</td>
+<td>高度图雕刻</td>
+<td>基础地貌</td>
+</tr>
+<tr>
+<td>河流切割</td>
+<td>程序化工具</td>
+<td>河道</td>
+</tr>
+<tr>
+<td>悬崖细节</td>
+<td>Houdini 等</td>
+<td>岩石细节</td>
+</tr>
+<tr>
+<td>植被布置</td>
+<td>生态刷子</td>
+<td>树木、草地</td>
+</tr>
+<tr>
+<td>最终整合</td>
+<td>场景编辑器</td>
+<td>完整场景</td>
+</tr>
+</tbody></table>
+<h3 id="4-2-地形渲染（Terrain-Rendering）"><a href="#4-2-地形渲染（Terrain-Rendering）" class="headerlink" title="4.2 地形渲染（Terrain Rendering）"></a>4.2 地形渲染（Terrain Rendering）</h3><p><strong>何时需要地形系统？</strong></p>
+<table>
+<thead>
+<tr>
+<th>场景规模</th>
+<th>推荐方案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&lt; 200 米</td>
+<td>普通网格模型</td>
+</tr>
+<tr>
+<td>200 米 - 1 公里</td>
+<td>视情况选择</td>
+</tr>
+<tr>
+<td>&gt; 1 公里</td>
+<td>地形系统（推荐）</td>
+</tr>
+<tr>
+<td>1000+ 平方公里</td>
+<td>大世界地形系统</td>
+</tr>
+</tbody></table>
+<p><strong>核心技术</strong>：</p>
+<ul>
+<li><strong>高度图（Heightmap）</strong>：每米&#x2F;每像素存储一个高度值，实时生成网格</li>
+<li><strong>LOD（Level of Detail）</strong>：根据距离调整网格密度</li>
+<li><strong>Clipmap &#x2F; 四叉树</strong>：高效管理大区域地形数据</li>
+<li><strong>VT（Virtual Texture）</strong>：虚拟纹理优化材质混合性能</li>
+<li><strong>GPU Driven</strong>：GPU 直接生成网格，减少 CPU 开销</li>
+</ul>
+<p><strong>地形材质混合</strong>：使用权重图混合多种材质（草地、岩不、泥土等），通过只保留权重最高的两层材质来优化性能。</p>
+<h3 id="4-3-植被系统（Vegetation-System）"><a href="#4-3-植被系统（Vegetation-System）" class="headerlink" title="4.3 植被系统（Vegetation System）"></a>4.3 植被系统（Vegetation System）</h3><p>核心目标：<strong>在有限性能预算内渲染足够密度的植被</strong>。</p>
+<p><strong>创作方式</strong>：</p>
+<ul>
+<li><strong>密度图刷</strong>：用刷子绘制密度，运行时按阈值生成（大范围植被）</li>
+<li><strong>精确撒点</strong>：手动指定每个植被的位置（精确控制区域）</li>
+</ul>
+<p><strong>植被交互</strong>——通过<strong>风场（Wind Field）</strong>和<strong>物理模拟</strong>实现：</p>
+<ul>
+<li>风吹摆动：牛顿力学 <code>F = ma</code></li>
+<li>角色碰撞：角色附近绑”风力源”</li>
+<li>实时响应：与环境和角色的动态交互</li>
+</ul>
+<h3 id="4-4-水体渲染（Water-Rendering）"><a href="#4-4-水体渲染（Water-Rendering）" class="headerlink" title="4.4 水体渲染（Water Rendering）"></a>4.4 水体渲染（Water Rendering）</h3><p><strong>水体光照成分</strong>：</p>
+<ul>
+<li><strong>反射（Reflection）</strong>：SSR 或光追</li>
+<li><strong>折射（Refraction）</strong>：水下透视效果</li>
+<li><strong>焦散（Caustics）</strong>：光聚焦形成的光斑</li>
+<li><strong>次表面散射（SSS）</strong>：水的通透感</li>
+<li><strong>深浅颜色渐变</strong>：浅水&#x2F;深水不同颜色</li>
+</ul>
+<p><strong>水体网格</strong>：使用 <strong>CDLOD（Continuous Distance LOD）</strong> 实现平滑过渡——重叠区域两套 LOD 网格共存，根据距离做渐变混合。</p>
+<h3 id="4-5-天气系统：天空、大气、云、雾"><a href="#4-5-天气系统：天空、大气、云、雾" class="headerlink" title="4.5 天气系统：天空、大气、云、雾"></a>4.5 天气系统：天空、大气、云、雾</h3><p><strong>统一的技术本质</strong>：<strong>Ray Marching（光线步进）</strong>——所有介质的光照问题都可以通过这一核心算法求解。</p>
+<h4 id="物理大气（Atmosphere）"><a href="#物理大气（Atmosphere）" class="headerlink" title="物理大气（Atmosphere）"></a>物理大气（Atmosphere）</h4><ul>
+<li><strong>经典论文</strong>：Preetham 2008《A Practical Analytic Model for Daylight》</li>
+<li><strong>建模</strong>：两层壳模型（地球内核 + 外层大气）</li>
+<li><strong>预计算 LUT</strong>：根据高度、视角、光源角查表</li>
+<li><strong>散射类型</strong>：瑞利散射（蓝天）+ 米氏散射（雾天）</li>
+<li><strong>多次散射</strong>：迭代 LUT 实现间接光照</li>
+</ul>
+<h4 id="大气雾（Aerial-Perspective）"><a href="#大气雾（Aerial-Perspective）" class="headerlink" title="大气雾（Aerial Perspective）"></a>大气雾（Aerial Perspective）</h4><p>解决传统高度雾与大气渲染<strong>割裂</strong>的问题：使用深度切片（32×32×16）融入大气计算，通过透射率&#x2F;散射亮度实现无缝衔接。</p>
+<h4 id="体积云（Volumetric-Cloud）"><a href="#体积云（Volumetric-Cloud）" class="headerlink" title="体积云（Volumetric Cloud）"></a>体积云（Volumetric Cloud）</h4><p>效果最逼真但性能开销最大。使用 <strong>3D 密度场 + Ray Marching</strong>，云层可遮挡光照影响场景。</p>
+<p><strong>云的层级化方案</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>实现方式</th>
+<th>性能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>雾（低层云）</td>
+<td>体积雾类似方案</td>
+<td>低</td>
+</tr>
+<tr>
+<td>普通云层</td>
+<td>Billboard&#x2F;Impostor</td>
+<td>中</td>
+</tr>
+<tr>
+<td>体积云</td>
+<td>Ray Marching 密度场</td>
+<td>高</td>
+</tr>
+</tbody></table>
+<h3 id="场景渲染小结"><a href="#场景渲染小结" class="headerlink" title="场景渲染小结"></a>场景渲染小结</h3><p><strong>场景制作的三大挑战</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>挑战</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>内容</strong></td>
+<td>创作工具（笔刷、PCG、AIGC）决定生产效率</td>
+</tr>
+<tr>
+<td><strong>性能</strong></td>
+<td>LOD、剔除、流送、GPU Driven</td>
+</tr>
+<tr>
+<td><strong>效果</strong></td>
+<td>风&#x2F;水交互、场景破坏、UGC 挖洞等</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><h3 id="渲染技术选择原则"><a href="#渲染技术选择原则" class="headerlink" title="渲染技术选择原则"></a>渲染技术选择原则</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐方案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>写实类 3A 游戏</td>
+<td>PBR + 物理准确方案</td>
+</tr>
+<tr>
+<td>移动端游戏</td>
+<td>简化 PBR + LUT 预计算</td>
+</tr>
+<tr>
+<td>二次元&#x2F;风格化</td>
+<td>NPR + 所见即所得</td>
+</tr>
+<tr>
+<td>混合风格</td>
+<td>分层材质系统（如 UE5 Strata）</td>
+</tr>
+</tbody></table>
+<h3 id="性能优化通用套路"><a href="#性能优化通用套路" class="headerlink" title="性能优化通用套路"></a>性能优化通用套路</h3><ol>
+<li><strong>LOD 策略</strong>：距离越远，细节越少</li>
+<li><strong>剔除优化</strong>：视锥剔除 + 遮挡剔除</li>
+<li><strong>流送管理</strong>：只加载需要的数据</li>
+<li><strong>GPU Driven</strong>：让 GPU 承担更多工作</li>
+<li><strong>预计算 LUT</strong>：空间换时间</li>
+</ol>
+<h3 id="核心学习路径"><a href="#核心学习路径" class="headerlink" title="核心学习路径"></a>核心学习路径</h3><ul>
+<li><strong>基础</strong>：渲染方程 → BRDF → 微表面模型</li>
+<li><strong>进阶</strong>：Disney PBR → SSS → 各向异性</li>
+<li><strong>场景</strong>：地形 LOD → 植被渲染 → 水体模拟</li>
+<li><strong>氛围</strong>：大气散射 → Ray Marching → 体积云</li>
+</ul>
+<hr>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><blockquote>
+<p><em>“渲染的本质是用最低的成本，达到最好的效果。”</em></p>
+</blockquote>
+<p>游戏渲染是一个<strong>效果、性能、成本</strong>三者平衡的艺术。没有银弹方案，只有最适合当前项目的选择。理解底层原理，掌握工具链，才能在实际开发中做出正确的技术决策。</p>
+<p>从一根头发的光线追踪，到整片天空的大气散射——每一个像素背后，都是数学和工程的精密配合。这正是游戏渲染技术的魅力所在。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%B8%B8%E6%88%8F%E6%8A%80%E6%9C%AF/" class="category-chain-item">游戏技术</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E6%B8%B8%E6%88%8F%E5%BC%80%E5%8F%91/" class="print-no-link">#游戏开发</a>
+      
+        <a href="/tags/%E6%B8%B2%E6%9F%93/" class="print-no-link">#渲染</a>
+      
+        <a href="/tags/PBR/" class="print-no-link">#PBR</a>
+      
+        <a href="/tags/NPR/" class="print-no-link">#NPR</a>
+      
+        <a href="/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" class="print-no-link">#图形学</a>
+      
+        <a href="/tags/UE5/" class="print-no-link">#UE5</a>
+      
+        <a href="/tags/%E5%AE%9E%E6%97%B6%E6%B8%B2%E6%9F%93/" class="print-no-link">#实时渲染</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>游戏渲染技术全方位解析 - 从一根头发到一片云的技术全景</div>
+      <div>https://alex-rachel.github.io/2026/06/03/game-rendering-deep-dive/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alex</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年6月3日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/06/02/harness-visualization/" title="Harness 的可见性危机:当 AI Agent 跑了 35 分钟,你只看到一个 ✅">
+                        <span class="hidden-mobile">Harness 的可见性危机:当 AI Agent 跑了 35 分钟,你只看到一个 ✅</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="gitalk-container"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#gitalk-container', function() {
+      Fluid.utils.createCssLink('/css/gitalk.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/gitalk/1.8.0/gitalk.min.js', function() {
+        var options = Object.assign(
+          {"clientID":"Ov23lih8eFhNzgiLGmVo","clientSecret":"198cdeb379ab1144b050ed916478192c7bb919fa","repo":"alex-rachel.github.io","owner":"Alex-Rachel","admin":["Alex-Rachel"],"language":"zh-CN","labels":["Gitalk"],"perPage":10,"pagerDirection":"last","distractionFreeMode":false,"createIssueManually":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token"},
+          {
+            id: 'fade6bee0c98fa8c5482641b04a73c46'
+          }
+        )
+        var gitalk = new Gitalk(options);
+        gitalk.render('gitalk-container');
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/live2d-custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
